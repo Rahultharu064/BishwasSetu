@@ -1,8 +1,0 @@
-{
-  "dependencies": {
-    "backend": "file:.."
-  },
-  "devDependencies": {
-    "@prisma/engines": "^7.1.0"
-  }
-}
