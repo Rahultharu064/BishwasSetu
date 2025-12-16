@@ -1,22 +1,40 @@
-import express from "express"
-import { createCategory,getCategory,searchCategory,updateCategory,deleteCategory } from "../controllers/categoryController.ts"
-import { createCategorySchema,updateCategorySchema } from "../validators/categoryValidaor.ts"
-import { validationMiddleware } from "../middlewares/validateMiddleware.ts"
+import express from "express";
+import {
+  createCategory,
+  getCategory,
+  searchCategory,
+  updateCategory,
+  deleteCategory
+} from "../controllers/categoryController.ts";
+import {
+  createCategorySchema,
+  updateCategorySchema
+} from "../validators/categoryValidaor.ts";
+import { validationMiddleware } from "../middlewares/validateMiddleware.ts";
 
+const categoryRoutes = express.Router();
 
-const categoryRoutes=express.Router();
+// create category
+categoryRoutes.post(
+  "/create",
+  validationMiddleware(createCategorySchema, "body"),
+  createCategory
+);
 
-//create category 
-categoryRoutes.post("/",validationMiddleware(createCategorySchema,"body"),createCategory);
-//get all category
-categoryRoutes.get("/",getCategory);
-//search category
-categoryRoutes.get("/search",searchCategory);
-//update category
-categoryRoutes.patch("/:id",validationMiddleware(updateCategorySchema),updateCategory)
-//delete category
-categoryRoutes.delete("/:id",deleteCategory);
+// get all categories
+categoryRoutes.get("/", getCategory);
 
+// search category
+categoryRoutes.get("/search", searchCategory);
 
+// update category
+categoryRoutes.patch(
+  "/:id",
+  validationMiddleware(updateCategorySchema, "body"),
+  updateCategory
+);
+
+// delete category
+categoryRoutes.delete("/:id", deleteCategory);
 
 export default categoryRoutes;

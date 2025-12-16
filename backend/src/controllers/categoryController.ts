@@ -41,7 +41,7 @@ export const searchCategory=async(req:Request,res:Response)=>{
                
             }
         },
-        orderBy:{createdAt:"desc"}
+        orderBy:{createdAt:"desc"} // 
     })
     res.json({count:categories.length,
         categories
