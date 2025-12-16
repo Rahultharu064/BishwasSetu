@@ -1,21 +1,46 @@
 import { useState, useEffect } from "react";
-import { createCategory } from "../../../services/categoryService";
+import { useParams } from "react-router-dom";
+import { updateCategory, getAllCategories } from "../../../services/categoryService";
 import toast from "react-hot-toast";
 import Card from "../../ui/Card";
 import Input from "../../ui/Input";
 import Button from "../../ui/Button";
+import type { Category } from "../../../types/categoryTypes";
 
-const CategoryCreate = () => {
+const CategoryUpdate = () => {
+  const { id } = useParams<{ id: string }>();
   const [name, setName] = useState("");
   const [icon, setIcon] = useState("");
   const [loading, setLoading] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const [category, setCategory] = useState<Category | null>(null);
 
   useEffect(() => {
     setIsVisible(true);
-  }, []);
+    if (id) {
+      loadCategory();
+    }
+  }, [id]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const loadCategory = async () => {
+    try {
+      const categories = await getAllCategories();
+      const foundCategory = categories.find((cat) => cat.id === id);
+      if (foundCategory) {
+        setCategory(foundCategory);
+        setName(foundCategory.name);
+        setIcon(foundCategory.icon || "");
+      }
+    } catch (error) {
+      toast.error("Failed to load category");
+    }
+  };
+
+  if (!id) {
+    return <div>Invalid category ID</div>;
+  }
+
+  const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!name.trim()) {
@@ -26,14 +51,12 @@ const CategoryCreate = () => {
     try {
       setLoading(true);
 
-      await createCategory({ name, icon });
+      await updateCategory(id, { name, icon });
 
-      toast.success("Category created successfully 🎉");
-      setName("");
-      setIcon("");
+      toast.success("Category updated successfully 🎉");
     } catch (error: any) {
       if (error?.response?.status === 400) {
-        toast.error("Category already exists");
+        toast.error("Category name already exists");
       } else {
         toast.error("Something went wrong");
       }
@@ -46,11 +69,11 @@ const CategoryCreate = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-100 flex items-center justify-center p-4">
       <Card className={`max-w-md w-full transition-all duration-1000 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-800 mb-2 animate-pulse">Create Category</h2>
-          <p className="text-gray-600">Add a new category to your forum</p>
+          <h2 className="text-3xl font-bold text-gray-800 mb-2 animate-pulse">Update Category</h2>
+          <p className="text-gray-600">Modify the category details</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleUpdate} className="space-y-6">
           <div className="animate-fade-in-up animation-delay-200">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Category Name *
@@ -78,7 +101,7 @@ const CategoryCreate = () => {
 
           <div className="animate-fade-in-up animation-delay-600">
             <Button type="submit" loading={loading} className="w-full">
-              {loading ? "Creating Category..." : "Create Category"}
+              {loading ? "Updating Category..." : "Update Category"}
             </Button>
           </div>
         </form>
@@ -87,4 +110,4 @@ const CategoryCreate = () => {
   );
 };
 
-export default CategoryCreate;
+export default CategoryUpdate;
