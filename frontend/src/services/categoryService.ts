@@ -4,7 +4,7 @@ import type{ Category } from "../types/categoryTypes";
 export const createCategory = async(data:{
     name:string;
     icon?:string;
-
+    description?:string;
 })=>{
     const response= await axiosapi.post("/categories/create",data)
     return response.data

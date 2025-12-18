@@ -24,25 +24,62 @@ const itemVariants = {
   },
 };
 
+const decodeHtml = (html: string) => {
+  const txt = document.createElement("textarea");
+  txt.innerHTML = html;
+  return txt.value;
+};
+
 const getCategoryIcon = (name: string, icon?: string) => {
   if (icon) {
-    // Check if it's inline SVG content
-    if (icon.trim().startsWith('<svg') && icon.trim().endsWith('</svg>')) {
+    let cleanIcon = icon.trim();
+
+    // Attempt to decode if it looks like escaped HTML
+    if (cleanIcon.includes('&lt;') || cleanIcon.includes('&gt;')) {
+      cleanIcon = decodeHtml(cleanIcon);
+    }
+
+    const lowerIcon = cleanIcon.toLowerCase();
+
+    // Check if it's SVG content (either full <svg> or partial <path>/<g>)
+    if (lowerIcon.startsWith('<svg') || lowerIcon.includes('<path') || lowerIcon.includes('<g')) {
+      let svgContent = cleanIcon;
+
+      // If it doesn't start with <svg, wrap it
+      if (!lowerIcon.startsWith('<svg')) {
+        svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-white">${cleanIcon}</svg>`;
+      } else {
+        // It has <svg>, just inject the class
+        // Use a regex to inject valid class, but carefully
+        // If it already has class, we might append or just leave it. 
+        // Simple approach: Replace <svg with <svg class="..." 
+        // But better: if it doesn't have class, add it.
+        if (!lowerIcon.includes('class=')) {
+          svgContent = cleanIcon.replace(/<svg/i, '<svg class="w-6 h-6 text-white"');
+        } else {
+          // It has class, maybe replace it or prepend? 
+          // Let's just forcefully replace the opening tag content to include our styles if we really want consistency, 
+          // OR just wrap the inner content.
+          // For now, let's stick to the previous simple injection but safer
+          svgContent = cleanIcon.replace(/<svg/i, '<svg class="w-6 h-6 text-white"');
+        }
+      }
+
       return (
         <div
-          className="w-12 h-12 rounded-xl bg-green-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg"
+          className="w-12 h-12 rounded-xl bg-green-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg category-icon-wrapper"
           dangerouslySetInnerHTML={{
-            __html: icon.replace('<svg', '<svg class="w-6 h-6 text-white"')
+            __html: svgContent
           }}
         />
       );
     }
     // Check if it's an SVG URL
-    else if (icon.toLowerCase().endsWith('.svg')) {
+    else if (lowerIcon.endsWith('.svg')) {
       return (
         <div className="w-12 h-12 rounded-xl bg-green-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
           <img
-            src={icon}
+            src={cleanIcon}
             alt={`${name} icon`}
             className="w-6 h-6 text-white filter brightness-0 invert"
           />
@@ -53,7 +90,7 @@ const getCategoryIcon = (name: string, icon?: string) => {
       return (
         <div
           className="w-12 h-12 rounded-xl bg-green-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg"
-          style={{ backgroundImage: `url(${icon})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+          style={{ backgroundImage: `url(${cleanIcon})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
         ></div>
       );
     }
@@ -130,7 +167,7 @@ const CategoryList = () => {
           viewport={{ once: true }}
           className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6"
         >
-          {categories.map((category, index) => (
+          {categories.map((category) => (
             <motion.div
               key={category.id}
               variants={itemVariants}
@@ -146,9 +183,31 @@ const CategoryList = () => {
                 </div>
 
                 {/* NAME FROM BACKEND */}
-                <h3 className="font-heading font-semibold text-foreground text-sm group-hover:text-primary transition-colors">
+                <h3 className="font-heading font-semibold text-foreground text-sm group-hover:text-primary transition-colors mb-2">
                   {category.name}
                 </h3>
+
+                {/* DESCRIPTION */}
+                {category.description && (
+                  <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+                    {category.description}
+                  </p>
+                )}
+
+                {/* TRUST SCORE */}
+                {category.avgTrustScore !== undefined && category.avgTrustScore > 0 && (
+                  <div className="flex items-center gap-1 text-xs text-amber-600 mb-2">
+                    <span>⭐</span>
+                    <span>{category.avgTrustScore.toFixed(1)}</span>
+                  </div>
+                )}
+
+                {/* PROVIDER COUNT */}
+                {category.providerCount !== undefined && category.providerCount > 0 && (
+                  <div className="text-xs text-muted-foreground">
+                    {category.providerCount} providers
+                  </div>
+                )}
               </Link>
             </motion.div>
           ))}

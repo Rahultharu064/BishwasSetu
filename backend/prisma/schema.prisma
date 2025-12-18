@@ -18,19 +18,34 @@ datasource db {
 
 // Define your database schema here
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
   name      String?
   phone     String?
   password  String
-  createdAt DateTime @default(now())
+  role      Role      @default(CUSTOMER)
+  createdAt DateTime  @default(now())
+
+// Relation to services (provider only)
 }
 
 model Category {
-  id        String   @id @default(uuid())
-  name      String   @unique
-  icon      String?  @db.VarChar(500)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String    @id @default(uuid())
+  name        String    @unique
+  icon        String?   @db.VarChar(500)
+  description String?   @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Trust score tracking (for future implementation)
+  avgTrustScore Float? @default(0.0)
+  providerCount   Int   @default(0)
 }
 
+
+
+enum Role {
+  CUSTOMER
+  PROVIDER
+  ADMIN
+}

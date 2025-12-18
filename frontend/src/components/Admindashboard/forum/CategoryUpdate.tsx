@@ -11,6 +11,7 @@ const CategoryUpdate = () => {
   const { id } = useParams<{ id: string }>();
   const [name, setName] = useState("");
   const [icon, setIcon] = useState("");
+  const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [category, setCategory] = useState<Category | null>(null);
@@ -30,6 +31,7 @@ const CategoryUpdate = () => {
         setCategory(foundCategory);
         setName(foundCategory.name);
         setIcon(foundCategory.icon || "");
+        setDescription(foundCategory.description || "");
       }
     } catch (error) {
       toast.error("Failed to load category");
@@ -51,7 +53,7 @@ const CategoryUpdate = () => {
     try {
       setLoading(true);
 
-      await updateCategory(id, { name, icon });
+      await updateCategory(id, { name, icon, description });
 
       toast.success("Category updated successfully 🎉");
     } catch (error: any) {
@@ -96,6 +98,21 @@ const CategoryUpdate = () => {
               value={icon}
               onChange={(e) => setIcon(e.target.value)}
               disabled={loading}
+            />
+          </div>
+
+          <div className="animate-fade-in-up animation-delay-500">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Description (Optional)
+            </label>
+            <textarea
+              placeholder="Enter category description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              disabled={loading}
+              rows={3}
+              maxLength={1000}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
             />
           </div>
 

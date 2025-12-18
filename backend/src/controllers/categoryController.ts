@@ -3,9 +3,8 @@ import prismaClient from "../config/db.ts"
 
 
 //create category 
-
 export const createCategory = async (req:Request,res:Response)=>{
-    const {name,icon} =req.body;
+    const {name,icon,description} =req.body;
     const existing=await prismaClient.category.findUnique({
         where:{name}
     })
@@ -13,7 +12,7 @@ export const createCategory = async (req:Request,res:Response)=>{
         return res.status(400).json({message:"category already exists"})
     }
     const category = await prismaClient.category.create({
-        data:{name,icon}
+        data:{name,icon,description}
     })
     return res.status(201).json({
         message:"category created successfully",

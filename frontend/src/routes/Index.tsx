@@ -3,25 +3,45 @@ import CategoryUpdate from "../components/Admindashboard/forum/CategoryUpdate";
 import CategoryAdminList from "../components/Admindashboard/forum/CategoryAdminList";
 import CategoryList from "../components/Homepage/CategoryList";
 
+// Public Pages
+import Homepage from "../pages/PublicUser/Homepage";
+import ProvidersPage from "../pages/PublicUser/ProvidersPage";
+import ServicesPage from "../pages/PublicUser/ServicesPage";
 
 
 
-const routes= [
+
+const routes = [
+    // Public Routes
     {
-        path:"/",
-        element:<CategoryCreate />
+        path: "/",
+        element: <Homepage />
     },
     {
-        path:"/categories",
-        element:<CategoryList />
+        path: "/providers",
+        element: <ProvidersPage />
     },
     {
-        path:"/admin/categories",
-        element:<CategoryAdminList />
+        path: "/services",
+        element: <ServicesPage />
+    },
+
+    // Admin/Existing Routes (Keeping these as requested/defaults)
+    {
+        path: "/admin/category/create",
+        element: <CategoryCreate />
     },
     {
-        path:"/update/:id",
-        element:<CategoryUpdate />
+        path: "/categories",
+        element: <CategoryList />
+    },
+    {
+        path: "/admin/categories",
+        element: <CategoryAdminList />
+    },
+    {
+        path: "/admin/category/update/:id",
+        element: <CategoryUpdate />
     }
 ]
 

@@ -1,169 +1,105 @@
-COMPLETE PROJECT OUTLINE
-BiswasSetu -Bridge of Trust
-1️⃣ Project Overview
-Project Title
+BishwasSetu – Complete Project Outline
 
-BishwasSetu – Bridge of Trust
+Home Services & Community Trust Platform
 
-Vision
+1. Platform Overview
 
-To create a community-driven trust ecosystem that helps people in Nepal confidently hire reliable local service providers using verified reviews, behavior-based trust scores, and transparent dispute handling.
+BishwasSetu is a trust-based home services marketplace that connects customers with verified service providers using a transparent Trust Score system, mandatory provider verification (KYC), and community-driven reviews.
 
-Problem Statement
+2. Core Platform Modules
 
-People in Nepal often hesitate to hire local service providers due to:
-
-Lack of verified reviews
-
-Fake or biased ratings
-
-No accountability after service completion
-
-No structured complaint resolution system
-
-Proposed Solution
-
-A centralized trust platform where:
-
-Service providers are evaluated using behavior-based trust scores
-
-Reviews are linked only to verified bookings
-
-Complaints are tracked and resolved transparently
-
-Honest vendors are rewarded with higher visibility
-
-2️⃣ System Architecture (High Level)
 Public Website
-     |
-Authentication Layer (JWT + Cookies)
-     |
------------------------------------------
-| Customer Dashboard                    |
-| Vendor Dashboard                      |
-| Admin Dashboard                       |
------------------------------------------
-     |
-Backend REST API (Node + Express)
-     |
+
+Authentication & Authorization
+
+Customer Module
+
+Service Provider Module
+
+Provider Professional Information & KYC (Mandatory)
+
+Service Discovery & Advanced Search
+
+Booking & Job Management
+
 Trust Score Engine
-     |
-Database (MySQL + Prisma)
 
-3️⃣ Tech Stack (Final & Practical)
-Frontend
+Review & Rating System
 
-React.js + TypeScript
+Complaint & Resolution System
 
-Tailwind CSS
+Admin & Moderator Panel
 
-shadcn/ui
+Notifications & Payments (Optional MVP)
 
-framer-motion
+3. Frontend Engineer – Page-wise Responsibilities
+Professional UI Rules
 
-lucide-react
+All public pages share common Header & Footer
 
-Axios
+Dashboard pages use role-based layouts
 
-React Router 
+Consistent design system & animations
 
-Backend
+3.1 Public Website (No Login Required)
+A. Global Header (Navbar)
 
-Node.js
+Logo: BishwasSetu
 
-Express.js
+Menu: Home | Services | Providers | About
 
-Prisma ORM
+Actions: Login | Register
 
-MySQL
+Sticky navbar, hover animations, mobile drawer
 
-JWT Authentication (HttpOnly cookies)
+B. Global Footer
 
-Role-Based Access Control (RBAC)
+Brand & tagline
 
-Rate limiting
+Quick links
 
-Dev Tools
+Legal links
 
-Git & GitHub
+Contact info
 
-Postman
+Public Pages
+1. Landing Page
 
-VS Code
+Hero section with service + location search
 
-Docker (optional)
+Service categories grid
 
-4️⃣ PUBLIC WEBSITE (Marketing Layer)
-Purpose
-
-Educate users
-
-Build initial trust
-
-Convert visitors into users/vendors
-
-Pages & Features
-Navigation
-
-Home
-
-Services
-
-Providers
-
-About
-
-Login / Register
-
-Home Page Sections
-
-Hero section with search
-
-Platform value highlights
-
-Service categories
+Why BishwasSetu (Trust, Verification, Support)
 
 Featured trusted providers
 
-Community impact stats
+Call-to-action banners
 
-Call-to-action section
+2. Services Page (Updated – Informative)
 
-Footer (legal & contact)
+Service category cards with:
 
-Frontend Responsibility
+Icon
 
-SEO-friendly UI
+Description
 
-Responsive layout
+Avg trust score
 
-Reusable components
+“View Providers” CTA
 
-Backend Support
+Service detail preview:
 
-Public providers API
+Included tasks
 
-Public trust score API
+Estimated pricing
 
-5️⃣ CUSTOMER DASHBOARD (Service Seekers)
-Purpose
+Avg completion time
 
-To help customers find, book, review, and report services confidently.
+Trust benefits section
 
-Core Features
-Dashboard Overview
+3. Providers Page (Updated – Advanced)
 
-Active bookings
-
-Completed services
-
-Trusted providers
-
-Recent activity
-
-Search Services
-
-Filter by:
+Advanced filters:
 
 Category
 
@@ -171,205 +107,275 @@ Location
 
 Trust score
 
-Provider cards
-
-Bookings Management
-
-Upcoming / completed bookings
-
-Review submission (only after completion)
-
-Reviews & Ratings
-
-Review history
-
-Trust score impact indicator
-
-Complaints & Support
-
-Submit complaint
-
-Track resolution status
-
-Notifications
-
-Booking updates
-
-Complaint updates
-
-Profile & Settings
-
-Personal info
-
-Security settings
-
-6️⃣ VENDOR DASHBOARD (Service Providers)
-Purpose
-
-To help vendors manage jobs, build trust, and grow income.
-
-Core Features
-Dashboard Overview
-
-New job requests
-
-Active jobs
-
-Monthly earnings
-
-Current trust score
-
-Job Requests & Jobs
-
-Accept / reject jobs
-
-Mark jobs as completed
-
-Trust Score & Reputation
-
-Trust score (0–100)
-
-Breakdown:
-
-Completion rate
-
-Timeliness
-
-Reviews
-
-Complaint history
-
 Verification status
 
-Trend visualization
+Availability
 
-Improvement tips
+Provider cards:
 
-Reviews & Feedback
+Photo
 
-View reviews
+Skills
 
-Respond to feedback
+Experience
 
-Complaints & Disputes
-
-View complaints
-
-Submit explanation
-
-Availability & Schedule
-
-Weekly availability
-
-Vacation mode
-
-Profile & Verification
-
-Business details
-
-Document upload
+Trust score
 
 Verification badge
 
-7️⃣ ADMIN DASHBOARD (Governance Layer)
-Purpose
+Provider profile detail page:
 
-To maintain fairness, transparency, and quality.
+Trust score breakdown
 
-Core Features
-Admin Overview
+Reviews
 
-Platform statistics
+Availability
 
-Trust score distribution
+Book service CTA
 
-Vendor Verification
+4. About Page
 
-Review documents
+Mission & vision
 
-Approve / reject vendors
+Trust philosophy
 
-Complaint Management
+Platform values
 
-Review disputes
+Contact details
 
-Resolve complaints
+3.2 Authentication Pages
+5. Login / Register
 
-Trust Score Moderation
-
-Audit trust score components
-
-Manual adjustment with reason logging
-
-User Management
-
-Suspend or warn users/vendors
-
-8️⃣ TRUST SCORE SYSTEM (CORE INNOVATION)
-Trust Score (0–100)
-Factor	Weight
-Job completion rate	30%
-Timeliness	20%
-Customer reviews	25%
-Complaint history	15%
-Verification status	10%
-Key Rules
-
-Reviews allowed only after verified bookings
-
-Complaints reduce score gradually
-
-Resolved complaints recover trust slowly
-
-One bad review cannot destroy reputation
-
-9️⃣ AUTHENTICATION & SECURITY
-Auth Features
-
-Email + password
+Phone or Email
 
 OTP verification
 
-JWT-based authentication
-
-Role-based authorization
-
-Security Measures
-
-Rate limiting
-
-Input validation
-
-Secure cookies
-
-🔟 FRONTEND ↔ BACKEND SYNC (IMPORTANT)
-Role-based API Mapping
-Public
-
-GET /providers
-
-GET /categories
+Role selection:
 
 Customer
 
-POST /bookings
+Provider
 
-POST /reviews
+3.3 Customer Module (After Login)
+6. Customer Dashboard
 
-POST /complaints
+Nearby trusted providers
 
-Vendor
+Recommended services
 
-GET /jobs
+Recent bookings summary
 
-PATCH /jobs/:id
+7. Provider Profile Page
 
-GET /trust-score
+Detailed provider info
 
-Admin
+Trust score meter
 
-PATCH /admin/verify
+Reviews & ratings
 
-PATCH /admin/complaints
+Book service CTA
 
-PATCH /admin/trust-adjust
+8. Booking Flow
+
+Booking creation page
+
+Booking status tracking
+
+Review & rating submission
+
+3.4 Service Provider Module (After Login)
+🚨 Mandatory Enforcement Rule
+
+Providers CANNOT accept bookings until professional info & KYC are approved.
+
+9. Provider Onboarding Status Page
+
+Status indicators:
+
+Incomplete
+
+Documents Pending
+
+Under Review
+
+Verified
+
+Rejected (with reason)
+
+10. Provider Professional Information Page
+
+Legal name
+
+Phone & email
+
+Service categories & skills
+
+Experience
+
+Service description
+
+Service area
+
+Availability schedule
+
+3.5 Provider Document Verification (KYC) – REQUIRED
+11. Provider KYC Page (Wizard Flow)
+
+Step 1: Professional Info
+Step 2: Document Upload
+
+Government ID
+
+Profile photo
+
+Certificate (optional)
+
+Step 3: Verification Status
+
+Status badges
+
+Admin feedback
+
+Re-upload option
+
+Post-Submission Behavior
+
+Redirect to Read-Only Dashboard
+
+Booking disabled
+
+Trust score locked
+
+12. Provider Dashboard (Verified Only)
+
+Trust score overview
+
+Booking requests
+
+Earnings summary
+
+Verification badge
+
+13. Booking Management
+
+Accept / reject bookings
+
+Update job status
+
+Mark completed
+
+3.6 Admin & Moderator Module
+14. Provider Verification Review (Admin)
+
+View uploaded documents
+
+Approve / reject
+
+Add rejection reason
+
+15. Complaint Review Page
+
+Complaint details
+
+Chat timeline
+
+Resolution actions
+
+16. Admin Dashboard
+
+Users & providers management
+
+Trust score audit logs
+
+Platform analytics
+
+Fraud & abuse flags
+
+4. Backend Engineer – Feature-wise Responsibilities
+4.1 Authentication & Authorization
+POST /api/auth/register
+POST /api/auth/login
+POST /api/auth/verify-otp
+POST /api/auth/logout
+
+
+OTP authentication
+
+JWT with HttpOnly cookies
+
+Role-based access control
+
+4.2 User & Provider Management
+GET  /api/users/me
+PUT  /api/users/me
+GET  /api/providers/:id
+PUT  /api/providers/profile
+
+4.3 Provider Professional Info & KYC
+POST /api/providers/profile/complete
+POST /api/providers/kyc/upload
+GET  /api/providers/kyc/status
+
+GET  /api/admin/providers/kyc
+PUT  /api/admin/providers/kyc/:id/approve
+PUT  /api/admin/providers/kyc/:id/reject
+
+
+Business Rule:
+Providers with status ≠ VERIFIED cannot accept bookings.
+
+4.4 Service & Category Module
+GET  /api/categories
+POST /api/categories (Admin)
+
+4.5 Provider Discovery & Search
+GET /api/providers
+
+
+Filters: category, location, trust score, verification
+
+4.6 Booking & Job Lifecycle
+POST /api/bookings
+GET  /api/bookings/:id
+PUT  /api/bookings/:id/status
+
+4.7 Review & Rating System
+POST /api/reviews
+GET  /api/providers/:id/reviews
+
+4.8 Trust Score Engine
+GET /api/providers/:id/trust-score
+
+
+Inputs:
+
+Reviews
+
+Timeliness
+
+Complaints
+
+Verification
+
+Community vouches
+
+4.9 Complaint & Resolution System
+POST /api/complaints
+PUT  /api/complaints/:id/resolve
+
+4.10 Admin Module
+GET  /api/admin/users
+GET  /api/admin/providers
+PUT  /api/admin/providers/:id/status
+
+5. Database & DevOps
+
+Prisma schema
+
+KYC document tables
+
+Status enums
+
+Secure file storage
+
+Indexing & optimization

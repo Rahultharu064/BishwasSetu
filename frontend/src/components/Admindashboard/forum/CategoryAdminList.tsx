@@ -44,7 +44,10 @@ const CategoryAdminList = () => {
         <thead>
           <tr className="bg-gray-100">
             <th className="border border-gray-300 p-2">Name</th>
+            <th className="border border-gray-300 p-2">Description</th>
             <th className="border border-gray-300 p-2">Icon</th>
+            <th className="border border-gray-300 p-2">Trust Score</th>
+            <th className="border border-gray-300 p-2">Providers</th>
             <th className="border border-gray-300 p-2">Actions</th>
           </tr>
         </thead>
@@ -53,18 +56,55 @@ const CategoryAdminList = () => {
             <tr key={category.id}>
               <td className="border border-gray-300 p-2">{category.name}</td>
               <td className="border border-gray-300 p-2">
-                {category.icon ? (
-                  category.icon.trim().startsWith('<svg') && category.icon.trim().endsWith('</svg>') ? (
-                    <div
-                      className="w-8 h-8 flex items-center justify-center"
-                      dangerouslySetInnerHTML={{ __html: category.icon }}
-                    />
-                  ) : (
-                    <img src={category.icon} alt={category.name} className="w-8 h-8" />
-                  )
-                ) : (
-                  <span>{category.name.charAt(0).toUpperCase()}</span>
-                )}
+                <div className="max-w-xs truncate">
+                  {category.description || '-'}
+                </div>
+              </td>
+              <td className="border border-gray-300 p-2">
+                {(() => {
+                  if (!category.icon) {
+                    return (
+                      <span className="font-bold text-gray-500 bg-gray-200 w-8 h-8 flex items-center justify-center rounded">
+                        {category.name.charAt(0).toUpperCase()}
+                      </span>
+                    );
+                  }
+
+                  let cleanIcon = category.icon.trim();
+
+                  // Helper to decode HTML entities inline since we can't easily add a top-level function inside the map without extracting it
+                  if (cleanIcon.includes('&lt;') || cleanIcon.includes('&gt;')) {
+                    const txt = document.createElement("textarea");
+                    txt.innerHTML = cleanIcon;
+                    cleanIcon = txt.value;
+                  }
+
+                  const lowerIcon = cleanIcon.toLowerCase();
+
+                  if (lowerIcon.startsWith('<svg') || lowerIcon.includes('<path') || lowerIcon.includes('<g')) {
+                    let svgContent = cleanIcon;
+                    if (!lowerIcon.startsWith('<svg')) {
+                      svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6">${cleanIcon}</svg>`;
+                    } else {
+                      svgContent = cleanIcon.replace(/<svg/i, '<svg class="w-6 h-6"');
+                    }
+
+                    return (
+                      <div
+                        className="w-8 h-8 flex items-center justify-center [&>svg]:w-6 [&>svg]:h-6"
+                        dangerouslySetInnerHTML={{ __html: svgContent }}
+                      />
+                    );
+                  } else {
+                    return <img src={cleanIcon} alt={category.name} className="w-8 h-8 object-cover rounded" />;
+                  }
+                })()}
+              </td>
+              <td className="border border-gray-300 p-2">
+                {category.avgTrustScore ? category.avgTrustScore.toFixed(1) : '-'}
+              </td>
+              <td className="border border-gray-300 p-2">
+                {category.providerCount || 0}
               </td>
               <td className="border border-gray-300 p-2">
                 <Link

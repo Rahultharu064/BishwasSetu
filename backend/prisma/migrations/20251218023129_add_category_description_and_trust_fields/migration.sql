@@ -1,0 +1,7 @@
+-- AlterTable
+ALTER TABLE `category` ADD COLUMN `avgTrustScore` DOUBLE NULL DEFAULT 0.0,
+    ADD COLUMN `description` TEXT NULL,
+    ADD COLUMN `providerCount` INTEGER NOT NULL DEFAULT 0;
+
+-- AlterTable
+ALTER TABLE `user` ADD COLUMN `role` ENUM('CUSTOMER', 'PROVIDER', 'ADMIN') NOT NULL DEFAULT 'CUSTOMER';

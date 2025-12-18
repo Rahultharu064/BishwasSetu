@@ -8,6 +8,7 @@ import Button from "../../ui/Button";
 const CategoryCreate = () => {
   const [name, setName] = useState("");
   const [icon, setIcon] = useState("");
+  const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -26,11 +27,12 @@ const CategoryCreate = () => {
     try {
       setLoading(true);
 
-      await createCategory({ name, icon });
+      await createCategory({ name, icon, description });
 
       toast.success("Category created successfully 🎉");
       setName("");
       setIcon("");
+      setDescription("");
     } catch (error: any) {
       if (error?.response?.status === 400) {
         toast.error("Category already exists");
@@ -73,6 +75,21 @@ const CategoryCreate = () => {
               value={icon}
               onChange={(e) => setIcon(e.target.value)}
               disabled={loading}
+            />
+          </div>
+
+          <div className="animate-fade-in-up animation-delay-500">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Description (Optional)
+            </label>
+            <textarea
+              placeholder="Enter category description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              disabled={loading}
+              rows={3}
+              maxLength={1000}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
             />
           </div>
 
