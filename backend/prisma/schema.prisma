@@ -21,12 +21,20 @@ model User {
   id        Int       @id @default(autoincrement())
   email     String    @unique
   name      String?
+  address   String?
   phone     String?
   password  String
-  role      Role      @default(CUSTOMER)
+  role      Role      
+  isVerified Boolean @default(false)
+  otp String?
+  otpExpiry DateTime?
   createdAt DateTime  @default(now())
 
 // Relation to services (provider only)
+}
+enum Role{
+  CUSTOMER
+  PROVIDER
 }
 
 model Category {
@@ -44,8 +52,3 @@ model Category {
 
 
 
-enum Role {
-  CUSTOMER
-  PROVIDER
-  ADMIN
-}

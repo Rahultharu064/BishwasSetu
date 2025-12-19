@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 
 interface JwtPayload {
     id: number;
-    role: "CUSTOMER" | "PROVIDER" | "ADMIN";
+    role: "CUSTOMER" | "PROVIDER";
 }
 
 export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
@@ -22,7 +22,7 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
     }
 };
 
-export const authorize = (roles: ("CUSTOMER" | "PROVIDER" | "ADMIN")[]) => {
+export const authorize = (roles: ("CUSTOMER" | "PROVIDER")[]) => {
     return (req: Request, res: Response, next: NextFunction) => {
         if (!req.user || !roles.includes(req.user.role)) {
             return res.status(403).json({ message: "Access denied" });
