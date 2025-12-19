@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import type { Request, Response, NextFunction } from 'express';
 import categoryRoutes from "./routes/categoryRoute.ts";
+import authRoutes  from "./routes/authRoute.ts"
 
 dotenv.config();
 
@@ -34,6 +35,7 @@ app.use(cors({
 
 
 app.use("/api/categories", categoryRoutes);
+app.use("/api/auth",authRoutes)
 
 
 // Global error handler

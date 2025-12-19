@@ -7,6 +7,9 @@ import CategoryList from "../components/Homepage/CategoryList";
 import Homepage from "../pages/PublicUser/Homepage";
 import ProvidersPage from "../pages/PublicUser/ProvidersPage";
 import ServicesPage from "../pages/PublicUser/ServicesPage";
+import Register from "../components/auth/Register";
+import Login from "../components/auth/Login";
+import VerifyOtp from "../components/auth/VerifyOtp";
 
 
 
@@ -25,6 +28,19 @@ const routes = [
         path: "/services",
         element: <ServicesPage />
     },
+    {
+        path:"/register",
+        element: <Register />
+    },
+    {
+        path:"/login",
+        element:<Login />
+    },
+    {
+        path:"/verify-otp",
+        element: <VerifyOtp />
+    },
+    
 
     // Admin/Existing Routes (Keeping these as requested/defaults)
     {
