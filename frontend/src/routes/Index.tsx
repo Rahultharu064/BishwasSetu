@@ -7,12 +7,20 @@ import CategoryList from "../components/Homepage/CategoryList";
 import Homepage from "../pages/PublicUser/Homepage";
 import ProvidersPage from "../pages/PublicUser/ProvidersPage";
 import ServicesPage from "../pages/PublicUser/ServicesPage";
+import ProfilePage from "../pages/PublicUser/ProfilePage";
 import Register from "../components/auth/Register";
 import Login from "../components/auth/Login";
 import VerifyOtp from "../components/auth/VerifyOtp";
 
 
 
+
+// Provider Dashboard Pages
+// Provider Dashboard Pages
+import ProviderLayoutPage from "../pages/ProviderDashboard/ProviderLayoutPage";
+import DashboardPage from "../pages/ProviderDashboard/DashboardPage";
+import ProviderServicesPage from "../pages/ProviderDashboard/ServicesPage";
+import BookingsPage from "../pages/ProviderDashboard/BookingsPage";
 
 const routes = [
     // Public Routes
@@ -29,20 +37,23 @@ const routes = [
         element: <ServicesPage />
     },
     {
-        path:"/register",
+        path: "/register",
         element: <Register />
     },
     {
-        path:"/login",
-        element:<Login />
+        path: "/login",
+        element: <Login />
     },
     {
-        path:"/verify-otp",
+        path: "/verify-otp",
         element: <VerifyOtp />
     },
-    
+    {
+        path: "/profile",
+        element: <ProfilePage />
+    },
 
-    // Admin/Existing Routes (Keeping these as requested/defaults)
+    // Admin/Existing Routes
     {
         path: "/admin/category/create",
         element: <CategoryCreate />
@@ -58,8 +69,20 @@ const routes = [
     {
         path: "/admin/category/update/:id",
         element: <CategoryUpdate />
+    },
+
+    // Provider Dashboard Routes
+    {
+        path: "/provider",
+        element: <ProviderLayoutPage />,
+        children: [
+            { path: "dashboard", element: <DashboardPage /> },
+            { path: "services", element: <ProviderServicesPage /> },
+            { path: "bookings", element: <BookingsPage /> },
+            { path: "profile", element: <ProfilePage /> },
+        ]
     }
-]
+];
 
 
 export default routes

@@ -1,6 +1,51 @@
 import type { Request, Response } from "express";
 import prismaClient from "../config/db.ts";
 
+// Become a Provider
+export const becomeProvider = async (req: Request, res: Response) => {
+    try {
+        if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+
+        const { legalName, experienceYears, bio, serviceArea, availability } = req.body;
+
+        // Check if user is already a provider
+        const existingProvider = await prismaClient.provider.findUnique({
+            where: { userId: req.user.id }
+        });
+
+        if (existingProvider) {
+            return res.status(400).json({ message: "You are already a provider." });
+        }
+
+        // Transaction to create provider and update user role
+        const provider = await prismaClient.$transaction(async (prisma) => {
+            const newProvider = await prisma.provider.create({
+                data: {
+                    userId: req.user!.id,
+                    legalName,
+                    experienceYears: parseInt(experienceYears),
+                    bio,
+                    serviceArea,
+                    availability,
+                    verificationStatus: "DOCUMENTS_PENDING"
+                }
+            });
+
+            await prisma.user.update({
+                where: { id: req.user!.id },
+                data: { role: "PROVIDER" }
+            });
+
+            return newProvider;
+        });
+
+        res.status(201).json({ message: "You are now a provider! Please upload KYC documents.", provider });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+
 // Complete Provider Profile
 export const completeProviderProfile = async (req: Request, res: Response) => {
     try {
@@ -19,7 +64,7 @@ export const completeProviderProfile = async (req: Request, res: Response) => {
             }
         });
 
-        res.json({ message: "Profile completed. Upload KYC documents.", provider });
+        res.json({ message: "Profile updated successfully.", provider });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Internal server error" });
@@ -89,8 +134,13 @@ export const getKycStatus = async (req: Request, res: Response) => {
 
 // Public Provider Profile
 export const getProviderById = async (req: Request, res: Response) => {
+    const id = parseInt(req.params.id || "");
+    if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid Provider ID" });
+    }
+
     const provider = await prismaClient.provider.findUnique({
-        where: { id: parseInt(req.params.id) },
+        where: { id },
         include: { user: { select: { name: true, email: true } }, kycDocuments: true }
     });
 
