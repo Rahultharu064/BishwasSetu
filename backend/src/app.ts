@@ -16,21 +16,24 @@ const allowedOrigin = [
     process.env.FRONTEND_URL
 ]
 
-app.use(cors({
-    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-        if (!origin)
-            return callback(null, true);
-        if (allowedOrigin.indexOf(origin) === -1) {
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
 
-        }
-        if (origin.startsWith("http://localhost:")) {
-            return callback(null, true);
-        }
+      if (
+        origin.startsWith("http://localhost:") ||
+        origin === process.env.FRONTEND_URL
+      ) {
+        return callback(null, true);
+      }
 
+      return callback(new Error("Not allowed by CORS"));
     },
+    credentials: true,
+  })
+);
 
-    credentials: true
-}));
 
 
 
