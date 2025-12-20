@@ -6,15 +6,12 @@
 
 generator client {
   provider = "prisma-client-js"
-  
 }
 
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
-
-
 
 // Define your database schema here
 model User {
@@ -29,9 +26,10 @@ model User {
   otp String?
   otpExpiry DateTime?
   createdAt DateTime  @default(now())
-
-// Relation to services (provider only)
+  
+  services Service[]
 }
+
 enum Role{
   CUSTOMER
   PROVIDER
@@ -48,7 +46,25 @@ model Category {
   // Trust score tracking (for future implementation)
   avgTrustScore Float? @default(0.0)
   providerCount   Int   @default(0)
+  
+  services Service[]
 }
 
+model Service {
+  id          String    @id @default(uuid())
+  title       String
+  description String    @db.Text
+  price       Float
+  location    String
+  providerId  Int
+  categoryId  String
+  
+  provider    User      @relation(fields: [providerId], references: [id])
+  category    Category  @relation(fields: [categoryId], references: [id])
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-
+  @@index([providerId])
+  @@index([categoryId])
+}

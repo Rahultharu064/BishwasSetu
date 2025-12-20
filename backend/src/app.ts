@@ -4,6 +4,7 @@ import cors from 'cors';
 import type { Request, Response, NextFunction } from 'express';
 import categoryRoutes from "./routes/categoryRoute.ts";
 import authRoutes  from "./routes/authRoute.ts"
+import serviceRoutes from "./routes/serviceRoute.ts";
 
 dotenv.config();
 
@@ -39,6 +40,7 @@ app.use(
 
 app.use("/api/categories", categoryRoutes);
 app.use("/api/auth",authRoutes)
+app.use("/api/services", serviceRoutes);
 
 
 // Global error handler
