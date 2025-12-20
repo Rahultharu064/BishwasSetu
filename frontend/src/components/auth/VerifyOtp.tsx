@@ -1,6 +1,6 @@
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { verifyOTP, resendOTP } from "../../Redux/slices/authSlice";
+import { verifyOTP, resendOTP, fetchMe } from "../../Redux/slices/authSlice";
 import type { RootState } from "../../Redux/store";
 import { useEffect } from "react";
 import toast from "react-hot-toast";
@@ -46,7 +46,8 @@ export default function VerifyOtp() {
     );
 
     if (verifyOTP.fulfilled.match(result)) {
-      navigate("/login");
+      await dispatch(fetchMe());
+      navigate("/");
     }
   };
 

@@ -2,6 +2,7 @@ export interface AuthState {
   loading: boolean;
   userId: string | null;
   isAuthenticated: boolean;
+  profile: UserProfile | null;
 }
 
 
@@ -12,5 +13,26 @@ export interface RegisterPayload {
   phone: string;
   password: string;
   role: "CUSTOMER" | "PROVIDER";
+}
+
+
+export interface UserProfile {
+  id: number;
+  email: string;
+  name?: string | null;
+  role: "CUSTOMER" | "PROVIDER";
+  isVerified: boolean;
+  phone?: string | null;
+  createdAt: string;
+}
+
+// API contracts
+export interface ApiError {
+  message?: string;
+  errors?: string[];
+}
+
+export interface RegisterResponse {
+  UserID: string;
 }
 

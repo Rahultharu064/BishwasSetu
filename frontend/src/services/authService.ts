@@ -23,3 +23,9 @@ export const verifyOtp = (data: {
 }) => axiosapi.post("/auth/verify-otp", data);
 
 export const logoutUser = () => axiosapi.post("/auth/logout");
+
+
+export const getCurrentUser = async () => {
+  const res = await axiosapi.get("/auth/me");
+  return res.data; 
+};

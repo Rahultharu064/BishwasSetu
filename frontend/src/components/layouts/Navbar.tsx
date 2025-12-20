@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import Button from '../ui/Button';
+import type { RootState } from '../../Redux/store';
 
 const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const { isAuthenticated, profile } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -67,16 +70,32 @@ const Navbar: React.FC = () => {
 
           {/* Desktop CTA Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            <Link to="/login">
-              <Button variant="outline" size="sm" className="w-[120px]">
-                Login
-              </Button>
-            </Link>
-            <Link to="/register">
-              <Button variant="primary" size="md" className="w-[140px]">
-                Register
-              </Button>
-            </Link>
+            {isAuthenticated ? (
+               <Link to="/profile">
+                  <div className="flex items-center space-x-3 cursor-pointer hover:bg-gray-100 px-3 py-2 rounded-lg transition-colors border border-transparent hover:border-gray-200">
+                    <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm shadow-sm">
+                        {profile?.name?.charAt(0).toUpperCase() || profile?.email?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                    <div className="flex flex-col items-start">
+                        <span className="font-semibold text-gray-700 text-sm leading-tight">{profile?.name || 'User'}</span>
+                        <span className="text-[10px] text-gray-500 font-medium leading-tight">{profile?.role}</span>
+                    </div>
+                  </div>
+               </Link>
+            ) : (
+                <>
+                <Link to="/login">
+                  <Button variant="outline" size="sm" className="w-[120px]">
+                    Login
+                  </Button>
+                </Link>
+                <Link to="/register">
+                  <Button variant="primary" size="md" className="w-[140px]">
+                    Register
+                  </Button>
+                </Link>
+                </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -154,19 +173,42 @@ const Navbar: React.FC = () => {
                 {link.name}
               </Link>
             ))}
+             {isAuthenticated && (
+                <Link
+                to="/profile"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`text-lg font-semibold transition-colors ${
+                  isActive('/profile')
+                    ? 'text-[#1E90FF]'
+                    : 'text-[#212529] hover:text-[#1E90FF]'
+                }`}
+              >
+                My Profile
+              </Link>
+             )}
           </div>
 
           <div className="mt-auto p-6 space-y-4">
-            <Link to="/login" onClick={() => setIsMobileMenuOpen(false)}>
-              <Button variant="outline" className="w-full">
-                Login
-              </Button>
-            </Link>
-            <Link to="/register" onClick={() => setIsMobileMenuOpen(false)}>
-              <Button variant="primary" className="w-full">
-                Register
-              </Button>
-            </Link>
+            {isAuthenticated ? (
+                 <Link to="/profile" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button variant="primary" className="w-full">
+                        Go to Profile
+                    </Button>
+                </Link>
+            ) : (
+                <>
+                <Link to="/login" onClick={() => setIsMobileMenuOpen(false)}>
+                <Button variant="outline" className="w-full">
+                    Login
+                </Button>
+                </Link>
+                <Link to="/register" onClick={() => setIsMobileMenuOpen(false)}>
+                <Button variant="primary" className="w-full">
+                    Register
+                </Button>
+                </Link>
+                </>
+            )}
           </div>
         </div>
       </div>

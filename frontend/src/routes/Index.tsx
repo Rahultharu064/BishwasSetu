@@ -10,6 +10,7 @@ import ServicesPage from "../pages/PublicUser/ServicesPage";
 import Register from "../components/auth/Register";
 import Login from "../components/auth/Login";
 import VerifyOtp from "../components/auth/VerifyOtp";
+import ProfilePage from "../pages/ProfilePage";
 
 
 
@@ -39,6 +40,10 @@ const routes = [
     {
         path:"/verify-otp",
         element: <VerifyOtp />
+    },
+    {
+        path: "/profile",
+        element: <ProfilePage />
     },
     
 

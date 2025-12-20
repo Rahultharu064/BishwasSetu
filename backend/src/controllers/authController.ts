@@ -170,3 +170,32 @@ export const resendOTP = async (req: Request, res: Response) => {
     return res.status(500).json({ message: "Failed to resend OTP" });
   }
 };
+
+
+
+//GET /api/users/me
+export const getMe = async (req: Request, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    const user = await prismaClient.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        isVerified: true,
+        phone: true,
+        createdAt: true,
+      },
+    });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    return res.json(user);
+  } catch (error) {
+    return res.status(500).json({ message: "Failed to fetch profile" });
+  }
+};

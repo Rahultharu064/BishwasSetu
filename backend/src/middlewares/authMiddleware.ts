@@ -7,7 +7,14 @@ interface JwtPayload {
 }
 
 export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
-    const token = req.header("Authorization")?.replace("Bearer ", "");
+    let token = req.header("Authorization")?.replace("Bearer ", "");
+    if (!token) {
+        // Try to read httpOnly cookie named 'token' without cookie-parser
+        const cookieHeader = req.headers.cookie || "";
+        const parts = cookieHeader.split(";").map((c) => c.trim());
+        const tokenPair = parts.find((p) => p.startsWith("token="));
+        if (tokenPair) token = tokenPair.substring("token=".length);
+    }
 
     if (!token) {
         return res.status(401).json({ message: "Authentication required" });

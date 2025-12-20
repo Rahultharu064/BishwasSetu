@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useDispatch } from "react-redux";
-import { login } from "../../Redux/slices/authSlice";
+import { login, fetchMe } from "../../Redux/slices/authSlice";
 import type { AppDispatch } from "../../Redux/store";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
@@ -22,17 +22,20 @@ export default function Login() {
 
     setLoading(true);
     try {
-      const result: any = await dispatch(
+      const result = await dispatch(
         login({ identifier: email.trim().toLowerCase(), password })
       );
+
       if (login.fulfilled.match(result)) {
+        await dispatch(fetchMe());
         toast.success("Login successful!");
         navigate("/");
-      } else {
-        toast.error(result.payload?.message || "Login failed");
       }
-    } catch (err: any) {
-      toast.error(err?.message || "Something went wrong");
+    } catch (err) {
+      const msg = (typeof err === "string" && err) ||
+        (typeof (err as any)?.message === "string" && (err as any).message) ||
+        "Login failed";
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
