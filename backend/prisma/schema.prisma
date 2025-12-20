@@ -6,6 +6,7 @@
 
 generator client {
   provider = "prisma-client-js"
+  
 }
 
 datasource db {
@@ -13,26 +14,80 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Define your database schema here
-model User {
-  id        Int       @id @default(autoincrement())
-  email     String    @unique
-  name      String?
-  address   String?
-  phone     String?
-  password  String
-  role      Role      
-  isVerified Boolean @default(false)
-  otp String?
-  otpExpiry DateTime?
-  createdAt DateTime  @default(now())
-  
-  services Service[]
-}
 
-enum Role{
+
+// Define your database schema here
+enum Role {
   CUSTOMER
   PROVIDER
+}
+
+enum ProviderStatus {
+  INCOMPLETE
+  DOCUMENTS_PENDING
+  UNDER_REVIEW
+  VERIFIED
+  REJECTED
+}
+
+enum KycType {
+  GOVERNMENT_ID
+  CERTIFICATE
+  PROFILE_PHOTO
+}
+
+enum KycStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id          Int       @id @default(autoincrement())
+  email       String    @unique
+  name        String?
+  address     String?
+  phone       String?
+  password    String
+  role        Role
+  isVerified  Boolean   @default(false)
+  otp         String?
+  otpExpiry   DateTime?
+  createdAt   DateTime  @default(now())
+
+  provider    Provider?
+}
+
+model Provider {
+  id                 Int            @id @default(autoincrement())
+  userId             Int            @unique
+  user               User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  legalName          String
+  experienceYears    Int
+  bio                String
+  serviceArea        String
+  availability       String
+  profilePhotoUrl    String?
+  verificationStatus ProviderStatus @default(INCOMPLETE)
+  trustScore         Float          @default(0)
+
+  kycDocuments       KYCDocument[]
+
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+}
+
+model KYCDocument {
+  id         Int       @id @default(autoincrement())
+  providerId Int
+  provider   Provider  @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  type       KycType
+  fileUrl    String
+  status     KycStatus @default(PENDING)
+
+  createdAt  DateTime  @default(now())
 }
 
 model Category {
@@ -43,28 +98,8 @@ model Category {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  // Trust score tracking (for future implementation)
-  avgTrustScore Float? @default(0.0)
-  providerCount   Int   @default(0)
   
-  services Service[]
 }
 
-model Service {
-  id          String    @id @default(uuid())
-  title       String
-  description String    @db.Text
-  price       Float
-  location    String
-  providerId  Int
-  categoryId  String
-  
-  provider    User      @relation(fields: [providerId], references: [id])
-  category    Category  @relation(fields: [categoryId], references: [id])
-  
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
 
-  @@index([providerId])
-  @@index([categoryId])
-}
+

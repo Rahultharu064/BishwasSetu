@@ -119,7 +119,7 @@ export const fetchMe = createAsyncThunk<
   "auth/fetchMe",
   async (_, { rejectWithValue }) => {
     try {
-      const data = await authService.getCurrentUser();
+      const { data } = await axiosapi.get<UserProfile>("/users/me");
       return data;
     } catch (err: unknown) {
       const msg = isAxiosError<ApiError>(err)

@@ -26,6 +26,6 @@ export const logoutUser = () => axiosapi.post("/auth/logout");
 
 
 export const getCurrentUser = async () => {
-  const res = await axiosapi.get("/auth/me");
+  const res = await axiosapi.get("/users/me");
   return res.data; 
 };
