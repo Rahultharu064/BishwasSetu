@@ -12,7 +12,7 @@ interface User {
     lastLogin?: string;
 }
 
-const Users = () => {
+const Users = ( ) => {
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');

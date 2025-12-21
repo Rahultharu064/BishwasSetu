@@ -22,12 +22,17 @@ import Analytics from "../components/Admindashboard/layouts/Analytics";
 import Settings from "../components/Admindashboard/layouts/Settings";
 
 // Provider Dashboard Pages
-// Provider Dashboard Pages
 import ProviderLayoutPage from "../pages/ProviderDashboard/ProviderLayoutPage";
 import DashboardPage from "../pages/ProviderDashboard/DashboardPage";
 import ProviderServicesPage from "../pages/ProviderDashboard/ServicesPage";
 import BookingsPage from "../pages/ProviderDashboard/BookingsPage";
 import Complaints from "../components/Admindashboard/layouts/Complaints";
+
+// Customer Dashboard Pages
+import CustomerDashboardPage from "../pages/CustomerDashboard/CustomerDashboardPage";
+import FindServices from "../components/CustomerDashboard/layouts/FindServices";
+import MyBookings from "../components/CustomerDashboard/layouts/MyBookings";
+import MyComplaints from "../components/CustomerDashboard/layouts/MyComplaints";
 
 const routes = [
     // Public Routes
@@ -106,6 +111,18 @@ const routes = [
             { path: "services", element: <ProviderServicesPage /> },
             { path: "bookings", element: <BookingsPage /> },
             { path: "profile", element: <ProfilePage /> },
+        ]
+    },
+
+    // Customer Dashboard Routes
+    {
+        path: "/customer",
+        element: <CustomerDashboardPage />,
+        children: [
+            { path: "dashboard", element: <CustomerDashboardPage /> },
+            { path: "services", element: <FindServices /> },
+            { path: "bookings", element: <MyBookings /> },
+            { path: "complaints", element: <MyComplaints /> },
         ]
     }
 ];
