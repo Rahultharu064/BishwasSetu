@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, MapPin, Star, Filter } from 'lucide-react';
 import Button from '../../ui/Button';
+import Select from '../../ui/Select';
 
 interface Service {
   id: string;
@@ -102,7 +103,7 @@ const FindServices: React.FC = () => {
             />
           </div>
           <div className="flex gap-2">
-            <select
+            <Select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -112,7 +113,7 @@ const FindServices: React.FC = () => {
                   {category.label}
                 </option>
               ))}
-            </select>
+            </Select>
             <Button className="flex items-center gap-2">
               <Filter className="h-4 w-4" />
               More Filters

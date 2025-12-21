@@ -1,9 +1,53 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ServiceForm from '../forum/ServiceForm';
+import { getServicesByProvider, deleteService } from '../../../services/serviceService';
+
+interface Service {
+  id: number;
+  title: string;
+  description: string;
+  price: number;
+  duration: string;
+  availability: string;
+  category: {
+    name: string;
+  };
+}
 
 const ServiceList: React.FC = () => {
     const [isAddingRequest, setIsAddingRequest] = useState(false);
-    const [services] = useState<any[]>([]); // Placeholder for fetched services
+    const [services, setServices] = useState<Service[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        if (!isAddingRequest) {
+            fetchServices();
+        }
+    }, [isAddingRequest]);
+
+    const fetchServices = async () => {
+        try {
+            setLoading(true);
+            const response = await getServicesByProvider();
+            setServices(response);
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'Failed to fetch services');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDelete = async (id: number) => {
+        if (!confirm('Are you sure you want to delete this service?')) return;
+
+        try {
+            await deleteService(id);
+            setServices(services.filter(service => service.id !== id));
+        } catch (err: any) {
+            alert(err.response?.data?.message || 'Failed to delete service');
+        }
+    };
 
     if (isAddingRequest) {
         return (
@@ -31,7 +75,11 @@ const ServiceList: React.FC = () => {
                 </button>
             </div>
 
-            {services.length === 0 ? (
+            {error && <div className="p-3 bg-red-50 text-red-700 rounded-lg">{error}</div>}
+
+            {loading ? (
+                <div className="text-center py-8">Loading services...</div>
+            ) : services.length === 0 ? (
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
                     <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
                         <span className="text-3xl">🛠️</span>
@@ -43,7 +91,37 @@ const ServiceList: React.FC = () => {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {/* Render service cards service */}
+                    {services.map((service) => (
+                        <div key={service.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                            <div className="flex justify-between items-start mb-4">
+                                <div>
+                                    <h3 className="text-lg font-semibold text-gray-800">{service.title}</h3>
+                                    <p className="text-sm text-gray-500">{service.category.name}</p>
+                                </div>
+                                <button
+                                    onClick={() => handleDelete(service.id)}
+                                    className="text-red-500 hover:text-red-700"
+                                >
+                                    🗑️
+                                </button>
+                            </div>
+                            <p className="text-gray-600 text-sm mb-4 line-clamp-3">{service.description}</p>
+                            <div className="space-y-2">
+                                <div className="flex justify-between">
+                                    <span className="text-sm text-gray-500">Price:</span>
+                                    <span className="font-medium">Rs. {service.price}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-sm text-gray-500">Duration:</span>
+                                    <span className="font-medium">{service.duration}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-sm text-gray-500">Availability:</span>
+                                    <span className="font-medium">{service.availability}</span>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             )}
         </div>

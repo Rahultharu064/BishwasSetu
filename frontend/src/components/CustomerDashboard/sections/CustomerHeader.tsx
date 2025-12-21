@@ -2,9 +2,10 @@ import React from 'react';
 import { Bell, Search, User } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../../Redux/store';
+import Button from '../../ui/Button';
 
 const CustomerHeader: React.FC = () => {
-  const user = useSelector((state: RootState) => state.auth.user);
+  const user = useSelector((state: RootState) => state.auth.profile);
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
@@ -30,10 +31,10 @@ const CustomerHeader: React.FC = () => {
           {/* Right side */}
           <div className="flex items-center space-x-4">
             {/* Notifications */}
-            <button className="p-2 text-gray-400 hover:text-gray-600 relative">
+            <Button className="p-2 text-gray-400 hover:text-gray-600 relative">
               <Bell className="h-6 w-6" />
               <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
-            </button>
+            </Button>
 
             {/* User Menu */}
             <div className="flex items-center space-x-2">

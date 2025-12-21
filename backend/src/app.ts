@@ -5,6 +5,7 @@ import type { Request, Response, NextFunction } from 'express';
 import categoryRoutes from "./routes/categoryRoute.ts";
 import authRoutes  from "./routes/authRoute.ts"
 import providerRoutes from "./routes/providerRoute.ts"
+import serviceRoutes from "./routes/serviceRoute.ts"
 
 dotenv.config();
 
@@ -41,6 +42,7 @@ app.use(
 app.use("/api/categories", categoryRoutes);
 app.use("/api/auth",authRoutes)
 app.use("/api/providers",providerRoutes)
+app.use("/api/services",serviceRoutes)
 
 
 // Global error handler
