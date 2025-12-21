@@ -11,9 +11,15 @@ import ProfilePage from "../pages/PublicUser/ProfilePage";
 import Register from "../components/auth/Register";
 import Login from "../components/auth/Login";
 import VerifyOtp from "../components/auth/VerifyOtp";
+import BecomeProvider from "../components/ProviderDashboard/forum/BecomeProvider";
 
-
-
+// Admin Dashboard Pages
+import AdminLayout from "../components/Admindashboard/layouts/AdminLayout";
+import AdminDashboardPage from "../pages/Admindashboard/AdminDashboardPage";
+import Users from "../components/Admindashboard/layouts/Users";
+import ProviderVerification from "../components/Admindashboard/layouts/ProviderVerification";
+import Analytics from "../components/Admindashboard/layouts/Analytics";
+import Settings from "../components/Admindashboard/layouts/Settings";
 
 // Provider Dashboard Pages
 // Provider Dashboard Pages
@@ -21,6 +27,7 @@ import ProviderLayoutPage from "../pages/ProviderDashboard/ProviderLayoutPage";
 import DashboardPage from "../pages/ProviderDashboard/DashboardPage";
 import ProviderServicesPage from "../pages/ProviderDashboard/ServicesPage";
 import BookingsPage from "../pages/ProviderDashboard/BookingsPage";
+import Complaints from "../components/Admindashboard/layouts/Complaints";
 
 const routes = [
     // Public Routes
@@ -52,6 +59,10 @@ const routes = [
         path: "/profile",
         element: <ProfilePage />
     },
+    {
+        path: "/become-provider",
+        element: <BecomeProvider />
+    },
 
     // Admin/Existing Routes
     {
@@ -69,6 +80,21 @@ const routes = [
     {
         path: "/admin/category/update/:id",
         element: <CategoryUpdate />
+    },
+
+    // Admin Dashboard Routes
+    {
+        path: "/admin",
+        element: <AdminLayout />,
+        children: [
+            { path: "dashboard", element: <AdminDashboardPage /> },
+            { path: "users", element: <Users   /> },
+            { path: "provider-verification", element: <ProviderVerification /> },
+            { path: "complaints", element: <Complaints /> },
+            { path: "categories", element: <CategoryAdminList /> },
+            { path: "analytics", element: <Analytics /> },
+            { path: "settings", element: <Settings /> },
+        ]
     },
 
     // Provider Dashboard Routes

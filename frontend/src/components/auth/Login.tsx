@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useDispatch } from "react-redux";
-import { login } from "../../Redux/slices/authSlice";
+import { login, fetchMe } from "../../Redux/slices/authSlice";
 import type { AppDispatch } from "../../Redux/store";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
@@ -27,7 +27,14 @@ export default function Login() {
       ).unwrap();
       if (ok) {
         toast.success("Login successful!");
-        navigate("/");
+        // Fetch user profile to check role
+        const user = await dispatch(fetchMe()).unwrap();
+        // Redirect based on role
+        if (user.role === 'PROVIDER') {
+          navigate("/become-provider");
+        } else {
+          navigate("/");
+        }
       }
     } catch (err) {
       const msg = (typeof err === "string" && err) ||
@@ -80,9 +87,8 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className={`w-full py-2 px-4 rounded-lg text-white font-semibold transition-colors ${
-              loading ? "bg-blue-300 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
-            }`}
+            className={`w-full py-2 px-4 rounded-lg text-white font-semibold transition-colors ${loading ? "bg-blue-300 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+              }`}
           >
             {loading ? "Logging in..." : "Login"}
           </button>

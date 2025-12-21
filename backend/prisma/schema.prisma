@@ -20,6 +20,7 @@ datasource db {
 enum Role {
   CUSTOMER
   PROVIDER
+  ADMIN
 }
 
 enum ProviderStatus {

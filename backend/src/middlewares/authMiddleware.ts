@@ -12,7 +12,7 @@ declare global {
 
 interface JwtPayload {
   id: number;
-  role: "CUSTOMER" | "PROVIDER";
+  role: "CUSTOMER" | "PROVIDER" | "ADMIN";
 }
 
 export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {

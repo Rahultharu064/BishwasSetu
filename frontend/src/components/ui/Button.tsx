@@ -7,7 +7,7 @@ interface ButtonProps {
   children: React.ReactNode;
   disabled?: boolean;
   loading?: boolean;
-  onClick?: () => void;
+  onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
   className?: string;
 }
 
@@ -22,20 +22,20 @@ const Button: React.FC<ButtonProps> = ({
   className = '',
 }) => {
   const baseClasses = 'font-semibold rounded-lg transition-all duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed';
-  
+
   const variantClasses = {
     primary: 'bg-[#1E90FF] text-white hover:bg-[#1873CC] hover:scale-105 shadow-lg hover:shadow-xl',
     outline: 'border-2 border-[#1E90FF] text-[#1E90FF] hover:bg-[#1E90FF] hover:text-white',
     secondary: 'bg-[#FFD700] text-[#212529] hover:bg-[#E6C200] hover:scale-105',
     white: 'bg-white text-[#1E90FF] hover:bg-[#F8F9FA] hover:scale-105',
   };
-  
+
   const sizeClasses = {
     sm: 'px-4 py-2 text-sm h-[36px]',
     md: 'px-6 py-2.5 text-base h-[44px]',
     lg: 'px-8 py-3 text-lg h-[48px]',
   };
-  
+
   return (
     <button
       type={type}
