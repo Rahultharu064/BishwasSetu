@@ -225,3 +225,168 @@ export const getAllServices = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+// Get services with advanced filtering
+export const getServicesWithFilters = async (req: Request, res: Response) => {
+  try {
+    const {
+      search = "",
+      category = "",
+      minPrice,
+      maxPrice,
+      sortBy = "createdAt",
+      page = "1",
+      limit = "20",
+    } = req.query;
+
+    const pageNum = parseInt(page as string);
+    const limitNum = parseInt(limit as string);
+    const skip = (pageNum - 1) * limitNum;
+
+    // Build where clause
+    const where: any = {
+      provider: {
+        verificationStatus: "VERIFIED",
+      },
+    };
+
+    // Search filter
+    if (search) {
+      where.OR = [
+        { title: { contains: search as string, mode: "insensitive" } },
+        { description: { contains: search as string, mode: "insensitive" } },
+      ];
+    }
+
+    // Category filter
+    if (category && category !== "All") {
+      where.category = {
+        name: category as string,
+      };
+    }
+
+    // Price range filter
+    if (minPrice || maxPrice) {
+      where.price = {};
+      if (minPrice) where.price.gte = parseFloat(minPrice as string);
+      if (maxPrice) where.price.lte = parseFloat(maxPrice as string);
+    }
+
+    // Determine sort order
+    let orderBy: any = { createdAt: "desc" };
+    if (sortBy === "price_asc") orderBy = { price: "asc" };
+    if (sortBy === "price_desc") orderBy = { price: "desc" };
+    if (sortBy === "title") orderBy = { title: "asc" };
+
+    const [services, total] = await Promise.all([
+      prismaClient.service.findMany({
+        where,
+        include: {
+          category: true,
+          provider: {
+            include: {
+              user: { select: { name: true, email: true } },
+            },
+          },
+        },
+        orderBy,
+        skip,
+        take: limitNum,
+      }),
+      prismaClient.service.count({ where }),
+    ]);
+
+    res.json({
+      services,
+      pagination: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum),
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Get service statistics (aggregated by title) for the Services page
+export const getServiceStats = async (req: Request, res: Response) => {
+  try {
+    const services = await prismaClient.service.findMany({
+      where: {
+        provider: {
+          verificationStatus: "VERIFIED",
+        },
+      },
+      include: {
+        category: true,
+      },
+    });
+
+    // Grouping by title to match frontend "Service Type" view
+    const grouped = services.reduce((acc: any, service) => {
+      const title = service.title;
+      if (!acc[title]) {
+        acc[title] = {
+          id: service.id,
+          name: title,
+          icon: service.icon || "🔧",
+          providers: 0,
+          rating: 4.8, // Placeholder: average rating from reviews can be added here
+          category: service.category.name,
+        };
+      }
+      acc[title].providers += 1;
+      return acc;
+    }, {});
+
+    const stats = Object.values(grouped);
+    res.json(stats);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
+// Get single service by ID
+export const getServiceById = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ message: "Service ID is required" });
+    }
+
+    const service = await prismaClient.service.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        category: true,
+        provider: {
+          include: {
+            user: {
+              select: {
+                name: true,
+                email: true,
+                phone: true,
+                address: true,
+              },
+            },
+            kycDocuments: true,
+          },
+        },
+      },
+    });
+
+    if (!service) {
+      return res.status(404).json({ message: "Service not found" });
+    }
+
+    res.json(service);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};

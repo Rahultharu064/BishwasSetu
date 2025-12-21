@@ -7,9 +7,12 @@ import {
     updateService,
     deleteService,
     getServicesByCategory,
-    getAllServices
+    getAllServices,
+    getServicesWithFilters,
+    getServiceStats,
+    getServiceById
 } from "../controllers/serviceController.ts";
-import { createServiceSchema, updateServiceSchema } from "../validators/serviceValidator.ts";
+import { createServiceSchema, updateServiceSchema, searchServiceSchema } from "../validators/serviceValidator.ts";
 
 const router = express.Router();
 
@@ -45,7 +48,12 @@ router.delete(
 );
 
 // Public routes
+router.get("/search", validate(searchServiceSchema, 'query'), getServicesWithFilters);
+router.get("/stats", getServiceStats);
+
 router.get("/category/:categoryId", getServicesByCategory);
+router.get("/:id", getServiceById);
 router.get("/", getAllServices);
 
 export default router;
+

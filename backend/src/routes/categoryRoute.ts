@@ -4,7 +4,8 @@ import {
   getCategory,
   searchCategory,
   updateCategory,
-  deleteCategory
+  deleteCategory,
+  getCategoriesWithStats
 } from "../controllers/categoryController.ts";
 import {
   createCategorySchema,
@@ -24,6 +25,9 @@ categoryRoutes.post(
 // get all categories
 categoryRoutes.get("/", getCategory);
 
+// get categories with stats
+categoryRoutes.get("/stats", getCategoriesWithStats);
+
 // search category
 categoryRoutes.get("/search", searchCategory);
 
@@ -38,3 +42,4 @@ categoryRoutes.patch(
 categoryRoutes.delete("/:id", deleteCategory);
 
 export default categoryRoutes;
+

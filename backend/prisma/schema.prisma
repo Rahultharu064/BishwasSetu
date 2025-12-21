@@ -112,10 +112,12 @@ model Service {
   category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   title       String
+  icon        String?  @db.VarChar(50)
   description String   @db.Text
   price       Float
   duration    String   // e.g., "1 hour", "30 minutes"
   availability String  // e.g., "Weekdays 9-5"
+
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

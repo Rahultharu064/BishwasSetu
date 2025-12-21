@@ -59,3 +59,14 @@ export const updateServiceSchema = Joi.object({
 }).min(1).messages({
   'object.min': 'At least one field must be provided for update'
 });
+
+export const searchServiceSchema = Joi.object({
+  search: Joi.string().allow('').optional(),
+  category: Joi.string().allow('').optional(),
+  minPrice: Joi.number().min(0).optional(),
+  maxPrice: Joi.number().min(0).optional(),
+  sortBy: Joi.string().valid('createdAt', 'price_asc', 'price_desc', 'title').optional(),
+  page: Joi.number().integer().min(1).optional(),
+  limit: Joi.number().integer().min(1).max(100).optional()
+});
+

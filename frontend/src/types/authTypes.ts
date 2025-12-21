@@ -12,7 +12,7 @@ export interface RegisterPayload {
   email: string;
   phone: string;
   password: string;
-  role: "CUSTOMER" | "PROVIDER";
+  role: "CUSTOMER" | "PROVIDER" | "ADMIN";
 }
 
 
@@ -20,7 +20,7 @@ export interface UserProfile {
   id: number;
   email: string;
   name?: string | null;
-  role: "CUSTOMER" | "PROVIDER";
+  role: "CUSTOMER" | "PROVIDER" | "ADMIN";
   isVerified: boolean;
   phone?: string | null;
   createdAt: string;

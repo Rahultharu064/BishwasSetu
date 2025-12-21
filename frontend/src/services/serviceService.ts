@@ -88,3 +88,10 @@ export const getAllServices = async () => {
     const res = await axiosapi.get("/services");
     return res.data;
 };
+
+// Get service statistics (aggregated by title)
+export const getServiceStats = async () => {
+    const res = await axiosapi.get("/services/stats");
+    return res.data;
+};
+
