@@ -5,7 +5,9 @@ export const providerProfileSchema = Joi.object({
   experienceYears: Joi.number().integer().min(0).max(50).required(),
   bio: Joi.string().min(10).max(500).required(),
   serviceArea: Joi.string().min(2).max(100).required(),
-  availability: Joi.string().min(2).max(100).required()
+  availability: Joi.string().min(2).max(100).required(),
+  price: Joi.number().min(0).precision(2).optional(),
+  duration: Joi.string().min(2).max(50).optional()
 });
 
 export const kycUploadSchema = Joi.object({

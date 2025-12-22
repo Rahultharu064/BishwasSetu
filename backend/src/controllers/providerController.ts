@@ -6,7 +6,7 @@ export const becomeProvider = async (req: Request, res: Response) => {
     try {
         if (!req.user) return res.status(401).json({ message: "Unauthorized" });
 
-        const { legalName, experienceYears, bio, serviceArea, availability } = req.body;
+        const { legalName, experienceYears, bio, serviceArea, availability, price, duration } = req.body;
 
         // Check if user is already a provider
         const existingProvider = await prismaClient.provider.findUnique({
@@ -27,6 +27,8 @@ export const becomeProvider = async (req: Request, res: Response) => {
                     bio,
                     serviceArea,
                     availability,
+                    price: price ? parseFloat(price) : null,
+                    duration,
                     verificationStatus: "DOCUMENTS_PENDING"
                 }
             });
@@ -50,7 +52,7 @@ export const becomeProvider = async (req: Request, res: Response) => {
 export const completeProviderProfile = async (req: Request, res: Response) => {
     try {
         if (!req.user) return res.status(401).json({ message: "Unauthorized" });
-        const { legalName, experienceYears, bio, serviceArea, availability } = req.body;
+        const { legalName, experienceYears, bio, serviceArea, availability, price, duration } = req.body;
 
         const provider = await prismaClient.provider.update({
             where: { userId: req.user.id },
@@ -60,6 +62,8 @@ export const completeProviderProfile = async (req: Request, res: Response) => {
                 bio,
                 serviceArea,
                 availability,
+                price: price ? parseFloat(price) : undefined,
+                duration,
                 verificationStatus: "DOCUMENTS_PENDING"
             }
         });

@@ -153,7 +153,7 @@ async function main() {
     },
   });
 
-  console.log("✅ Users seeded");
+  console.log(" Users seeded");
 
   /* ------------------ PROVIDERS ------------------ */
   const provider1 = await prisma.provider.upsert({
@@ -166,6 +166,8 @@ async function main() {
       bio: "Expert plumber with 8 years of experience in residential and commercial plumbing",
       serviceArea: "Kathmandu Valley",
       availability: "Mon-Sat 8AM-6PM",
+      price: 1500,
+      duration: "2-3 hours",
       verificationStatus: "VERIFIED",
       trustScore: 4.8,
     },
@@ -181,6 +183,8 @@ async function main() {
       bio: "Professional cleaning service for homes and offices",
       serviceArea: "Lalitpur, Kathmandu",
       availability: "Daily 7AM-7PM",
+      price: 1200,
+      duration: "3-4 hours",
       verificationStatus: "VERIFIED",
       trustScore: 4.9,
     },
@@ -196,6 +200,8 @@ async function main() {
       bio: "Certified electrician specializing in home wiring and repairs",
       serviceArea: "Bhaktapur, Kathmandu",
       availability: "Mon-Fri 9AM-5PM",
+      price: 1800,
+      duration: "2-4 hours",
       verificationStatus: "VERIFIED",
       trustScore: 4.7,
     },
@@ -211,6 +217,8 @@ async function main() {
       bio: "Interior and exterior painting specialist",
       serviceArea: "Pokhara, Kathmandu",
       availability: "Mon-Sat 8AM-5PM",
+      price: 3500,
+      duration: "1-2 days",
       verificationStatus: "VERIFIED",
       trustScore: 4.6,
     },
@@ -226,6 +234,8 @@ async function main() {
       bio: "Reliable moving services with careful handling",
       serviceArea: "Nationwide",
       availability: "Daily 6AM-8PM",
+      price: 5000,
+      duration: "Full day",
       verificationStatus: "VERIFIED",
       trustScore: 4.8,
     },
@@ -241,6 +251,8 @@ async function main() {
       bio: "Professional gardening and landscaping services",
       serviceArea: "Kathmandu Valley",
       availability: "Mon-Sat 7AM-4PM",
+      price: 1500,
+      duration: "3-4 hours",
       verificationStatus: "VERIFIED",
       trustScore: 4.7,
     },
@@ -256,9 +268,6 @@ async function main() {
         title: "Plumbing",
         icon: "🔧",
         description: "Complete plumbing services including leak repairs, pipe installation, and drain cleaning",
-        price: 1500,
-        duration: "2-3 hours",
-        availability: "Mon-Sat 8AM-6PM",
         providerId: provider1.id,
         categoryId: categories[0].id, // Home Repair
       },
@@ -267,9 +276,6 @@ async function main() {
         title: "Electrical",
         icon: "⚡",
         description: "Professional electrical services for wiring, switches, outlets, and circuit repairs",
-        price: 1800,
-        duration: "2-4 hours",
-        availability: "Mon-Fri 9AM-5PM",
         providerId: provider3.id,
         categoryId: categories[0].id, // Home Repair
       },
@@ -278,9 +284,6 @@ async function main() {
         title: "AC Repair",
         icon: "❄️",
         description: "Air conditioning repair, maintenance, and installation services",
-        price: 2500,
-        duration: "3-5 hours",
-        availability: "Mon-Sat 8AM-6PM",
         providerId: provider3.id,
         categoryId: categories[0].id, // Home Repair
       },
@@ -289,9 +292,6 @@ async function main() {
         title: "Appliance Repair",
         icon: "🔌",
         description: "Repair services for refrigerators, washing machines, and other home appliances",
-        price: 2000,
-        duration: "2-4 hours",
-        availability: "Mon-Sat 8AM-6PM",
         providerId: provider1.id,
         categoryId: categories[0].id, // Home Repair
       },
@@ -300,9 +300,6 @@ async function main() {
         title: "Carpentry",
         icon: "🪚",
         description: "Custom woodwork, furniture repair, and carpentry services",
-        price: 2200,
-        duration: "4-6 hours",
-        availability: "Mon-Sat 8AM-5PM",
         providerId: provider3.id,
         categoryId: categories[0].id, // Home Repair
       },
@@ -311,9 +308,6 @@ async function main() {
         title: "House Cleaning",
         icon: "🧹",
         description: "Regular house cleaning services including dusting, mopping, and sanitizing",
-        price: 1200,
-        duration: "3-4 hours",
-        availability: "Daily 7AM-7PM",
         providerId: provider2.id,
         categoryId: categories[1].id, // Cleaning
       },
@@ -322,9 +316,6 @@ async function main() {
         title: "Deep Cleaning",
         icon: "✨",
         description: "Thorough deep cleaning service for entire home including hard-to-reach areas",
-        price: 2500,
-        duration: "6-8 hours",
-        availability: "Daily 7AM-7PM",
         providerId: provider2.id,
         categoryId: categories[1].id, // Cleaning
       },
@@ -333,9 +324,6 @@ async function main() {
         title: "Interior Painting",
         icon: "🎨",
         description: "Professional interior painting services with premium quality paints",
-        price: 3500,
-        duration: "1-2 days",
-        availability: "Mon-Sat 8AM-5PM",
         providerId: provider4.id,
         categoryId: categories[2].id, // Home Improvement
       },
@@ -344,9 +332,6 @@ async function main() {
         title: "Moving Services",
         icon: "🚚",
         description: "Professional packing, loading, and moving services for home and office relocation",
-        price: 5000,
-        duration: "Full day",
-        availability: "Daily 6AM-8PM",
         providerId: provider5.id,
         categoryId: categories[3].id, // Moving
       },
@@ -355,9 +340,6 @@ async function main() {
         title: "Home Security",
         icon: "🔒",
         description: "Installation of CCTV cameras, alarm systems, and smart home security solutions",
-        price: 8000,
-        duration: "4-6 hours",
-        availability: "Mon-Fri 9AM-5PM",
         providerId: provider3.id,
         categoryId: categories[4].id, // Security
       },
@@ -366,9 +348,6 @@ async function main() {
         title: "Pest Control",
         icon: "🐜",
         description: "Comprehensive pest control services for termites, rodents, and insects",
-        price: 1800,
-        duration: "2-3 hours",
-        availability: "Mon-Sat 8AM-6PM",
         providerId: provider1.id,
         categoryId: categories[5].id, // Home Maintenance
       },
@@ -377,9 +356,6 @@ async function main() {
         title: "Gardening",
         icon: "🌿",
         description: "Professional gardening services including lawn care, plant maintenance, and landscaping",
-        price: 1500,
-        duration: "3-4 hours",
-        availability: "Mon-Sat 7AM-4PM",
         providerId: provider6.id,
         categoryId: categories[6].id, // Outdoor
       },

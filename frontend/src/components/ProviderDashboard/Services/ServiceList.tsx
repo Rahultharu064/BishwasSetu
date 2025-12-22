@@ -3,15 +3,18 @@ import ServiceForm from '../forum/ServiceForm';
 import { getServicesByProvider, deleteService } from '../../../services/serviceService';
 
 interface Service {
-  id: number;
-  title: string;
-  description: string;
-  price: number;
-  duration: string;
-  availability: string;
-  category: {
-    name: string;
-  };
+    id: number;
+    title: string;
+    description: string;
+    icon?: string;
+    category: {
+        name: string;
+    };
+    provider: {
+        price: number;
+        duration: string;
+        availability: string;
+    };
 }
 
 const ServiceList: React.FC = () => {
@@ -109,15 +112,15 @@ const ServiceList: React.FC = () => {
                             <div className="space-y-2">
                                 <div className="flex justify-between">
                                     <span className="text-sm text-gray-500">Price:</span>
-                                    <span className="font-medium">Rs. {service.price}</span>
+                                    <span className="font-medium">Rs. {service.provider.price}</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-sm text-gray-500">Duration:</span>
-                                    <span className="font-medium">{service.duration}</span>
+                                    <span className="font-medium">{service.provider.duration}</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-sm text-gray-500">Availability:</span>
-                                    <span className="font-medium">{service.availability}</span>
+                                    <span className="font-medium">{service.provider.availability}</span>
                                 </div>
                             </div>
                         </div>

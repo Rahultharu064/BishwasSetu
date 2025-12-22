@@ -14,21 +14,6 @@ export const createServiceSchema = Joi.object({
     'string.min': 'Description must be at least 10 characters long',
     'string.max': 'Description cannot exceed 500 characters',
     'any.required': 'Description is required'
-  }),
-  price: Joi.number().min(0).precision(2).required().messages({
-    'number.min': 'Price must be greater than or equal to 0',
-    'number.precision': 'Price must have at most 2 decimal places',
-    'any.required': 'Price is required'
-  }),
-  duration: Joi.string().min(2).max(50).required().messages({
-    'string.min': 'Duration must be at least 2 characters long',
-    'string.max': 'Duration cannot exceed 50 characters',
-    'any.required': 'Duration is required'
-  }),
-  availability: Joi.string().min(2).max(100).required().messages({
-    'string.min': 'Availability must be at least 2 characters long',
-    'string.max': 'Availability cannot exceed 100 characters',
-    'any.required': 'Availability is required'
   })
 });
 
@@ -43,18 +28,6 @@ export const updateServiceSchema = Joi.object({
   description: Joi.string().min(10).max(500).optional().messages({
     'string.min': 'Description must be at least 10 characters long',
     'string.max': 'Description cannot exceed 500 characters'
-  }),
-  price: Joi.number().min(0).precision(2).optional().messages({
-    'number.min': 'Price must be greater than or equal to 0',
-    'number.precision': 'Price must have at most 2 decimal places'
-  }),
-  duration: Joi.string().min(2).max(50).optional().messages({
-    'string.min': 'Duration must be at least 2 characters long',
-    'string.max': 'Duration cannot exceed 50 characters'
-  }),
-  availability: Joi.string().min(2).max(100).optional().messages({
-    'string.min': 'Availability must be at least 2 characters long',
-    'string.max': 'Availability cannot exceed 100 characters'
   })
 }).min(1).messages({
   'object.min': 'At least one field must be provided for update'

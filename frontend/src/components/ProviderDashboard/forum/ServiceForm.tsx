@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createService } from '../../../services/serviceService';
 import { getAllCategories } from '../../../services/categoryService';
 import Select from '../../ui/Select';
+import { toast } from 'react-hot-toast';
 
 interface Category {
     id: string;
@@ -13,9 +14,7 @@ const ServiceForm: React.FC = () => {
         categoryId: '',
         title: '',
         description: '',
-        price: '',
-        duration: '',
-        availability: ''
+        icon: ''
     });
     const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(false);
@@ -44,24 +43,26 @@ const ServiceForm: React.FC = () => {
         setError('');
 
         try {
-            // Convert price to number before sending
-            const serviceData = {
-                ...formData,
-                price: parseFloat(formData.price)
-            };
-            await createService(serviceData);
-            alert('Service created successfully!');
+            await createService({
+                categoryId: formData.categoryId,
+                title: formData.title,
+                description: formData.description,
+                icon: formData.icon || undefined
+            });
+
+            toast.success('Service created successfully!');
+
             // Reset form
             setFormData({
                 categoryId: '',
                 title: '',
                 description: '',
-                price: '',
-                duration: '',
-                availability: ''
+                icon: ''
             });
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Failed to create service');
+            const errorMessage = err.response?.data?.message || 'Failed to create service';
+            setError(errorMessage);
+            toast.error(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -118,45 +119,15 @@ const ServiceForm: React.FC = () => {
                     />
                 </div>
 
-                <div className="grid grid-cols-2 gap-6">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Price (Rs.)</label>
-                        <input
-                            type="number"
-                            name="price"
-                            value={formData.price}
-                            onChange={handleChange}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="0.00"
-                            min="0"
-                            step="0.01"
-                            required
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Duration</label>
-                        <input
-                            type="text"
-                            name="duration"
-                            value={formData.duration}
-                            onChange={handleChange}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="e.g. 1 hour"
-                            required
-                        />
-                    </div>
-                </div>
-
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Availability</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Icon (Optional)</label>
                     <input
                         type="text"
-                        name="availability"
-                        value={formData.availability}
+                        name="icon"
+                        value={formData.icon}
                         onChange={handleChange}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="e.g. Weekdays 9-5"
-                        required
+                        placeholder="e.g. 🧹 or 🔧"
                     />
                 </div>
 
@@ -169,8 +140,8 @@ const ServiceForm: React.FC = () => {
                         {loading ? 'Saving...' : 'Save Service'}
                     </button>
                 </div>
-            </form>
-        </div>
+            </form >
+        </div >
     );
 };
 

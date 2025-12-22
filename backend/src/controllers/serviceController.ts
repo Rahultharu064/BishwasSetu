@@ -1,11 +1,11 @@
-import type { Request, Response } from "express";
+import type{ Request, Response } from "express";
 import prismaClient from "../config/db.ts";
 
 export const createService = async (req: Request, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ message: "Unauthorized" });
 
-    const { categoryId, title, description, price, duration, availability } = req.body;
+    const { categoryId, title, description, icon } = req.body;
 
     // Check if provider exists and is verified
     const provider = await prismaClient.provider.findUnique({
@@ -35,9 +35,9 @@ export const createService = async (req: Request, res: Response) => {
         categoryId,
         title,
         description,
-        price: parseFloat(price),
-        duration,
-        availability,
+        icon
+
+        
       },
       include: {
         category: true,
@@ -72,6 +72,7 @@ export const getServicesByProvider = async (req: Request, res: Response) => {
       where: { providerId: provider.id },
       include: {
         category: true,
+        provider: true
       },
       orderBy: { createdAt: "desc" },
     });
@@ -267,15 +268,15 @@ export const getServicesWithFilters = async (req: Request, res: Response) => {
 
     // Price range filter
     if (minPrice || maxPrice) {
-      where.price = {};
-      if (minPrice) where.price.gte = parseFloat(minPrice as string);
-      if (maxPrice) where.price.lte = parseFloat(maxPrice as string);
+      where.provider = { ...where.provider, price: {} };
+      if (minPrice) where.provider.price.gte = parseFloat(minPrice as string);
+      if (maxPrice) where.provider.price.lte = parseFloat(maxPrice as string);
     }
 
     // Determine sort order
     let orderBy: any = { createdAt: "desc" };
-    if (sortBy === "price_asc") orderBy = { price: "asc" };
-    if (sortBy === "price_desc") orderBy = { price: "desc" };
+    if (sortBy === "price_asc") orderBy = { provider: { price: "asc" } };
+    if (sortBy === "price_desc") orderBy = { provider: { price: "desc" } };
     if (sortBy === "title") orderBy = { title: "asc" };
 
     const [services, total] = await Promise.all([

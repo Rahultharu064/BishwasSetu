@@ -69,6 +69,8 @@ model Provider {
   bio                String
   serviceArea        String
   availability       String
+  price              Float?
+  duration           String? // e.g., "1 hour", "30 minutes"
   profilePhotoUrl    String?
   verificationStatus ProviderStatus @default(INCOMPLETE)
   trustScore         Float          @default(0)
@@ -114,9 +116,6 @@ model Service {
   title       String
   icon        String?  @db.VarChar(50)
   description String   @db.Text
-  price       Float
-  duration    String   // e.g., "1 hour", "30 minutes"
-  availability String  // e.g., "Weekdays 9-5"
 
 
   createdAt   DateTime @default(now())

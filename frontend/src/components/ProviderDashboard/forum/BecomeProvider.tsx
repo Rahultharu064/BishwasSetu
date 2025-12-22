@@ -12,7 +12,9 @@ export default function BecomeProvider() {
         experienceYears: "",
         bio: "",
         serviceArea: "",
-        availability: ""
+        availability: "",
+        price: "",
+        duration: ""
     });
 
     const submit = async (e: MouseEvent<HTMLButtonElement>) => {
@@ -34,6 +36,8 @@ export default function BecomeProvider() {
             <Textarea placeholder="Bio" className="mt-2" onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setForm({ ...form, bio: e.target.value })} />
             <Input placeholder="Service Area" value={form.serviceArea} className="mt-2" onChange={e => setForm({ ...form, serviceArea: e.target.value })} />
             <Input placeholder="Availability" value={form.availability} className="mt-2" onChange={e => setForm({ ...form, availability: e.target.value })} />
+            <Input placeholder="Price (Base Rate)" value={form.price} type="number" className="mt-2" onChange={e => setForm({ ...form, price: e.target.value })} />
+            <Input placeholder="Duration (Base)" value={form.duration} className="mt-2" onChange={e => setForm({ ...form, duration: e.target.value })} />
 
             <Button className="mt-4 w-full" onClick={submit}>
                 Submit
