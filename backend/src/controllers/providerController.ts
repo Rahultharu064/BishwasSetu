@@ -15,10 +15,14 @@ export const becomeProvider = async (req: Request, res: Response) => {
             serviceDistrict, serviceMunicipality,
             availabilityDays, availabilityTime,
             isEmergencyAvailable, emergencyResponseTime, emergencyExtraCharge,
+
             price, duration
         } = req.body;
 
+        console.log("BecomeProvider Request Body:", JSON.stringify(req.body, null, 2));
+
         // Extract files
+
         const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
         // Check if user is already a provider
@@ -27,24 +31,24 @@ export const becomeProvider = async (req: Request, res: Response) => {
         });
 
         if (existingProvider) {
+            console.log("Validation Failed: Provider already exists for user", req.user.id);
             return res.status(400).json({ message: "You are already a provider." });
         }
 
         // Validate required fields
         if (!legalName || !bio) {
+            console.log("Validation Failed: Missing legalName or bio");
             return res.status(400).json({
                 message: "Legal name and bio are required fields."
             });
         }
 
-        if (bio.length < 150) {
-            return res.status(400).json({
-                message: "Bio must be at least 150 characters long."
-            });
-        }
+
 
         // Validate required files
+        console.log("Files received:", req.files ? Object.keys(req.files) : "No files");
         if (!files?.govtIdFront?.[0] || !files?.govtIdBack?.[0]) {
+            console.log("Validation Failed: Missing ID files");
             return res.status(400).json({
                 message: "Both front and back sides of government ID are required."
             });
@@ -102,29 +106,30 @@ export const becomeProvider = async (req: Request, res: Response) => {
                         ? parseFloat(price.toString())
                         : null,
                     duration: duration || "Per Hour",
-                    verificationStatus: "UNDER_REVIEW"
+                    verificationStatus: "UNDER_REVIEW",
+                    updatedAt: new Date()
                 }
             });
 
             // Create KYC Documents
             if (files?.govtIdFront?.[0]) {
-                await prisma.kYCDocument.create({
+                await prisma.kycdocument.create({
                     data: {
                         providerId: newProvider.id,
                         type: "GOVERNMENT_ID",
                         fileUrl: `/uploads/kyc/government-id/${files.govtIdFront[0].filename}`,
-                        documentType: "FRONT"
+
                     }
                 });
             }
 
             if (files?.govtIdBack?.[0]) {
-                await prisma.kYCDocument.create({
+                await prisma.kycdocument.create({
                     data: {
                         providerId: newProvider.id,
                         type: "GOVERNMENT_ID",
                         fileUrl: `/uploads/kyc/government-id/${files.govtIdBack[0].filename}`,
-                        documentType: "BACK"
+
                     }
                 });
             }
@@ -270,23 +275,23 @@ export const completeProviderProfile = async (req: Request, res: Response) => {
 
             // Handle KYC Documents (only if new files uploaded)
             if (files?.govtIdFront?.[0]) {
-                await prisma.kYCDocument.create({
+                await prisma.kycdocument.create({
                     data: {
                         providerId: updatedProvider.id,
                         type: "GOVERNMENT_ID",
                         fileUrl: `/uploads/kyc/government-id/${files.govtIdFront[0].filename}`,
-                        documentType: "FRONT"
+
                     }
                 });
             }
 
             if (files?.govtIdBack?.[0]) {
-                await prisma.kYCDocument.create({
+                await prisma.kycdocument.create({
                     data: {
                         providerId: updatedProvider.id,
                         type: "GOVERNMENT_ID",
                         fileUrl: `/uploads/kyc/government-id/${files.govtIdBack[0].filename}`,
-                        documentType: "BACK"
+
                     }
                 });
             }
@@ -369,7 +374,7 @@ export const uploadKyc = async (req: Request, res: Response) => {
             filePath = `/uploads/${req.file.filename}`;
         }
 
-        const kyc = await prismaClient.kYCDocument.create({
+        const kyc = await prismaClient.kycdocument.create({
             data: {
                 providerId: provider.id,
                 type,

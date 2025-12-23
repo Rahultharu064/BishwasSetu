@@ -4,7 +4,7 @@ export const becomeProvider = (data: any) =>
   axiosapi.post("/providers/become-provider", data);
 
 export const completeProfile = (data: any) =>
-  axiosapi.post("/providers/profile/complete", data);
+  axiosapi.put("/providers/profile/complete", data);
 
 export const uploadProfilePhoto = (file: File) => {
   const formData = new FormData();
