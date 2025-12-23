@@ -34,6 +34,13 @@ export const registerUser = async (req: Request, res: Response) => {
       res.status(400).json({ success: false, error: { code: "INVALID_INPUT", message: "name,email and password are required" } })
       return;
     }
+
+    // Validate role
+    const validRoles = ["CUSTOMER", "PROVIDER", "ADMIN"];
+    if (!role || !validRoles.includes(role)) {
+      res.status(400).json({ message: "Validation Error: Invalid role selected" })
+      return;
+    }
     const existingUser = await prismaClient.user.findFirst({
       where: {
         OR: [{ email: normalizedEmail }]

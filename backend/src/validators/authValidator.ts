@@ -6,7 +6,7 @@ export const registerSchema = Joi.object({
   password: Joi.string().min(6).required(),
   phone: Joi.string().pattern(/^[0-9]{10,15}$/).required(),
   role: Joi.string()
-    .valid("CUSTOMER", "PROVIDER")
+    .valid("CUSTOMER", "PROVIDER", "ADMIN")
     .required()
     .messages({
       "any.only": "Invalid role selected",

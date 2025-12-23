@@ -13,6 +13,7 @@ import Register from "../components/auth/Register";
 import Login from "../components/auth/Login";
 import VerifyOtp from "../components/auth/VerifyOtp";
 import BecomeProvider from "../components/ProviderDashboard/forum/BecomeProvider";
+import AdminRegister from "../components/auth/AdminRegister";
 
 // Admin Dashboard Pages
 import AdminLayout from "../components/Admindashboard/layouts/AdminLayout";
@@ -68,6 +69,10 @@ const routes = [
     {
         path: "/become-provider",
         element: <BecomeProvider />
+    },
+    {
+        path: "/admin-register",
+        element: <AdminRegister />
     },
 
     // Admin Dashboard Routes

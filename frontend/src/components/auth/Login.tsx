@@ -32,6 +32,8 @@ export default function Login() {
         // Redirect based on role
         if (user.role === 'PROVIDER') {
           navigate("/become-provider");
+        } else if (user.role === 'ADMIN') {
+          navigate("/admin");
         } else {
           navigate("/");
         }
