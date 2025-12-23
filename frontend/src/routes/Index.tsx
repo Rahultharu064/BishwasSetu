@@ -1,7 +1,8 @@
 import CategoryCreate from "../components/Admindashboard/forum/CategoryCreate";
 import CategoryUpdate from "../components/Admindashboard/forum/CategoryUpdate";
 import CategoryAdminList from "../components/Admindashboard/forum/CategoryAdminList";
-import CategoryList from "../components/Homepage/CategoryList";
+import ServiceAdminList from "../components/Admindashboard/forum/ServiceAdminList";
+import ServiceCreate from "../components/Admindashboard/forum/ServiceCreate";
 
 // Public Pages
 import Homepage from "../pages/PublicUser/Homepage";
@@ -69,34 +70,20 @@ const routes = [
         element: <BecomeProvider />
     },
 
-    // Admin/Existing Routes
-    {
-        path: "/admin/category/create",
-        element: <CategoryCreate />
-    },
-    {
-        path: "/categories",
-        element: <CategoryList />
-    },
-    {
-        path: "/admin/categories",
-        element: <CategoryAdminList />
-    },
-    {
-        path: "/admin/category/update/:id",
-        element: <CategoryUpdate />
-    },
-
     // Admin Dashboard Routes
     {
         path: "/admin",
         element: <AdminLayout />,
         children: [
             { path: "dashboard", element: <AdminDashboardPage /> },
-            { path: "users", element: <Users   /> },
+            { path: "users", element: <Users /> },
             { path: "provider-verification", element: <ProviderVerification /> },
             { path: "complaints", element: <Complaints /> },
             { path: "categories", element: <CategoryAdminList /> },
+            { path: "services", element: <ServiceAdminList /> },
+            { path: "service/create", element: <ServiceCreate /> },
+            { path: "category/create", element: <CategoryCreate /> },
+            { path: "category/update/:id", element: <CategoryUpdate /> },
             { path: "analytics", element: <Analytics /> },
             { path: "settings", element: <Settings /> },
         ]
@@ -127,5 +114,4 @@ const routes = [
     }
 ];
 
-
-export default routes
+export default routes;

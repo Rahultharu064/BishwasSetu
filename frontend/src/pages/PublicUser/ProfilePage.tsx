@@ -164,12 +164,31 @@ const ProfilePage: React.FC = () => {
                         {/* Customer Specific Section */}
                         {profile.role === 'CUSTOMER' && (
                             <div className="mt-10 pt-6 border-t border-gray-100">
-                                <h2 className="text-xl font-bold text-gray-800 mb-6">Recent Activity</h2>
-                                <div className="bg-gray-50 rounded-xl p-8 text-center border border-gray-200 border-dashed">
-                                    <p className="text-gray-500">No recent bookings or activity found.</p>
-                                    <button onClick={() => navigate('/services')} className="mt-4 text-blue-600 font-medium hover:underline">
-                                        Browse Services
+                                <div className="flex items-center justify-between mb-6">
+                                    <h2 className="text-xl font-bold text-gray-800">Become a Provider</h2>
+                                    <button
+                                        onClick={() => navigate('/become-provider')}
+                                        className="text-blue-600 hover:text-blue-700 text-sm font-semibold hover:underline"
+                                    >
+                                        Start Onboarding
                                     </button>
+                                </div>
+                                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-8 text-center border border-blue-100 relative overflow-hidden group">
+                                    <div className="relative z-10">
+                                        <h3 className="text-lg font-bold text-gray-900">Want to earn by providing services?</h3>
+                                        <p className="text-gray-600 mt-2 max-w-sm mx-auto mb-6">Join our community of professional providers and start growing your business with BishwasSetu.</p>
+                                        <button
+                                            onClick={() => navigate('/become-provider')}
+                                            className="px-8 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all font-bold shadow-lg shadow-blue-200 active:scale-95"
+                                        >
+                                            Register as Provider
+                                        </button>
+                                    </div>
+                                    <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                                        <svg width="120" height="120" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M20 7h-4V5c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v2H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zM10 5h4v2h-4V5zm10 15H4V9h16v11z" />
+                                        </svg>
+                                    </div>
                                 </div>
                             </div>
                         )}

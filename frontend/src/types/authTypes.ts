@@ -23,6 +23,11 @@ export interface UserProfile {
   role: "CUSTOMER" | "PROVIDER" | "ADMIN";
   isVerified: boolean;
   phone?: string | null;
+  address?: string | null;
+  district?: string | null;
+  municipality?: string | null;
+  gender?: string | null;
+  provider?: any | null; // Placeholder for ProviderProfile to avoid circular or missing type issues for now
   createdAt: string;
 }
 

@@ -1,23 +1,22 @@
-
 import axiosapi from "./api";
 
 export const becomeProvider = (data: any) =>
-  axiosapi.post("/providers/become", data);
+  axiosapi.post("/providers/become-provider", data);
 
 export const completeProfile = (data: any) =>
-        axiosapi.put("/providers/profile", data);
+  axiosapi.post("/providers/profile/complete", data);
 
 export const uploadProfilePhoto = (file: File) => {
   const formData = new FormData();
-  formData.append("file", file);
-  return axiosapi.post("/providers/profile-photo", formData);
+  formData.append("photo", file);
+  return axiosapi.post("/providers/profile/photo", formData);
 };
 
 export const uploadKyc = (type: string, file: File) => {
   const formData = new FormData();
   formData.append("type", type);
   formData.append("file", file);
-  return axiosapi.post("/providers/kyc", formData);
+  return axiosapi.post("/providers/kyc/upload", formData);
 };
 
 export const getKycStatus = () =>

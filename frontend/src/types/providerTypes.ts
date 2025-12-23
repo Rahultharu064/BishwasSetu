@@ -1,0 +1,30 @@
+export interface ProviderProfile {
+    id: number;
+    userId: number;
+    gender?: string;
+    district?: string;
+    municipality?: string;
+    legalName: string;
+    experienceYears: number;
+    bio: string;
+    skills?: string;
+    prevCompany?: string;
+    prevRole?: string;
+    workDuration?: string;
+    portfolioUrls?: string;
+    tradeLicenseUrl?: string;
+    serviceDistrict?: string;
+    serviceMunicipality?: string;
+    availabilityDays?: string;
+    availabilityTime?: string;
+    isEmergencyAvailable: boolean;
+    emergencyResponseTime?: string;
+    emergencyExtraCharge?: number;
+    price?: number;
+    duration?: string;
+    profilePhotoUrl?: string;
+    verificationStatus: "INCOMPLETE" | "DOCUMENTS_PENDING" | "UNDER_REVIEW" | "VERIFIED" | "REJECTED";
+    trustScore: number;
+    createdAt: string;
+    updatedAt: string;
+}

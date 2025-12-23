@@ -24,58 +24,15 @@ const ServiceCategories: React.FC = () => {
     fetchCategories();
   }, []);
 
-  const defaultCategories: Category[] = [
-    {
-      id: '1',
-      name: 'Plumbing',
-      icon: '🔧',
-      description: 'Professional plumbing services',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: '2',
-      name: 'Electrical',
-      icon: '⚡',
-      description: 'Certified electricians',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: '3',
-      name: 'Carpentry',
-      icon: '🪚',
-      description: 'Skilled carpentry work',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: '4',
-      name: 'Cleaning',
-      icon: '🧹',
-      description: 'Home & office cleaning',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: '5',
-      name: 'Painting',
-      icon: '🎨',
-      description: 'Interior & exterior painting',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: '6',
-      name: 'Gardening',
-      icon: '🌱',
-      description: 'Garden maintenance',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-  ];
+  const displayCategories = categories;
 
-  const displayCategories = categories.length > 0 ? categories : defaultCategories;
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-20">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1E90FF]"></div>
+      </div>
+    );
+  }
 
   return (
     <section className="py-16 md:py-20 bg-white">

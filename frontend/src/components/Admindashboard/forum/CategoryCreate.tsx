@@ -1,20 +1,19 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { createCategory } from "../../../services/categoryService";
 import toast from "react-hot-toast";
 import Card from "../../ui/Card";
 import Input from "../../ui/Input";
 import Button from "../../ui/Button";
 
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
+
 const CategoryCreate = () => {
+  const navigate = useNavigate();
   const [name, setName] = useState("");
   const [icon, setIcon] = useState("");
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    setIsVisible(true);
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,9 +29,7 @@ const CategoryCreate = () => {
       await createCategory({ name, icon, description });
 
       toast.success("Category created successfully 🎉");
-      setName("");
-      setIcon("");
-      setDescription("");
+      navigate("/admin/categories");
     } catch (error: any) {
       if (error?.response?.status === 400) {
         toast.error("Category already exists");
@@ -45,11 +42,19 @@ const CategoryCreate = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-100 flex items-center justify-center p-4">
-      <Card className={`max-w-md w-full transition-all duration-1000 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-800 mb-2 animate-pulse">Create Category</h2>
-          <p className="text-gray-600">Add a new category to your forum</p>
+    <div className="max-w-4xl mx-auto space-y-6">
+      <button
+        onClick={() => navigate("/admin/categories")}
+        className="flex items-center gap-2 text-gray-400 hover:text-gray-600 transition-colors font-medium text-sm group"
+      >
+        <ArrowLeft size={18} className="transition-transform group-hover:-translate-x-1" />
+        Back to Categories
+      </button>
+
+      <Card className="p-8 border-0 shadow-sm ring-1 ring-gray-100">
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-900">Create Category</h2>
+          <p className="text-sm text-gray-500 mt-1">Add a new service category to the platform</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -93,8 +98,8 @@ const CategoryCreate = () => {
             />
           </div>
 
-          <div className="animate-fade-in-up animation-delay-600">
-            <Button type="submit" loading={loading} className="w-full">
+          <div className="pt-4">
+            <Button type="submit" loading={loading} className="w-full bg-blue-600 hover:bg-blue-700 h-11">
               {loading ? "Creating Category..." : "Create Category"}
             </Button>
           </div>

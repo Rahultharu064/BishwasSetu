@@ -127,6 +127,8 @@ Provider profile detail page:
 
 Trust score breakdown
 
+Experience Badge
+
 Reviews
 
 Availability
@@ -211,6 +213,14 @@ Phone & email
 Service categories & skills
 
 Experience
+
+Experience Badge (based on years of experience):
+
+- Navin (नविन): Below 1 year
+
+- Anubhavi (अनुभवी): 1-2 years
+
+- Prabin (प्रवीन): More than 2 years
 
 Service description
 

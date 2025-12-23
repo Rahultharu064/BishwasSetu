@@ -2,9 +2,10 @@ import React from 'react';
 
 interface InputProps {
   type?: string;
+  name?: string;
   placeholder?: string;
   value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   disabled?: boolean;
   required?: boolean;
   className?: string;
@@ -12,6 +13,7 @@ interface InputProps {
 
 const Input: React.FC<InputProps> = ({
   type = 'text',
+  name,
   placeholder,
   value,
   onChange,
@@ -22,6 +24,7 @@ const Input: React.FC<InputProps> = ({
   return (
     <input
       type={type}
+      name={name}
       placeholder={placeholder}
       value={value}
       onChange={onChange}

@@ -6,29 +6,37 @@ import Navbar from "../../components/layouts/Navbar";
 import Footer from "../../components/layouts/Footer";
 import Button from "../../components/ui/Button";
 import { getServiceStats } from "../../services/serviceService";
-
-const categories = ["All", "Home Repair", "Cleaning", "Home Improvement", "Moving", "Security", "Home Maintenance", "Outdoor"];
+import { getAllCategories } from "../../services/categoryService";
 
 const ServicesPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [categories, setCategories] = useState<string[]>(["All"]);
   const [services, setServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchServices = async () => {
+    const fetchData = async () => {
       try {
-        const data = await getServiceStats();
-        if (Array.isArray(data)) {
-          setServices(data);
+        const [servicesData, categoriesData] = await Promise.all([
+          getServiceStats(),
+          getAllCategories()
+        ]);
+
+        if (Array.isArray(servicesData)) {
+          setServices(servicesData);
+        }
+
+        if (Array.isArray(categoriesData)) {
+          setCategories(["All", ...categoriesData.map(c => c.name)]);
         }
       } catch (error) {
-        console.error("Failed to fetch services:", error);
+        console.error("Failed to fetch data:", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchServices();
+    fetchData();
   }, []);
 
 

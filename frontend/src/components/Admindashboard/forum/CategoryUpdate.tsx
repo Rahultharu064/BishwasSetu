@@ -1,23 +1,21 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { updateCategory, getAllCategories } from "../../../services/categoryService";
 import toast from "react-hot-toast";
 import Card from "../../ui/Card";
 import Input from "../../ui/Input";
 import Button from "../../ui/Button";
-import type { Category } from "../../../types/categoryTypes";
+import { ArrowLeft } from "lucide-react";
 
 const CategoryUpdate = () => {
+  const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [name, setName] = useState("");
   const [icon, setIcon] = useState("");
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isVisible, setIsVisible] = useState(false);
-  const [category, setCategory] = useState<Category | null>(null);
 
   useEffect(() => {
-    setIsVisible(true);
     if (id) {
       loadCategory();
     }
@@ -28,7 +26,6 @@ const CategoryUpdate = () => {
       const categories = await getAllCategories();
       const foundCategory = categories.find((cat) => cat.id === id);
       if (foundCategory) {
-        setCategory(foundCategory);
         setName(foundCategory.name);
         setIcon(foundCategory.icon || "");
         setDescription(foundCategory.description || "");
@@ -56,6 +53,7 @@ const CategoryUpdate = () => {
       await updateCategory(id, { name, icon, description });
 
       toast.success("Category updated successfully 🎉");
+      navigate("/admin/categories");
     } catch (error: any) {
       if (error?.response?.status === 400) {
         toast.error("Category name already exists");
@@ -68,11 +66,19 @@ const CategoryUpdate = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-100 flex items-center justify-center p-4">
-      <Card className={`max-w-md w-full transition-all duration-1000 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-800 mb-2 animate-pulse">Update Category</h2>
-          <p className="text-gray-600">Modify the category details</p>
+    <div className="max-w-4xl mx-auto space-y-6">
+      <button
+        onClick={() => navigate("/admin/categories")}
+        className="flex items-center gap-2 text-gray-400 hover:text-gray-600 transition-colors font-medium text-sm group"
+      >
+        <ArrowLeft size={18} className="transition-transform group-hover:-translate-x-1" />
+        Back to Categories
+      </button>
+
+      <Card className="p-8 border-0 shadow-sm ring-1 ring-gray-100">
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-900">Update Category</h2>
+          <p className="text-sm text-gray-500 mt-1">Modify the category details</p>
         </div>
 
         <form onSubmit={handleUpdate} className="space-y-6">
@@ -116,8 +122,8 @@ const CategoryUpdate = () => {
             />
           </div>
 
-          <div className="animate-fade-in-up animation-delay-600">
-            <Button type="submit" loading={loading} className="w-full">
+          <div className="pt-4">
+            <Button type="submit" loading={loading} className="w-full bg-blue-600 hover:bg-blue-700 h-11">
               {loading ? "Updating Category..." : "Update Category"}
             </Button>
           </div>

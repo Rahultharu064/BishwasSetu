@@ -1,4 +1,4 @@
-import type{ Request, Response } from "express";
+import type { Request, Response } from "express";
 import prismaClient from "../config/db.ts";
 
 export const createService = async (req: Request, res: Response) => {
@@ -7,10 +7,30 @@ export const createService = async (req: Request, res: Response) => {
 
     const { categoryId, title, description, icon } = req.body;
 
-    // Check if provider exists and is verified
-    const provider = await prismaClient.provider.findUnique({
+    let provider = await prismaClient.provider.findUnique({
       where: { userId: req.user.id },
     });
+
+    // If admin, ensure they have a verified provider profile
+    if (req.user.role === "ADMIN") {
+      if (!provider) {
+        provider = await prismaClient.provider.create({
+          data: {
+            userId: req.user.id,
+            legalName: "Administrator Services",
+            bio: "Administrative service profile",
+            experienceYears: 0,
+            verificationStatus: "VERIFIED",
+            updatedAt: new Date()
+          }
+        });
+      } else if (provider.verificationStatus !== "VERIFIED") {
+        provider = await prismaClient.provider.update({
+          where: { id: provider.id },
+          data: { verificationStatus: "VERIFIED" }
+        });
+      }
+    }
 
     if (!provider) {
       return res.status(404).json({ message: "Provider not found" });
@@ -37,7 +57,7 @@ export const createService = async (req: Request, res: Response) => {
         description,
         icon
 
-        
+
       },
       include: {
         category: true,
@@ -145,14 +165,6 @@ export const deleteService = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Service ID is required" });
     }
 
-    const provider = await prismaClient.provider.findUnique({
-      where: { userId: req.user.id },
-    });
-
-    if (!provider) {
-      return res.status(404).json({ message: "Provider not found" });
-    }
-
     const service = await prismaClient.service.findUnique({
       where: { id: parseInt(id) },
     });
@@ -161,8 +173,15 @@ export const deleteService = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Service not found" });
     }
 
-    if (service.providerId !== provider.id) {
-      return res.status(403).json({ message: "Unauthorized to delete this service" });
+    // Allow deletion if user is ADMIN or the OWNER (Provider)
+    if (req.user.role !== "ADMIN") {
+      const provider = await prismaClient.provider.findUnique({
+        where: { userId: req.user.id },
+      });
+
+      if (!provider || service.providerId !== provider.id) {
+        return res.status(403).json({ message: "Unauthorized to delete this service" });
+      }
     }
 
     await prismaClient.service.delete({

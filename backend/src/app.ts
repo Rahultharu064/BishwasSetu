@@ -3,9 +3,10 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import type { Request, Response, NextFunction } from 'express';
 import categoryRoutes from "./routes/categoryRoute.ts";
-import authRoutes  from "./routes/authRoute.ts"
+import authRoutes from "./routes/authRoute.ts"
 import providerRoutes from "./routes/providerRoute.ts"
 import serviceRoutes from "./routes/serviceRoute.ts"
+import adminRoutes from "./routes/adminRoute.ts"
 
 dotenv.config();
 
@@ -15,7 +16,7 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: false }));
 
 const allowedOrigin = [
-    process.env.FRONTEND_URL
+  process.env.FRONTEND_URL
 ]
 
 app.use(
@@ -40,15 +41,16 @@ app.use(
 
 
 app.use("/api/categories", categoryRoutes);
-app.use("/api/auth",authRoutes)
-app.use("/api/providers",providerRoutes)
-app.use("/api/services",serviceRoutes)
+app.use("/api/auth", authRoutes)
+app.use("/api/providers", providerRoutes)
+app.use("/api/services", serviceRoutes)
+app.use("/api/admin", adminRoutes)
 
 
 // Global error handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-    console.error(err.stack);
-    res.status(500).json({ message: 'Something went wrong!' });
+  console.error(err.stack);
+  res.status(500).json({ message: 'Something went wrong!' });
 });
 
 export default app;

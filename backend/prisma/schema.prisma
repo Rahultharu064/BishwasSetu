@@ -1,12 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
-  
 }
 
 datasource db {
@@ -14,110 +7,118 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
-
-// Define your database schema here
-enum Role {
-  CUSTOMER
-  PROVIDER
-  ADMIN
+model category {
+  id          String    @id
+  name        String    @unique(map: "Category_name_key")
+  icon        String?   @db.VarChar(500)
+  description String?   @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime
+  service     service[]
+  provider    provider[]
 }
 
-enum ProviderStatus {
-  INCOMPLETE
-  DOCUMENTS_PENDING
-  UNDER_REVIEW
-  VERIFIED
-  REJECTED
+model kycdocument {
+  id         Int                @id @default(autoincrement())
+  providerId Int
+  type       kycdocument_type
+  fileUrl    String
+  status     kycdocument_status @default(PENDING)
+  createdAt  DateTime           @default(now())
+  provider   provider           @relation(fields: [providerId], references: [id], onDelete: Cascade, map: "KYCDocument_providerId_fkey")
+
+  @@index([providerId], map: "KYCDocument_providerId_fkey")
 }
 
-enum KycType {
+model provider {
+  id                    Int                         @id @default(autoincrement())
+  userId                Int                         @unique(map: "Provider_userId_key")
+  categoryId            String?
+  legalName             String
+  experienceYears       Int
+  bio                   String                      @db.Text
+  skills                String?                     @db.Text
+  prevCompany           String?
+  prevRole              String?
+  workDuration          String?
+  portfolioUrls         String?                     @db.Text
+  tradeLicenseUrl       String?
+  serviceDistrict       String?
+  serviceMunicipality   String?
+  availabilityDays      String?
+  availabilityTime      String?
+  isEmergencyAvailable  Boolean                     @default(false)
+  emergencyResponseTime String?
+  emergencyExtraCharge  Float?
+  price                 Float?
+  duration              String?
+  profilePhotoUrl       String?
+  verificationStatus    provider_verificationStatus @default(INCOMPLETE)
+  trustScore            Float                       @default(0)
+  createdAt             DateTime                    @default(now())
+  updatedAt             DateTime
+  category              category?                   @relation(fields: [categoryId], references: [id], onDelete: SetNull, map: "Provider_categoryId_fkey")
+  kycDocuments          kycdocument[]
+  user                  user                        @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Provider_userId_fkey")
+  service               service[]
+}
+
+model service {
+  id          Int      @id @default(autoincrement())
+  providerId  Int
+  categoryId  String
+  title       String
+  icon        String?  @db.VarChar(50)
+  description String   @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+  category    category @relation(fields: [categoryId], references: [id], onDelete: Cascade, map: "Service_categoryId_fkey")
+  provider    provider @relation(fields: [providerId], references: [id], onDelete: Cascade, map: "Service_providerId_fkey")
+
+  @@index([categoryId], map: "Service_categoryId_fkey")
+  @@index([providerId], map: "Service_providerId_fkey")
+}
+
+model user {
+  id           Int       @id @default(autoincrement())
+  email        String    @unique(map: "User_email_key")
+  name         String?
+  address      String?
+  district     String?
+  municipality String?
+  gender       String?
+  phone        String?
+  password     String
+  role         user_role
+  isVerified   Boolean   @default(false)
+  otp          String?
+  otpExpiry    DateTime?
+  createdAt    DateTime  @default(now())
+  provider     provider?
+}
+
+enum kycdocument_type {
   GOVERNMENT_ID
   CERTIFICATE
   PROFILE_PHOTO
 }
 
-enum KycStatus {
+enum kycdocument_status {
   PENDING
   APPROVED
   REJECTED
 }
 
-model User {
-  id          Int       @id @default(autoincrement())
-  email       String    @unique
-  name        String?
-  address     String?
-  phone       String?
-  password    String
-  role        Role
-  isVerified  Boolean   @default(false)
-  otp         String?
-  otpExpiry   DateTime?
-  createdAt   DateTime  @default(now())
-
-  provider    Provider?
+enum user_role {
+  CUSTOMER
+  PROVIDER
+  ADMIN
 }
 
-model Provider {
-  id                 Int            @id @default(autoincrement())
-  userId             Int            @unique
-  user               User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  legalName          String
-  experienceYears    Int
-  bio                String
-  serviceArea        String
-  availability       String
-  price              Float?
-  duration           String? // e.g., "1 hour", "30 minutes"
-  profilePhotoUrl    String?
-  verificationStatus ProviderStatus @default(INCOMPLETE)
-  trustScore         Float          @default(0)
-
-  kycDocuments       KYCDocument[]
-  services           Service[]
-
-  createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
-}
-
-model KYCDocument {
-  id         Int       @id @default(autoincrement())
-  providerId Int
-  provider   Provider  @relation(fields: [providerId], references: [id], onDelete: Cascade)
-
-  type       KycType
-  fileUrl    String
-  status     KycStatus @default(PENDING)
-
-  createdAt  DateTime  @default(now())
-}
-
-model Category {
-  id          String    @id @default(uuid())
-  name        String    @unique
-  icon        String?   @db.VarChar(500)
-  description String?   @db.Text
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  services    Service[]
-}
-
-model Service {
-  id          Int      @id @default(autoincrement())
-  providerId  Int
-  provider    Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
-
-  categoryId  String
-  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-
-  title       String
-  icon        String?  @db.VarChar(50)
-  description String   @db.Text
-
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+enum provider_verificationStatus {
+  INCOMPLETE
+  DOCUMENTS_PENDING
+  UNDER_REVIEW
+  VERIFIED
+  REJECTED
 }

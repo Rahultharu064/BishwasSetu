@@ -10,7 +10,8 @@ import {
     BarChart3,
     Shield,
     Settings,
-    LogOut
+    LogOut,
+    Package
 } from 'lucide-react';
 
 interface AdminSidebarProps {
@@ -29,6 +30,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
         { path: '/admin/provider-verification', label: 'Provider Verification', icon: Shield },
         { path: '/admin/complaints', label: 'Complaints', icon: FileText },
         { path: '/admin/categories', label: 'Categories', icon: BarChart3 },
+        { path: '/admin/services', label: 'Services', icon: Package },
         { path: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
         { path: '/admin/settings', label: 'Settings', icon: Settings },
     ];
@@ -69,8 +71,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
                                 to={item.path}
                                 onClick={onClose}
                                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${isActive
-                                        ? 'bg-blue-50 text-blue-600'
-                                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                    ? 'bg-blue-50 text-blue-600'
+                                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                                     }`}
                             >
                                 <Icon

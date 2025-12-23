@@ -1,16 +1,17 @@
 import express from "express";
 import { authMiddleware, authorize } from "../middlewares/authMiddleware.ts";
 import { validate } from "../middlewares/validateMiddleware.ts";
-import { uploadSingle } from "../middlewares/multerMiddleware.ts";
 import {
     becomeProvider,
     completeProviderProfile,
     uploadProfilePhoto,
     uploadKyc,
     getKycStatus,
-    getProviderById
+    getProviderById,
+    getMyProviderProfile
 } from "../controllers/providerController.ts";
-import { providerProfileSchema, kycUploadSchema } from "../validators/providervalidator.ts";
+import {providerCreateSchema, providerUpdateSchema ,kycUploadSchema} from "../validators/providervalidator.ts";
+import { providerOnboardingUpload ,uploadSingle} from "../middlewares/multerMiddleware.ts"; // Import the new upload config
 
 const router = express.Router();
 
@@ -18,21 +19,25 @@ const router = express.Router();
 router.get("/:id", getProviderById);
 
 // Protected routes
+
+// BECOME PROVIDER - For new providers (USER role)
 router.post(
     "/become-provider",
     authMiddleware,
-    validate(providerProfileSchema),
+    providerOnboardingUpload, // Use the new config
     becomeProvider
 );
 
-router.post(
+// COMPLETE PROFILE - For existing providers (PROVIDER role)
+router.put(
     "/profile/complete",
     authMiddleware,
     authorize(["PROVIDER"]),
-    validate(providerProfileSchema),
+    providerOnboardingUpload, // Use the same config
     completeProviderProfile
 );
 
+// SINGLE UPLOAD ENDPOINTS
 router.post(
     "/profile/photo",
     authMiddleware,
@@ -40,6 +45,8 @@ router.post(
     uploadSingle("photo"),
     uploadProfilePhoto
 );
+// Add to your router file
+router.get("/profile/me", authMiddleware, authorize(["PROVIDER"]), getMyProviderProfile);
 
 router.post(
     "/kyc/upload",

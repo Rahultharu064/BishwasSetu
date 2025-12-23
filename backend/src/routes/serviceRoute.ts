@@ -43,7 +43,7 @@ router.put(
 router.delete(
     "/:id",
     authMiddleware,
-    authorize(["PROVIDER"]),
+    authorize(["PROVIDER", "ADMIN"]),
     deleteService
 );
 
