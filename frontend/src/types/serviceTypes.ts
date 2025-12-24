@@ -41,6 +41,7 @@ export interface CreateServiceData {
     title: string;
     description: string;
     icon?: string;
+    providerId?: number;
 }
 
 export interface UpdateServiceData {

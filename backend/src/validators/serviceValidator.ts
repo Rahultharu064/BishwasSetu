@@ -1,6 +1,10 @@
 import Joi from "joi";
 
 export const createServiceSchema = Joi.object({
+  providerId: Joi.number().integer().min(1).optional().messages({
+    'number.base': 'Provider ID must be a number',
+    'number.min': 'Provider ID must be a positive number'
+  }),
   categoryId: Joi.string().uuid().required().messages({
     'string.guid': 'Category ID must be a valid UUID',
     'any.required': 'Category ID is required'
@@ -14,6 +18,9 @@ export const createServiceSchema = Joi.object({
     'string.min': 'Description must be at least 10 characters long',
     'string.max': 'Description cannot exceed 500 characters',
     'any.required': 'Description is required'
+  }),
+  icon: Joi.string().max(50).optional().messages({
+    'string.max': 'Icon cannot exceed 50 characters'
   })
 });
 
@@ -42,4 +49,3 @@ export const searchServiceSchema = Joi.object({
   page: Joi.number().integer().min(1).optional(),
   limit: Joi.number().integer().min(1).max(100).optional()
 });
-

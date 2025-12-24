@@ -1,6 +1,7 @@
 import  { useEffect, useState } from 'react';
 import { Search, Filter, MoreVertical, UserCheck, UserX } from 'lucide-react';
 import Button from '../../ui/Button';
+import Select from '../../ui/Select';
 
 interface User {
     id: string;
@@ -93,7 +94,7 @@ const Users = ( ) => {
                         />
                     </div>
                     <div className="flex gap-2">
-                        <select
+                        <Select
                             value={filterRole}
                             onChange={(e) => setFilterRole(e.target.value)}
                             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -102,7 +103,7 @@ const Users = ( ) => {
                             <option value="customer">Customers</option>
                             <option value="provider">Providers</option>
                             <option value="admin">Admins</option>
-                        </select>
+                        </Select>
                         <Button className="flex items-center gap-2">
                             <Filter size={16} />
                             More Filters

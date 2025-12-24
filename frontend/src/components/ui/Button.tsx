@@ -2,7 +2,7 @@ import React from 'react';
 
 interface ButtonProps {
   type?: 'button' | 'submit' | 'reset';
-  variant?: 'primary' | 'outline' | 'secondary' | 'white';
+  variant?: 'primary' | 'outline' | 'secondary' | 'white' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
   children: React.ReactNode;
   disabled?: boolean;

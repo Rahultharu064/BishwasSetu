@@ -2,37 +2,57 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createService } from '../../../services/serviceService';
 import { getAllCategories } from '../../../services/categoryService';
+import { getProvidersByStatus } from '../../../services/adminService';
 import Select from '../../ui/Select';
 import { toast } from 'react-hot-toast';
 import Card from '../../ui/Card';
 import Button from '../../ui/Button';
-import { ArrowLeft, Package, Tag, Type, Info } from 'lucide-react';
+import { ArrowLeft, Package, Tag, Type, Info, User } from 'lucide-react';
 
 const AdminServiceCreate = () => {
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
+        providerId: '',
         categoryId: '',
         title: '',
         description: '',
         icon: ''
     });
     const [categories, setCategories] = useState<any[]>([]);
+    const [providers, setProviders] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        const fetchCategories = async () => {
+        const fetchData = async () => {
             try {
-                const cats = await getAllCategories();
+                const [cats, provs] = await Promise.all([
+                    getAllCategories(),
+                    getProvidersByStatus('VERIFIED')
+                ]);
                 setCategories(cats);
+                setProviders(provs);
             } catch (err) {
-                toast.error('Failed to load categories');
+                toast.error('Failed to load data');
             }
         };
-        fetchCategories();
+        fetchData();
     }, []);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleProviderChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const providerId = e.target.value;
+        const selectedProvider = providers.find(p => p.id.toString() === providerId);
+        const selectedCategory = selectedProvider ? categories.find(c => c.id === selectedProvider.categoryId) : null;
+
+        setFormData({
+            ...formData,
+            providerId,
+            title: selectedCategory ? selectedCategory.name : '',
+            categoryId: selectedProvider?.categoryId || ''
+        });
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -40,12 +60,19 @@ const AdminServiceCreate = () => {
         setLoading(true);
 
         try {
-            await createService({
+            const serviceData: any = {
                 categoryId: formData.categoryId,
                 title: formData.title,
                 description: formData.description,
                 icon: formData.icon || undefined
-            });
+            };
+
+            // Only include providerId if a provider is selected
+            if (formData.providerId) {
+                serviceData.providerId = parseInt(formData.providerId);
+            }
+
+            await createService(serviceData);
 
             toast.success('Service created successfully!');
             navigate('/admin/services');
@@ -73,6 +100,27 @@ const AdminServiceCreate = () => {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* Provider Selection */}
+                    <div className="space-y-2">
+                        <label className="flex items-center gap-2 text-sm font-bold text-gray-700">
+                            <User size={16} className="text-blue-500" />
+                            Service Provider
+                        </label>
+                        <Select
+                            name="providerId"
+                            value={formData.providerId}
+                            onChange={handleProviderChange}
+                            className="w-full h-11"
+                        >
+                            <option value="">Create for admin (optional)</option>
+                            {providers.map((p) => (
+                                <option key={p.id} value={p.id}>
+                                    {p.legalName} ({p.user?.name})
+                                </option>
+                            ))}
+                        </Select>
+                    </div>
+
                     {/* Category Selection */}
                     <div className="space-y-2">
                         <label className="flex items-center gap-2 text-sm font-bold text-gray-700">

@@ -16,11 +16,11 @@ import { createServiceSchema, updateServiceSchema, searchServiceSchema } from ".
 
 const router = express.Router();
 
-// Protected routes - require PROVIDER role
+// Protected routes - allow PROVIDER and ADMIN roles
 router.post(
     "/",
     authMiddleware,
-    authorize(["PROVIDER"]),
+    authorize(["PROVIDER", "ADMIN"]),
     validate(createServiceSchema),
     createService
 );
@@ -56,4 +56,3 @@ router.get("/:id", getServiceById);
 router.get("/", getAllServices);
 
 export default router;
-

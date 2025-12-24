@@ -3,41 +3,75 @@ import prismaClient from "../config/db.ts";
 
 export const createService = async (req: Request, res: Response) => {
   try {
-    if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+    if (!req.user) {
+      console.log("CreateService: No user in request");
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    console.log(`CreateService: User ${req.user.id} Role ${req.user.role} Payload:`, req.body);
 
-    const { categoryId, title, description, icon } = req.body;
+    const { categoryId, title, description, icon, providerId } = req.body;
 
-    let provider = await prismaClient.provider.findUnique({
-      where: { userId: req.user.id },
-    });
+    let provider;
 
-    // If admin, ensure they have a verified provider profile
-    if (req.user.role === "ADMIN") {
+    // If admin is creating service for a specific provider
+    if (req.user.role === "ADMIN" && providerId) {
+      provider = await prismaClient.provider.findUnique({
+        where: { id: providerId },
+      });
+
       if (!provider) {
-        provider = await prismaClient.provider.create({
-          data: {
-            userId: req.user.id,
-            legalName: "Administrator Services",
-            bio: "Administrative service profile",
-            experienceYears: 0,
-            verificationStatus: "VERIFIED",
-            updatedAt: new Date()
-          }
-        });
-      } else if (provider.verificationStatus !== "VERIFIED") {
-        provider = await prismaClient.provider.update({
-          where: { id: provider.id },
-          data: { verificationStatus: "VERIFIED" }
-        });
+        return res.status(404).json({ message: "Provider not found" });
       }
-    }
 
-    if (!provider) {
-      return res.status(404).json({ message: "Provider not found" });
-    }
+      if (provider.verificationStatus !== "VERIFIED") {
+        console.log(`CreateService: [ADMIN] Provider ${provider.id} is not VERIFIED (Status: ${provider.verificationStatus})`);
+        return res.status(403).json({ message: "Provider must be verified to create services" });
+      }
+    } else {
+      // For providers or admin creating their own service
+      provider = await prismaClient.provider.findUnique({
+        where: { userId: req.user.id },
+      });
 
-    if (provider.verificationStatus !== "VERIFIED") {
-      return res.status(403).json({ message: "Provider must be verified to create services" });
+      // If admin, ensure they have a verified provider profile
+      if (req.user.role === "ADMIN") {
+        if (!provider) {
+          // Get first category as default
+          const defaultCategory = await prismaClient.category.findFirst();
+          if (!defaultCategory) {
+            console.log("CreateService: [ADMIN] No default category found");
+            return res.status(500).json({ message: "No categories available" });
+          }
+
+          provider = await prismaClient.provider.create({
+            data: {
+              userId: req.user.id,
+              categoryId: defaultCategory.id,
+              legalName: "Administrator Services",
+              bio: "Administrative service profile",
+              experienceYears: 0,
+              price: 0,
+              duration: "Per Service",
+              verificationStatus: "VERIFIED",
+              updatedAt: new Date()
+            }
+          });
+        } else if (provider.verificationStatus !== "VERIFIED") {
+          provider = await prismaClient.provider.update({
+            where: { id: provider.id },
+            data: { verificationStatus: "VERIFIED" }
+          });
+        }
+      }
+
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+
+      if (provider.verificationStatus !== "VERIFIED") {
+        console.log(`CreateService: [PROVIDER] Provider ${provider.id} is not VERIFIED (Status: ${provider.verificationStatus})`);
+        return res.status(403).json({ message: "Provider must be verified to create services" });
+      }
     }
 
     // Check if category exists
@@ -55,9 +89,8 @@ export const createService = async (req: Request, res: Response) => {
         categoryId,
         title,
         description,
-        icon
-
-
+        icon,
+        updatedAt: new Date()
       },
       include: {
         category: true,
