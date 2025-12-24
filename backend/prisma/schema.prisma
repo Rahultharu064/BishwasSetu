@@ -90,7 +90,9 @@ model user {
   phone        String?
   password     String
   role         user_role
+  status       user_status @default(ACTIVE)
   isVerified   Boolean   @default(false)
+  lastLogin    DateTime?
   otp          String?
   otpExpiry    DateTime?
   createdAt    DateTime  @default(now())
@@ -113,6 +115,12 @@ enum user_role {
   CUSTOMER
   PROVIDER
   ADMIN
+}
+
+enum user_status {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
 }
 
 enum provider_verificationStatus {

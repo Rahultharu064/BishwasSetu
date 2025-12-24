@@ -187,7 +187,7 @@ const CategoryList = () => {
                   {category.name}
                 </h3>
 
-                {/* DESCRIPTION */}
+                DESCRIPTION
                 {category.description && (
                   <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
                     {category.description}

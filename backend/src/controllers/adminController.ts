@@ -1,6 +1,38 @@
 import type { Request, Response } from "express";
 import prismaClient from "../config/db.ts";
 
+export const getAllUsers = async (req: Request, res: Response) => {
+    try {
+        const users = await prismaClient.user.findMany({
+            select: {
+                id: true,
+                email: true,
+                name: true,
+                role: true,
+                isVerified: true,
+                createdAt: true
+            },
+            orderBy: { createdAt: "desc" }
+        });
+
+        // Map the data to match the frontend interface
+        const formattedUsers = users.map(user => ({
+            id: user.id.toString(),
+            name: user.name || user.email.split('@')[0], // Fallback to email prefix if no name
+            email: user.email,
+            role: user.role.toLowerCase() as 'customer' | 'provider' | 'admin',
+            status: user.isVerified ? 'active' : 'inactive', // Map isVerified to status
+            createdAt: user.createdAt.toISOString().split('T')[0], // Format as YYYY-MM-DD
+            lastLogin: undefined // Not available in current schema
+        }));
+
+        res.json(formattedUsers);
+    } catch (error) {
+        console.error("Error fetching users:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+
 export const getAllProviders = async (req: Request, res: Response) => {
     try {
         const providers = await prismaClient.provider.findMany({

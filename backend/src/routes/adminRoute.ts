@@ -1,6 +1,7 @@
 import express from "express";
 import { authMiddleware, authorize } from "../middlewares/authMiddleware.ts";
 import {
+    getAllUsers,
     getAllProviders,
     getProvidersByStatus,
     acceptProvider,
@@ -10,6 +11,7 @@ import {
 
 const router = express.Router();
 
+router.get("/users", authMiddleware, authorize(["ADMIN"]), getAllUsers);
 router.get("/providers", authMiddleware, authorize(["ADMIN"]), getAllProviders);
 router.get("/providers/status", authMiddleware, authorize(["ADMIN"]), getProvidersByStatus);
 router.get("/providers/pending", authMiddleware, authorize(["ADMIN"]), getPendingProviders);

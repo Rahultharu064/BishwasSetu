@@ -2,6 +2,7 @@ import  { useEffect, useState } from 'react';
 import { Search, Filter, MoreVertical, UserCheck, UserX } from 'lucide-react';
 import Button from '../../ui/Button';
 import Select from '../../ui/Select';
+import { getAdminUsers } from '../../../services/adminService';
 
 interface User {
     id: string;
@@ -20,38 +21,18 @@ const Users = ( ) => {
     const [filterRole, setFilterRole] = useState<string>('all');
 
     useEffect(() => {
-        // Mock data - replace with API call
-        const mockUsers: User[] = [
-            {
-                id: '1',
-                name: 'John Doe',
-                email: 'john@example.com',
-                role: 'customer',
-                status: 'active',
-                createdAt: '2024-01-15',
-                lastLogin: '2024-01-20'
-            },
-            {
-                id: '2',
-                name: 'Jane Smith',
-                email: 'jane@example.com',
-                role: 'provider',
-                status: 'active',
-                createdAt: '2024-01-10',
-                lastLogin: '2024-01-19'
-            },
-            {
-                id: '3',
-                name: 'Bob Johnson',
-                email: 'bob@example.com',
-                role: 'customer',
-                status: 'suspended',
-                createdAt: '2024-01-05',
-                lastLogin: '2024-01-18'
+        const fetchUsers = async () => {
+            try {
+                const data = await getAdminUsers();
+                setUsers(data);
+            } catch (error) {
+                console.error('Error fetching users:', error);
+            } finally {
+                setLoading(false);
             }
-        ];
-        setUsers(mockUsers);
-        setLoading(false);
+        };
+
+        fetchUsers();
     }, []);
 
     const filteredUsers = users.filter(user => {

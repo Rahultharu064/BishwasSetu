@@ -17,9 +17,11 @@ dotenv.config();
 
 const app = express();
 
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 // Serve static files from the uploads directory
 const uploadsPath = path.join(process.cwd(), 'uploads');
-console.log('Serving static files from:', uploadsPath);
 app.use('/uploads', express.static(uploadsPath));
 
 const allowedOrigin = [

@@ -1,5 +1,10 @@
 import axiosapi from "./api";
 
+export const getAdminUsers = async () => {
+    const res = await axiosapi.get("/admin/users");
+    return res.data;
+};
+
 export const getAdminProviders = async () => {
     const res = await axiosapi.get("/admin/providers");
     return res.data;
