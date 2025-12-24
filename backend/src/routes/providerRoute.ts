@@ -8,14 +8,16 @@ import {
     uploadKyc,
     getKycStatus,
     getProviderById,
-    getMyProviderProfile
+    getMyProviderProfile,
+    getAllVerifiedProviders
 } from "../controllers/providerController.ts";
 import {providerCreateSchema, providerUpdateSchema ,kycUploadSchema} from "../validators/providervalidator.ts";
 import { providerOnboardingUpload ,uploadSingle} from "../middlewares/multerMiddleware.ts"; // Import the new upload config
 
 const router = express.Router();
 
-// Public route
+// Public routes
+router.get("/", getAllVerifiedProviders);
 router.get("/:id", getProviderById);
 
 // Protected routes

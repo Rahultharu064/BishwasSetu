@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from '../../components/layouts/Navbar';
 import Footer from '../../components/layouts/Footer';
 import Button from '../../components/ui/Button';
+import { getAllVerifiedProviders } from '../../services/providerService';
 
 interface Provider {
   id: string;
@@ -25,93 +26,41 @@ const ProvidersPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'all');
   const [selectedLocation, setSelectedLocation] = useState('all');
   const [minTrustScore, setMinTrustScore] = useState(0);
+  const [providers, setProviders] = useState<Provider[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock providers data - replace with API call
-  const mockProviders: Provider[] = [
-    {
-      id: '1',
-      name: 'Ram Bahadur Plumbing Services',
-      category: 'Plumbing',
-      rating: 4.8,
-      reviews: 127,
-      location: 'Kathmandu',
-      verified: true,
-      trustScore: 95,
-      image: '👨‍🔧',
-      services: ['Pipe Repair', 'Installation', 'Emergency Service'],
-      priceRange: 'NPR 500-2000',
-    },
-    {
-      id: '2',
-      name: 'Shyam Electricals',
-      category: 'Electrical',
-      rating: 4.9,
-      reviews: 203,
-      location: 'Lalitpur',
-      verified: true,
-      trustScore: 98,
-      image: '⚡',
-      services: ['Wiring', 'Repairs', 'Installation'],
-      priceRange: 'NPR 800-3000',
-    },
-    {
-      id: '3',
-      name: 'Hari Carpentry Works',
-      category: 'Carpentry',
-      rating: 4.7,
-      reviews: 89,
-      location: 'Bhaktapur',
-      verified: true,
-      trustScore: 92,
-      image: '🪚',
-      services: ['Furniture', 'Doors', 'Custom Work'],
-      priceRange: 'NPR 1000-5000',
-    },
-    {
-      id: '4',
-      name: 'Clean Home Services',
-      category: 'Cleaning',
-      rating: 4.6,
-      reviews: 156,
-      location: 'Kathmandu',
-      verified: true,
-      trustScore: 90,
-      image: '🧹',
-      services: ['Deep Cleaning', 'Regular Cleaning', 'Office Cleaning'],
-      priceRange: 'NPR 1500-4000',
-    },
-    {
-      id: '5',
-      name: 'Color Master Painters',
-      category: 'Painting',
-      rating: 4.8,
-      reviews: 142,
-      location: 'Lalitpur',
-      verified: true,
-      trustScore: 94,
-      image: '🎨',
-      services: ['Interior', 'Exterior', 'Texture'],
-      priceRange: 'NPR 2000-8000',
-    },
-    {
-      id: '6',
-      name: 'Green Garden Services',
-      category: 'Gardening',
-      rating: 4.5,
-      reviews: 78,
-      location: 'Kathmandu',
-      verified: true,
-      trustScore: 88,
-      image: '🌱',
-      services: ['Maintenance', 'Landscaping', 'Plant Care'],
-      priceRange: 'NPR 1000-3000',
-    },
-  ];
+  useEffect(() => {
+    const fetchProviders = async () => {
+      try {
+        const response = await getAllVerifiedProviders();
+        const transformedProviders: Provider[] = response.data.map((provider: any) => ({
+          id: provider.id.toString(),
+          name: provider.legalName || provider.user.name,
+          category: provider.category?.name || 'Uncategorized',
+          rating: 4.8, // Placeholder - would need review system
+          reviews: 0, // Placeholder - would need review system
+          location: provider.serviceDistrict || provider.user.district || 'Unknown',
+          verified: provider.verificationStatus === 'VERIFIED',
+          trustScore: provider.trustScore || 85,
+          image: provider.profilePhotoUrl ? provider.profilePhotoUrl : '👨‍🔧', // Fallback emoji
+          services: provider.service.map((s: any) => s.title) || [],
+          priceRange: provider.price ? `NPR ${provider.price}` : 'Price on request',
+        }));
+        setProviders(transformedProviders);
+      } catch (error) {
+        console.error('Failed to fetch providers', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProviders();
+  }, []);
 
   const categories = ['All', 'Plumbing', 'Electrical', 'Carpentry', 'Cleaning', 'Painting', 'Gardening'];
   const locations = ['All', 'Kathmandu', 'Lalitpur', 'Bhaktapur'];
 
-  const filteredProviders = mockProviders.filter((provider) => {
+  const filteredProviders = providers.filter((provider) => {
     const matchesSearch = provider.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       provider.services.some(s => s.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesCategory = selectedCategory === 'all' || provider.category.toLowerCase() === selectedCategory.toLowerCase();
@@ -119,6 +68,14 @@ const ProvidersPage: React.FC = () => {
     const matchesTrustScore = provider.trustScore >= minTrustScore;
     return matchesSearch && matchesCategory && matchesLocation && matchesTrustScore;
   });
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1E90FF]"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F8F9FA]">
@@ -243,9 +200,28 @@ const ProvidersPage: React.FC = () => {
                     <div className="px-6 pb-6 -mt-12 relative">
                       {/* Image - Circle 120x120 */}
                       <div className="w-[120px] h-[120px] bg-white rounded-full p-2 mx-auto shadow-md mb-4 flex items-center justify-center border-4 border-white">
-                        <div className="w-full h-full bg-[#f8f9fa] rounded-full flex items-center justify-center text-5xl">
-                          {provider.image}
-                        </div>
+                        {provider.image.startsWith('/') ? (
+                          <img
+                            src={(() => {
+                              const backendUrl = import.meta.env.VITE_BACKEND_URL?.replace(/\/api\/?$/, '') || 'http://localhost:5009';
+                              // Remove leading slash from image to avoid double slash if needed, or join cleanly
+                              // But provider.image usually starts with / (e.g. /uploads/...)
+                              // So we want backendUrl + provider.image
+                              const imageUrl = `${backendUrl}${provider.image}`;
+                              return imageUrl;
+                            })()}
+                            onError={(e) => {
+                              console.error('Failed to load image:', provider.image);
+                              (e.target as HTMLImageElement).src = 'https://via.placeholder.com/120?text=Error';
+                            }}
+                            alt={provider.name}
+                            className="w-full h-full rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-[#f8f9fa] rounded-full flex items-center justify-center text-5xl">
+                            {provider.image}
+                          </div>
+                        )}
                       </div>
 
                       <div className="text-center">

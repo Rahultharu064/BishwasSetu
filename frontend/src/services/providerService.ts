@@ -24,3 +24,6 @@ export const getKycStatus = () =>
 
 export const getProviderById = (id: number) =>
   axiosapi.get(`/providers/${id}`);
+
+export const getAllVerifiedProviders = () =>
+  axiosapi.get("/providers");

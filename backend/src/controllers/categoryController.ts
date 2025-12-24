@@ -127,7 +127,7 @@ export const getCategoriesWithStats = async (req: Request, res: Response) => {
     try {
         const categories = await prismaClient.category.findMany({
             include: {
-                services: {
+                service: {
                     where: {
                         provider: {
                             verificationStatus: "VERIFIED"
@@ -143,7 +143,7 @@ export const getCategoriesWithStats = async (req: Request, res: Response) => {
 
         const categoriesWithStats = categories.map(category => {
             const uniqueProviders = new Set(
-                category.services.map(service => service.providerId)
+                category.service.map(service => service.providerId)
             );
 
             return {
@@ -151,7 +151,7 @@ export const getCategoriesWithStats = async (req: Request, res: Response) => {
                 name: category.name,
                 icon: category.icon,
                 description: category.description,
-                serviceCount: category.services.length,
+                serviceCount: category.service.length,
                 providerCount: uniqueProviders.size,
                 // Placeholder for average rating - can be calculated from reviews later
                 rating: 4.7
@@ -164,4 +164,3 @@ export const getCategoriesWithStats = async (req: Request, res: Response) => {
         return res.status(500).json({ message: "Internal server error fetching categories" });
     }
 }
-

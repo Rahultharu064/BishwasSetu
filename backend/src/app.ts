@@ -2,6 +2,11 @@ import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import type { Request, Response, NextFunction } from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 import categoryRoutes from "./routes/categoryRoute.ts";
 import authRoutes from "./routes/authRoute.ts"
 import providerRoutes from "./routes/providerRoute.ts"
@@ -12,8 +17,10 @@ dotenv.config();
 
 const app = express();
 
-app.use(express.json())
-app.use(express.urlencoded({ extended: false }));
+// Serve static files from the uploads directory
+const uploadsPath = path.join(process.cwd(), 'uploads');
+console.log('Serving static files from:', uploadsPath);
+app.use('/uploads', express.static(uploadsPath));
 
 const allowedOrigin = [
   process.env.FRONTEND_URL

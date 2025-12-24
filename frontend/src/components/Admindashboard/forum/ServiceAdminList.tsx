@@ -133,7 +133,7 @@ const ServiceAdminList = () => {
                                     </td>
                                     <td className="px-6 py-4 text-center">
                                         <div className="text-sm font-bold text-gray-900">
-                                            Rs. {service.price || 'N/A'}
+                                            Rs. {service.provider?.price || 'N/A'}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">

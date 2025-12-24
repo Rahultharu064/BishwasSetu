@@ -506,3 +506,42 @@ export const getMyProviderProfile = async (req: Request, res: Response) => {
         res.status(500).json({ message: "Internal server error" });
     }
 };
+
+// Get all verified providers (public endpoint)
+export const getAllVerifiedProviders = async (req: Request, res: Response) => {
+    try {
+        const providers = await prismaClient.provider.findMany({
+            where: {
+                verificationStatus: "VERIFIED"
+            },
+            include: {
+                user: {
+                    select: {
+                        name: true,
+                        email: true,
+                        phone: true,
+                        address: true,
+                        district: true,
+                        municipality: true
+                    }
+                },
+                category: {
+                    select: {
+                        name: true
+                    }
+                },
+                service: {
+                    select: {
+                        title: true
+                    }
+                }
+            },
+            orderBy: { createdAt: "desc" }
+        });
+
+        res.json(providers);
+    } catch (error) {
+        console.error("Get all verified providers error:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
