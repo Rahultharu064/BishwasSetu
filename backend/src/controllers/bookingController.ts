@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import prismaClient from "../config/db.ts";
+import { emitBookingStatusUpdate, emitNewBooking, emitBookingCancelled } from "../config/socketHandlers.ts";
 
 // Create a new booking
 export const createBooking = async (req: Request, res: Response) => {
@@ -75,6 +76,9 @@ export const createBooking = async (req: Request, res: Response) => {
         },
       },
     });
+
+    // Emit WebSocket event for new booking
+    emitNewBooking(providerId, booking);
 
     res.status(201).json({
       message: "Booking created successfully",
@@ -328,6 +332,13 @@ export const updateBookingStatus = async (req: Request, res: Response) => {
         },
       },
     });
+
+    // Emit WebSocket event for status update
+    if (status === 'CANCELLED') {
+      emitBookingCancelled(updatedBooking.customerId, updatedBooking.providerId, updatedBooking);
+    } else {
+      emitBookingStatusUpdate(updatedBooking.customerId, updatedBooking.providerId, updatedBooking);
+    }
 
     res.json({
       message: "Booking status updated successfully",
