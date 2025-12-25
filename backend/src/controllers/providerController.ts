@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import prismaClient from "../config/db.ts";
 
+
 // Become a Provider (First-time registration)
 export const becomeProvider = async (req: Request, res: Response) => {
     try {
@@ -73,9 +74,9 @@ export const becomeProvider = async (req: Request, res: Response) => {
         }
 
         // Transaction to create provider and update user
-        const provider = await prismaClient.$transaction(async (prisma) => {
+        const provider = await prismaClient.$transaction(async () => {
             // Create provider
-            const newProvider = await prisma.provider.create({
+            const newProvider = await prismaClient.provider.create({
                 data: {
                     userId: req.user!.id,
                     categoryId: categoryId || null,
@@ -113,7 +114,7 @@ export const becomeProvider = async (req: Request, res: Response) => {
 
             // Create KYC Documents
             if (files?.govtIdFront?.[0]) {
-                await prisma.kycdocument.create({
+                await prismaClient.kycdocument.create({
                     data: {
                         providerId: newProvider.id,
                         type: "GOVERNMENT_ID",
@@ -124,7 +125,7 @@ export const becomeProvider = async (req: Request, res: Response) => {
             }
 
             if (files?.govtIdBack?.[0]) {
-                await prisma.kycdocument.create({
+                await prismaClient.kycdocument.create({
                     data: {
                         providerId: newProvider.id,
                         type: "GOVERNMENT_ID",
@@ -135,7 +136,7 @@ export const becomeProvider = async (req: Request, res: Response) => {
             }
 
             // Update user role and information
-            await prisma.user.update({
+            await prismaClient.user.update({
                 where: { id: req.user!.id },
                 data: {
                     role: "PROVIDER",
@@ -209,7 +210,7 @@ export const completeProviderProfile = async (req: Request, res: Response) => {
             });
         }
 
-        const provider = await prismaClient.$transaction(async (prisma) => {
+        const provider = await prismaClient.$transaction(async () => {
             // Prepare provider update data
             const providerUpdateData: any = {};
             const userUpdateData: any = {};
@@ -268,14 +269,14 @@ export const completeProviderProfile = async (req: Request, res: Response) => {
             if (gender !== undefined) userUpdateData.gender = gender;
 
             // Update provider
-            const updatedProvider = await prisma.provider.update({
+            const updatedProvider = await prismaClient.provider.update({
                 where: { userId: req.user!.id },
                 data: providerUpdateData
             });
 
             // Handle KYC Documents (only if new files uploaded)
             if (files?.govtIdFront?.[0]) {
-                await prisma.kycdocument.create({
+                await prismaClient.kycdocument.create({
                     data: {
                         providerId: updatedProvider.id,
                         type: "GOVERNMENT_ID",
@@ -286,7 +287,7 @@ export const completeProviderProfile = async (req: Request, res: Response) => {
             }
 
             if (files?.govtIdBack?.[0]) {
-                await prisma.kycdocument.create({
+                await prismaClient.kycdocument.create({
                     data: {
                         providerId: updatedProvider.id,
                         type: "GOVERNMENT_ID",
@@ -298,7 +299,7 @@ export const completeProviderProfile = async (req: Request, res: Response) => {
 
             // Update user if there are changes
             if (Object.keys(userUpdateData).length > 0) {
-                await prisma.user.update({
+                await prismaClient.user.update({
                     where: { id: req.user!.id },
                     data: userUpdateData
                 });
@@ -543,5 +544,34 @@ export const getAllVerifiedProviders = async (req: Request, res: Response) => {
     } catch (error) {
         console.error("Get all verified providers error:", error);
         res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+
+/// search providers based on district
+export const searchProviders = async (req: Request, res: Response) => {
+    try {
+        const { district } = req.query;
+
+        const providers = await prismaClient.provider.findMany({
+            where: district ? {
+                user: {
+                    district: district as string
+                }
+            } : {},
+            include: {
+                user: true
+            }
+        });
+
+        res.status(200).json({
+            success: true,
+            data: providers
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch providers"
+        });
     }
 };

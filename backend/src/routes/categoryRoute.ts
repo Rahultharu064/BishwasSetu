@@ -10,7 +10,7 @@ import {
 import {
   createCategorySchema,
   updateCategorySchema
-} from "../validators/categoryValidaor.ts";
+} from "../validators/categoryValidator.ts";
 import { validationMiddleware } from "../middlewares/validateMiddleware.ts";
 
 const categoryRoutes = express.Router();

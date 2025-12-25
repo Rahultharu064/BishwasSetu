@@ -1,0 +1,82 @@
+﻿node.exe : 
+At line:1 char:1
++ & "C:\Program Files
+\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo 
+...
++ ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: (:String   
+ ) [], RemoteExce    
+ption
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 
+node:internal/modules
+/run_main:123
+    triggerUncaughtEx
+ception(
+    ^
+Error 
+[TransformError]: 
+Transform failed 
+with 1 error:
+C:\Users\Dell\Desktop
+\BishwasSetu\backend\
+src\controllers\categ
+oryController.ts:35:0
+: ERROR: Unexpected 
+"export"
+    at 
+failureErrorWithLog (
+C:\Users\Dell\Desktop
+\BishwasSetu\backend\
+node_modules\esbuild\
+lib\main.js:1467:15)
+    at C:\Users\Dell\
+Desktop\BishwasSetu\b
+ackend\node_modules\e
+sbuild\lib\main.js:73
+6:50
+    at responseCallba
+cks.<computed> (C:\Us
+ers\Dell\Desktop\Bish
+wasSetu\backend\node_
+modules\esbuild\lib\m
+ain.js:603:9)
+    at 
+handleIncomingPacket 
+(C:\Users\Dell\Deskto
+p\BishwasSetu\backend
+\node_modules\esbuild
+\lib\main.js:658:12)
+    at Socket.readFro
+mStdout (C:\Users\Del
+l\Desktop\BishwasSetu
+\backend\node_modules
+\esbuild\lib\main.js:
+581:7)
+    at Socket.emit 
+(node:events:519:28)
+    at addChunk (node
+:internal/streams/rea
+dable:561:12)
+    at readableAddChu
+nkPushByteMode (node:
+internal/streams/read
+able:512:3)
+    at Readable.push 
+(node:internal/stream
+s/readable:392:5)
+    at 
+Pipe.onStreamRead (no
+de:internal/stream_ba
+se_commons:189:23)
+
+Node.js v22.19.0

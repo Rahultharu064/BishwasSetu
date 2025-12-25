@@ -32,9 +32,10 @@ import Complaints from "../components/Admindashboard/layouts/Complaints";
 
 // Customer Dashboard Pages
 import CustomerDashboardPage from "../pages/CustomerDashboard/CustomerDashboardPage";
-import FindServices from "../components/CustomerDashboard/layouts/FindServices";
+// import FindServices from "../components/CustomerDashboard/layouts/FindServices";
 import MyBookings from "../components/CustomerDashboard/layouts/MyBookings";
 import MyComplaints from "../components/CustomerDashboard/layouts/MyComplaints";
+import { CustomerDashboard } from "../components";
 
 const routes = [
     // Public Routes
@@ -111,8 +112,8 @@ const routes = [
         path: "/customer",
         element: <CustomerDashboardPage />,
         children: [
-            { path: "dashboard", element: <CustomerDashboardPage /> },
-            { path: "services", element: <FindServices /> },
+            { path: "dashboard", element: <CustomerDashboard /> },
+            { path: "services", element: <ServicesPage />},
             { path: "bookings", element: <MyBookings /> },
             { path: "complaints", element: <MyComplaints /> },
         ]

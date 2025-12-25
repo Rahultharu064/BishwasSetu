@@ -13,7 +13,7 @@ import {
 const CustomerSidebar: React.FC = () => {
   const menuItems = [
     { icon: Home, label: 'Dashboard', path: '/customer/dashboard' },
-    { icon: MapPin, label: 'Find Services', path: '/customer/services' },
+    { icon: MapPin, label: 'Find Services', path: '/services' },
     { icon: Calendar, label: 'My Bookings', path: '/customer/bookings' },
     { icon: Star, label: 'My Reviews', path: '/customer/reviews' },
     { icon: MessageSquare, label: 'Complaints', path: '/customer/complaints' },

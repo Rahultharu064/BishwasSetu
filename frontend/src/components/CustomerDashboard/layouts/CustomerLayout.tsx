@@ -3,6 +3,9 @@ import { Outlet } from 'react-router-dom';
 import CustomerHeader from '../sections/CustomerHeader';
 import CustomerSidebar from '../sections/CustomerSidebar';
 
+
+
+
 const CustomerLayout: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">

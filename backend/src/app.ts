@@ -11,6 +11,7 @@ import categoryRoutes from "./routes/categoryRoute.ts";
 import authRoutes from "./routes/authRoute.ts"
 import providerRoutes from "./routes/providerRoute.ts"
 import serviceRoutes from "./routes/serviceRoute.ts"
+import bookingRoutes from "./routes/bookingRoute.ts"
 import adminRoutes from "./routes/adminRoute.ts"
 
 dotenv.config();
@@ -53,6 +54,7 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/auth", authRoutes)
 app.use("/api/providers", providerRoutes)
 app.use("/api/services", serviceRoutes)
+app.use("/api/bookings", bookingRoutes)
 app.use("/api/admin", adminRoutes)
 
 

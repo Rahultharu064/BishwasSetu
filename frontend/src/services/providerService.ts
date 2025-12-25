@@ -27,3 +27,6 @@ export const getProviderById = (id: number) =>
 
 export const getAllVerifiedProviders = () =>
   axiosapi.get("/providers");
+
+export const searchProviders = (district: string) =>
+  axiosapi.get(`/providers/search?district=${district}`);

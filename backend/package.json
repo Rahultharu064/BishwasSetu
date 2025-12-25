@@ -16,7 +16,7 @@
     "@types/multer": "^2.0.0",
     "@types/node": "^25.0.2",
     "@types/nodemailer": "^7.0.4",
-    "prisma": "^6.0.0",
+    "prisma": "^6.19.1",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   },

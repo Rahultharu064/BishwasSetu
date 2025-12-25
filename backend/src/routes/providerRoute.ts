@@ -9,7 +9,8 @@ import {
     getKycStatus,
     getProviderById,
     getMyProviderProfile,
-    getAllVerifiedProviders
+    getAllVerifiedProviders,
+    searchProviders
 } from "../controllers/providerController.ts";
 import {providerCreateSchema, providerUpdateSchema ,kycUploadSchema} from "../validators/providervalidator.ts";
 import { providerOnboardingUpload ,uploadSingle} from "../middlewares/multerMiddleware.ts"; // Import the new upload config
@@ -60,5 +61,6 @@ router.post(
 );
 
 router.get("/kyc/status", authMiddleware, authorize(["PROVIDER"]), getKycStatus);
+router.get("/search", authMiddleware, authorize(["PROVIDER"]), searchProviders);
 
 export default router;

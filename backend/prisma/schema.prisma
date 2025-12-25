@@ -7,14 +7,14 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model category {
+model Category {
   id          String    @id
   name        String    @unique(map: "Category_name_key")
   icon        String?   @db.VarChar(500)
   description String?   @db.Text
   createdAt   DateTime  @default(now())
   updatedAt   DateTime
-  service     service[]
+  service     Service[]
   provider    provider[]
 }
 
@@ -57,13 +57,14 @@ model provider {
   trustScore            Float                       @default(0)
   createdAt             DateTime                    @default(now())
   updatedAt             DateTime
-  category              category?                   @relation(fields: [categoryId], references: [id], onDelete: SetNull, map: "Provider_categoryId_fkey")
+  category              Category?                   @relation(fields: [categoryId], references: [id], onDelete: SetNull, map: "Provider_categoryId_fkey")
   kycDocuments          kycdocument[]
   user                  user                        @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Provider_userId_fkey")
-  service               service[]
+  service               Service[]
+  bookings              Booking[]
 }
 
-model service {
+model Service {
   id          Int      @id @default(autoincrement())
   providerId  Int
   categoryId  String
@@ -72,11 +73,31 @@ model service {
   description String   @db.Text
   createdAt   DateTime @default(now())
   updatedAt   DateTime
-  category    category @relation(fields: [categoryId], references: [id], onDelete: Cascade, map: "Service_categoryId_fkey")
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade, map: "Service_categoryId_fkey")
   provider    provider @relation(fields: [providerId], references: [id], onDelete: Cascade, map: "Service_providerId_fkey")
+  bookings    Booking[]
 
   @@index([categoryId], map: "Service_categoryId_fkey")
   @@index([providerId], map: "Service_providerId_fkey")
+}
+
+model Booking {
+  id         Int              @id @default(autoincrement())
+  customerId Int
+  providerId Int
+  serviceId  Int
+  bookingDate DateTime
+  status     booking_status   @default(PENDING)
+  notes      String?          @db.Text
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime
+  customer   user             @relation("CustomerBookings", fields: [customerId], references: [id], onDelete: Cascade, map: "Booking_customerId_fkey")
+  provider   provider         @relation(fields: [providerId], references: [id], onDelete: Cascade, map: "Booking_providerId_fkey")
+  service    Service          @relation(fields: [serviceId], references: [id], onDelete: Cascade, map: "Booking_serviceId_fkey")
+
+  @@index([customerId], map: "Booking_customerId_fkey")
+  @@index([providerId], map: "Booking_providerId_fkey")
+  @@index([serviceId], map: "Booking_serviceId_fkey")
 }
 
 model user {
@@ -97,6 +118,7 @@ model user {
   otpExpiry    DateTime?
   createdAt    DateTime  @default(now())
   provider     provider?
+  customerBookings Booking[] @relation("CustomerBookings")
 }
 
 enum kycdocument_type {
@@ -129,4 +151,12 @@ enum provider_verificationStatus {
   UNDER_REVIEW
   VERIFIED
   REJECTED
+}
+
+enum booking_status {
+  PENDING
+  ACCEPTED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
 }

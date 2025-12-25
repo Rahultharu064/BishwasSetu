@@ -37,7 +37,7 @@ export const createService = async (req: Request, res: Response) => {
       if (req.user.role === "ADMIN") {
         if (!provider) {
           // Get first category as default
-          const defaultCategory = await prismaClient.category.findFirst();
+          const defaultCategory = await prismaClient.Category.findFirst();
           if (!defaultCategory) {
             console.log("CreateService: [ADMIN] No default category found");
             return res.status(500).json({ message: "No categories available" });
@@ -75,7 +75,7 @@ export const createService = async (req: Request, res: Response) => {
     }
 
     // Check if category exists
-    const category = await prismaClient.category.findUnique({
+    const category = await prismaClient.Category.findUnique({
       where: { id: categoryId },
     });
 
@@ -83,7 +83,7 @@ export const createService = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Category not found" });
     }
 
-    const service = await prismaClient.service.create({
+    const service = await prismaClient.Service.create({
       data: {
         providerId: provider.id,
         categoryId,
@@ -121,7 +121,7 @@ export const getServicesByProvider = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Provider not found" });
     }
 
-    const services = await prismaClient.service.findMany({
+    const services = await prismaClient.Service.findMany({
       where: { providerId: provider.id },
       include: {
         category: true,
@@ -156,7 +156,7 @@ export const updateService = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Provider not found" });
     }
 
-    const service = await prismaClient.service.findUnique({
+    const service = await prismaClient.Service.findUnique({
       where: { id: parseInt(id) },
     });
 
@@ -168,7 +168,7 @@ export const updateService = async (req: Request, res: Response) => {
       return res.status(403).json({ message: "Unauthorized to update this service" });
     }
 
-    const updatedService = await prismaClient.service.update({
+    const updatedService = await prismaClient.Service.update({
       where: { id: parseInt(id) },
       data: updateData,
       include: {
@@ -198,7 +198,7 @@ export const deleteService = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Service ID is required" });
     }
 
-    const service = await prismaClient.service.findUnique({
+    const service = await prismaClient.Service.findUnique({
       where: { id: parseInt(id) },
     });
 
@@ -217,7 +217,7 @@ export const deleteService = async (req: Request, res: Response) => {
       }
     }
 
-    await prismaClient.service.delete({
+    await prismaClient.Service.delete({
       where: { id: parseInt(id) },
     });
 
@@ -236,7 +236,7 @@ export const getServicesByCategory = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Category ID is required" });
     }
 
-    const services = await prismaClient.service.findMany({
+    const services = await prismaClient.Service.findMany({
       where: { categoryId },
       include: {
         category: true,
@@ -379,7 +379,7 @@ export const getServiceStats = async (req: Request, res: Response) => {
     });
 
     // Grouping by title to match frontend "Service Type" view
-    const grouped = services.reduce((acc: any, service) => {
+    const grouped = services.reduce((acc: any, service: any) => {
       const title = service.title;
       if (!acc[title]) {
         acc[title] = {
