@@ -10,7 +10,7 @@ export const createCategory = async (
   try {
     const { name, icon, description } = req.body;
 
-    const existing = await prismaClient.Category.findUnique({
+    const existing = await prismaClient.category.findUnique({
       where: { name },
     });
 
@@ -18,8 +18,12 @@ export const createCategory = async (
       return res.status(400).json({ message: "Category already exists" });
     }
 
-    const category = await prismaClient.Category.create({
-      data: { name, icon, description },
+    const category = await prismaClient.category.create({
+data: {
+    name,
+    icon: icon ?? null,
+    description: description ?? null,
+  }
     });
 
     return res.status(201).json({
@@ -38,7 +42,7 @@ export const getCategory = async (
   res: Response<any[] | { message: string }>
 ) => {
   try {
-    const categories: any[] = await prismaClient.Category.findMany({
+    const categories: any[] = await prismaClient.category.findMany({
       orderBy: { createdAt: "desc" },
     });
     return res.json(categories);
@@ -56,7 +60,7 @@ export const searchCategory = async (
   try {
     const searchQuery: string = req.query.query ?? "";
 
-    const categories: any[] = await prismaClient.Category.findMany({
+    const categories: any[] = await prismaClient.category.findMany({
       where: {
         name: {
           contains: searchQuery,
@@ -92,12 +96,12 @@ export const updateCategory = async (
       return res.status(400).json({ message: "Category ID is required" });
     }
 
-    const existing = await prismaClient.Category.findUnique({ where: { id } });
+    const existing = await prismaClient.category.findUnique({ where: { id } });
     if (!existing) {
       return res.status(404).json({ message: "Category not found" });
     }
 
-    const category = await prismaClient.Category.update({
+    const category = await prismaClient.category.update({
       where: { id },
       data: req.body,
     });
@@ -121,12 +125,12 @@ export const deleteCategory = async (
       return res.status(400).json({ message: "Category ID is required" });
     }
 
-    const existing = await prismaClient.Category.findUnique({ where: { id } });
+    const existing = await prismaClient.category.findUnique({ where: { id } });
     if (!existing) {
       return res.status(404).json({ message: "Category not found" });
     }
 
-    await prismaClient.Category.delete({ where: { id } });
+    await prismaClient.category.delete({ where: { id } });
 
     return res.json({ message: "Category deleted successfully" });
   } catch (error) {
@@ -153,7 +157,7 @@ export const getCategoriesWithStats = async (
 ) => {
   try {
     const categories: (any & { service: any[] })[] =
-      await prismaClient.Category.findMany({
+      await prismaClient.category.findMany({
         include: {
           service: {
             where: { provider: { verificationStatus: "VERIFIED" } },

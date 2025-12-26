@@ -28,6 +28,7 @@ const Button: React.FC<ButtonProps> = ({
     outline: 'border-2 border-[#1E90FF] text-[#1E90FF] hover:bg-[#1E90FF] hover:text-white',
     secondary: 'bg-[#FFD700] text-[#212529] hover:bg-[#E6C200] hover:scale-105',
     white: 'bg-white text-[#1E90FF] hover:bg-[#F8F9FA] hover:scale-105',
+    ghost: "bg-transparent text-blue-600 hover:bg-blue-50"
   };
 
   const sizeClasses = {

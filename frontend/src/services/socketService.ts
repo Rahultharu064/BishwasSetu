@@ -8,7 +8,7 @@ class SocketService {
         this.serverUrl = import.meta.env.VITE_API_URL || 'http://localhost:5009';
     }
 
-    connect(token: string): Socket {
+    connect(token: string = ''): Socket {
         if (this.socket?.connected) {
             return this.socket;
         }

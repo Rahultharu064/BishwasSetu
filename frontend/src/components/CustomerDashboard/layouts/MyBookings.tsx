@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, MapPin, Star, MessageSquare, Loader2 } from 'lucide-react';
+import { Calendar, MessageSquare, Loader2 } from 'lucide-react';
 import Button from '../../ui/Button';
+import { useSelector } from 'react-redux';
+import type { RootState } from '../../../Redux/store';
 import { getCustomerBookings, updateBookingStatus } from '../../../services/bookingService';
 import type { Booking } from '../../../types/bookingTypes';
-import { useSocket } from '../../../contexts/SocketContext';
+import socketService from '../../../services/socketService';
 import toast from 'react-hot-toast';
 
 const MyBookings: React.FC = () => {
@@ -12,14 +14,14 @@ const MyBookings: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState('all');
   const [updatingBooking, setUpdatingBooking] = useState<number | null>(null);
-  const { socket } = useSocket();
+  const isConnected = useSelector((state: RootState) => state.socket.isConnected);
 
   useEffect(() => {
     fetchBookings();
   }, []);
 
   useEffect(() => {
-    if (!socket) return;
+    if (!isConnected) return;
 
     const handleStatusUpdate = (data: { booking: Booking; message: string }) => {
       console.log('Received booking status update:', data);
@@ -42,14 +44,14 @@ const MyBookings: React.FC = () => {
       });
     };
 
-    socket.on('booking:statusUpdate', handleStatusUpdate);
-    socket.on('booking:cancelled', handleBookingCancelled);
+    socketService.on('booking:statusUpdate', handleStatusUpdate);
+    socketService.on('booking:cancelled', handleBookingCancelled);
 
     return () => {
-      socket.off('booking:statusUpdate', handleStatusUpdate);
-      socket.off('booking:cancelled', handleBookingCancelled);
+      socketService.off('booking:statusUpdate', handleStatusUpdate);
+      socketService.off('booking:cancelled', handleBookingCancelled);
     };
-  }, [socket]);
+  }, [isConnected]);
 
   const fetchBookings = async () => {
     try {
@@ -134,10 +136,10 @@ const MyBookings: React.FC = () => {
                 <button
                   key={status}
                   onClick={() => setFilterStatus(status)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filterStatus === status
+                  className={`px - 4 py - 2 rounded - lg text - sm font - medium transition - colors ${filterStatus === status
                     ? 'bg-blue-600 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
+                    } `}
                 >
                   {status === 'all' ? 'All Bookings' : status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                 </button>
@@ -178,7 +180,7 @@ const MyBookings: React.FC = () => {
 
                   <div className="flex flex-col lg:items-end space-y-2">
                     <div className="text-right">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(booking.status)}`}>
+                      <span className={`inline - flex px - 2 py - 1 text - xs font - semibold rounded - full ${getStatusColor(booking.status)} `}>
                         {booking.status.replace('_', ' ')}
                       </span>
                     </div>

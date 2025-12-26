@@ -8,14 +8,15 @@ datasource db {
 }
 
 model Category {
-  id          String    @id
-  name        String    @unique(map: "Category_name_key")
-  icon        String?   @db.VarChar(500)
-  description String?   @db.Text
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime
-  service     Service[]
-  provider    provider[]
+  id          String   @id @default(uuid())
+  name        String   @unique
+  icon        String?
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  providers provider[] // ✅ ADD THIS LINE
+  service   Service[]
 }
 
 model kycdocument {
@@ -65,16 +66,16 @@ model provider {
 }
 
 model Service {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   providerId  Int
   categoryId  String
   title       String
-  icon        String?  @db.VarChar(50)
-  description String   @db.Text
-  createdAt   DateTime @default(now())
+  icon        String?   @db.VarChar(50)
+  description String    @db.Text
+  createdAt   DateTime  @default(now())
   updatedAt   DateTime
-  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade, map: "Service_categoryId_fkey")
-  provider    provider @relation(fields: [providerId], references: [id], onDelete: Cascade, map: "Service_providerId_fkey")
+  category    Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade, map: "Service_categoryId_fkey")
+  provider    provider  @relation(fields: [providerId], references: [id], onDelete: Cascade, map: "Service_providerId_fkey")
   bookings    Booking[]
 
   @@index([categoryId], map: "Service_categoryId_fkey")
@@ -82,18 +83,18 @@ model Service {
 }
 
 model Booking {
-  id         Int              @id @default(autoincrement())
-  customerId Int
-  providerId Int
-  serviceId  Int
+  id          Int            @id @default(autoincrement())
+  customerId  Int
+  providerId  Int
+  serviceId   Int
   bookingDate DateTime
-  status     booking_status   @default(PENDING)
-  notes      String?          @db.Text
-  createdAt  DateTime         @default(now())
-  updatedAt  DateTime
-  customer   user             @relation("CustomerBookings", fields: [customerId], references: [id], onDelete: Cascade, map: "Booking_customerId_fkey")
-  provider   provider         @relation(fields: [providerId], references: [id], onDelete: Cascade, map: "Booking_providerId_fkey")
-  service    Service          @relation(fields: [serviceId], references: [id], onDelete: Cascade, map: "Booking_serviceId_fkey")
+  status      booking_status @default(PENDING)
+  notes       String?        @db.Text
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime
+  customer    user           @relation("CustomerBookings", fields: [customerId], references: [id], onDelete: Cascade, map: "Booking_customerId_fkey")
+  provider    provider       @relation(fields: [providerId], references: [id], onDelete: Cascade, map: "Booking_providerId_fkey")
+  service     Service        @relation(fields: [serviceId], references: [id], onDelete: Cascade, map: "Booking_serviceId_fkey")
 
   @@index([customerId], map: "Booking_customerId_fkey")
   @@index([providerId], map: "Booking_providerId_fkey")
@@ -101,24 +102,24 @@ model Booking {
 }
 
 model user {
-  id           Int       @id @default(autoincrement())
-  email        String    @unique(map: "User_email_key")
-  name         String?
-  address      String?
-  district     String?
-  municipality String?
-  gender       String?
-  phone        String?
-  password     String
-  role         user_role
-  status       user_status @default(ACTIVE)
-  isVerified   Boolean   @default(false)
-  lastLogin    DateTime?
-  otp          String?
-  otpExpiry    DateTime?
-  createdAt    DateTime  @default(now())
-  provider     provider?
-  customerBookings Booking[] @relation("CustomerBookings")
+  id               Int         @id @default(autoincrement())
+  email            String      @unique(map: "User_email_key")
+  name             String?
+  address          String?
+  district         String?
+  municipality     String?
+  gender           String?
+  phone            String?
+  password         String
+  role             user_role
+  status           user_status @default(ACTIVE)
+  isVerified       Boolean     @default(false)
+  lastLogin        DateTime?
+  otp              String?
+  otpExpiry        DateTime?
+  createdAt        DateTime    @default(now())
+  provider         provider?
+  customerBookings Booking[]   @relation("CustomerBookings")
 }
 
 enum kycdocument_type {

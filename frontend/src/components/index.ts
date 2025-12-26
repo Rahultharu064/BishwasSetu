@@ -56,3 +56,6 @@ export { default as CategoryUpdate } from './Admindashboard/forum/CategoryUpdate
 
 // Error Boundary
 export { default as ErrorBoundary } from './ErrorBoundary';
+
+// Global Managers
+export { default as SocketManager } from './common/SocketManager';
