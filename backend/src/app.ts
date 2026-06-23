@@ -13,6 +13,7 @@ import providerRoutes from "./routes/providerRoute.ts"
 import serviceRoutes from "./routes/serviceRoute.ts"
 import bookingRoutes from "./routes/bookingRoute.ts"
 import adminRoutes from "./routes/adminRoute.ts"
+import reviewRoutes from "./routes/reviewRoute.ts"
 
 dotenv.config();
 
@@ -56,6 +57,7 @@ app.use("/api/providers", providerRoutes)
 app.use("/api/services", serviceRoutes)
 app.use("/api/bookings", bookingRoutes)
 app.use("/api/admin", adminRoutes)
+app.use("/api/reviews", reviewRoutes)
 
 
 // Global error handler

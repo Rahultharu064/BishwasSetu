@@ -292,7 +292,7 @@ const ProvidersPage: React.FC = () => {
                           <Button
                             variant="primary"
                             size="sm"
-                            onClick={() => navigate(`/booking/${provider.id}`)}
+                            onClick={() => navigate(`/book/${provider.id}`)}
                             className="flex-1 text-sm shadow-md hover:shadow-lg"
                           >
                             Book Now

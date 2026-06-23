@@ -166,9 +166,7 @@ const Footer: React.FC = () => {
           <p className="text-[#6C757D] text-sm">
             © {currentYear} BishwasSetu. All rights reserved.
           </p>
-          <p className="text-[#6C757D] text-sm">
-            Made with ❤️ in Nepal
-          </p>
+         
         </div>
       </div>
     </footer>

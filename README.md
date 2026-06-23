@@ -20,21 +20,17 @@ BishwasSetu is a modern, trust-based home services marketplace designed to bridg
 - **Trust Badges**: Verified providers receive distinct badges on their profiles.
 
 ### 📊 Trust Score Engine (Planned)
-- **Dynamic Rating**: A unique scoring algorithm that calculates a provider's reliability based on:
-  - Customer reviews and ratings.
-  - Job completion timeliness.
-  - Verification status.
-  - Community "vouches" and conflict resolution history.
+- **Dynamic Rating**: A unique scoring algorithm that calculates a provider's reliability based on reviews, timeliness, and community verification. Database support has been migrated.
 
 ### 📂 Service Marketplace
 - **Categorized Discovery**: Services are organized into intuitive categories (e.g., Cleaning, Plumbing, Electrical).
 - **Detailed Listings**: Each service includes descriptions, estimated pricing, and provider expertise.
-- **Advanced Search**: Filter providers by category, location, trust score, and verification status.
+- **Advanced Search**: Filter providers by category, location, and verification status.
 
-### 📅 Booking & Job Management (Planned)
-- **Seamless Booking**: Customers can schedule services directly through the platform.
-- **Real-time Status tracking**: Track jobs from "Requested" to "Completed".
-- **History**: Maintain a record of all past services and interactions.
+### 📅 Booking & Job Management
+- **Seamless Booking**: Customers can schedule services directly through the platform (Implemented).
+- **Real-time Status Tracking**: Track jobs from "Pending" to "Accepted", "Cancelled", or "Completed" (Implemented).
+- **WebSockets Communication**: Immediate booking event alerts (Implemented).
 
 ---
 
@@ -52,7 +48,7 @@ BishwasSetu is a modern, trust-based home services marketplace designed to bridg
 - **Database**: MySQL
 - **ORM**: Prisma
 - **Validation**: Joi & Zod
-- **Auth**: JWT (JSON Web Tokens)
+- **Auth**: JWT (JSON Web Tokens) with Email OTP Verification
 
 ---
 
@@ -89,11 +85,14 @@ BishwasSetu is a modern, trust-based home services marketplace designed to bridg
 ---
 
 ## 🛣️ Roadmap
-- [ ] **OTP Integration**: Phone-based authentication for enhanced security.
-- [ ] **Trust Score Algorithm**: Finalizing the variables for the dynamic scoring system.
-- [ ] **Review System**: Implementing the media-rich review and rating module.
-- [ ] **Payment Gateway**: Integration for secure service payments.
-- [ ] **Mobile App**: Developing a companion app for providers and customers on the go.
+- [x] **Email OTP Integration**: User registration verification via email OTP.
+- [ ] **Phone OTP Integration**: SMS-based (Sparrow SMS) verification.
+- [ ] **Review & Rating System**: Submitting reviews, replies, and ratings.
+- [ ] **Trust Score Engine**: Dynamic rating computations and events tracking.
+- [ ] **AI Assistant & matching**: RAG-based search and chat assistant.
+- [ ] **Payment Gateway**: Khalti & eSewa credit wallet integration.
+- [ ] **Mobile App**: Developing a companion app for providers and customers.
+
 
 ---
 

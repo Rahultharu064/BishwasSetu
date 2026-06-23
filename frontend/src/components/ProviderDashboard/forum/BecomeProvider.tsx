@@ -390,11 +390,8 @@ export default function BecomeProvider() {
                                             <Input name="skills" value={formData.skills} onChange={handleChange} placeholder="e.g. Plumbing, Leak Repair, Pipe Installation" />
                                         </div>
                                         <div className="md:col-span-2">
-                                            <label className="text-sm font-semibold text-gray-600 mb-2 block flex justify-between">
+                                            <label className="text-sm font-semibold text-gray-600 mb-2 block">
                                                 Service Description
-                                                <span className={`text-xs ${formData.bio.length < 150 ? "text-red-500" : "text-green-500"}`}>
-                                                    {formData.bio.length}/150
-                                                </span>
                                             </label>
                                             <Textarea
                                                 name="bio"
@@ -589,8 +586,7 @@ export default function BecomeProvider() {
                                 </Button>
                                 <Button
                                     onClick={nextStep}
-                                    disabled={formData.bio.length < 150}
-                                    className="px-10 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-200 disabled:opacity-50"
+                                    className="px-10 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-200"
                                 >
                                     Save & Continue <ChevronRight size={18} className="ml-2" />
                                 </Button>

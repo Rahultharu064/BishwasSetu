@@ -9,6 +9,7 @@ import Homepage from "../pages/PublicUser/Homepage";
 import ProvidersPage from "../pages/PublicUser/ProvidersPage";
 import ServicesPage from "../pages/PublicUser/ServicesPage";
 import ProfilePage from "../pages/PublicUser/ProfilePage";
+import BookingDetailPage from "../pages/PublicUser/BookingDetailPage";
 import Register from "../components/auth/Register";
 import Login from "../components/auth/Login";
 import VerifyOtp from "../components/auth/VerifyOtp";
@@ -66,6 +67,14 @@ const routes = [
     {
         path: "/profile",
         element: <ProfilePage />
+    },
+    {
+        path: "/booking/:id",
+        element: <BookingDetailPage />
+    },
+    {
+        path: "/book/:providerId",
+        element: <BookingDetailPage />
     },
     {
         path: "/become-provider",

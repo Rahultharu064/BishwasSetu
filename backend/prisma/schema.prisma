@@ -63,6 +63,14 @@ model provider {
   user                  user                        @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Provider_userId_fkey")
   service               Service[]
   bookings              Booking[]
+  trustScoreEvents      TrustScoreEvent[]
+  kycAiDecisions        KycAiDecision[]
+  creditPurchases       CreditPurchase[]
+  creditWallet          CreditWallet?
+  creditDeductions      CreditDeduction[]
+  badges                ProviderBadge[]
+  reviews               Review[]
+  complaints            Complaint[]
 }
 
 model Service {
@@ -92,9 +100,12 @@ model Booking {
   notes       String?        @db.Text
   createdAt   DateTime       @default(now())
   updatedAt   DateTime
-  customer    user           @relation("CustomerBookings", fields: [customerId], references: [id], onDelete: Cascade, map: "Booking_customerId_fkey")
-  provider    provider       @relation(fields: [providerId], references: [id], onDelete: Cascade, map: "Booking_providerId_fkey")
-  service     Service        @relation(fields: [serviceId], references: [id], onDelete: Cascade, map: "Booking_serviceId_fkey")
+  customer          user              @relation("CustomerBookings", fields: [customerId], references: [id], onDelete: Cascade, map: "Booking_customerId_fkey")
+  provider          provider          @relation(fields: [providerId], references: [id], onDelete: Cascade, map: "Booking_providerId_fkey")
+  service           Service           @relation(fields: [serviceId], references: [id], onDelete: Cascade, map: "Booking_serviceId_fkey")
+  creditDeductions  CreditDeduction[]
+  reviews           Review[]
+  complaints        Complaint[]
 
   @@index([customerId], map: "Booking_customerId_fkey")
   @@index([providerId], map: "Booking_providerId_fkey")
@@ -118,8 +129,12 @@ model user {
   otp              String?
   otpExpiry        DateTime?
   createdAt        DateTime    @default(now())
-  provider         provider?
-  customerBookings Booking[]   @relation("CustomerBookings")
+  provider          provider?
+  customerBookings  Booking[]          @relation("CustomerBookings")
+  assistantSessions AssistantSession[]
+  verifiedBadges    ProviderBadge[]    @relation("AdminVerifiedBadges")
+  reviews           Review[]
+  complaints        Complaint[]
 }
 
 enum kycdocument_type {
@@ -160,4 +175,193 @@ enum booking_status {
   IN_PROGRESS
   COMPLETED
   CANCELLED
+}
+
+// ==========================================
+// NEW MODELS ADDED FOR AI & CREDITS
+// ==========================================
+
+// Knowledge base for RAG assistant
+model KbArticle {
+  id         String   @id @default(uuid())
+  category   String   // 'policy'|'faq'|'provider_info'|'booking_guide'|'credits'
+  title      String
+  content    String   @db.Text
+  lang       String   @default("ne")  // 'ne' | 'en'
+  updatedAt  DateTime @updatedAt
+
+  @@map("kb_articles")
+}
+
+// Assistant session log
+model AssistantSession {
+  id          String   @id @default(uuid())
+  userId      Int?
+  sessionId   String   @unique
+  contextType String?
+  contextId   String?
+  messages    Json     // [{ role, content, retrieved_chunks }]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        user?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("assistant_sessions")
+}
+
+// Trust score event log
+model TrustScoreEvent {
+  id         String   @id @default(uuid())
+  providerId Int
+  score      Float
+  prevScore  Float
+  trigger    String   // 'review'|'complaint'|'vouch'|'decay'|'booking'
+  inputs     Json     // full breakdown snapshot
+  aiFlags    Json?
+  modelVer   String?
+  createdAt  DateTime @default(now())
+
+  provider   provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  @@map("trust_score_events")
+}
+
+// KYC AI decision log
+model KycAiDecision {
+  id            String   @id @default(uuid())
+  providerId    Int
+  ocrResult     Json
+  faceScore     Float?
+  forgeryRisk   String   // 'low'|'medium'|'high'
+  confidence    Float
+  decision      String   // 'AUTO_APPROVE'|'HUMAN_QUEUE'
+  adminOverride String?  // 'APPROVE'|'REJECT'
+  modelVer      String
+  createdAt     DateTime @default(now())
+
+  provider      provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  @@map("kyc_ai_decisions")
+}
+
+// Content moderation log
+model ModerationLog {
+  id         String   @id @default(uuid())
+  entityType String   // 'review'|'complaint'|'profile'
+  entityId   String
+  result     String   // 'PASSED'|'FLAGGED'
+  category   String?
+  confidence Float
+  createdAt  DateTime @default(now())
+
+  @@map("moderation_logs")
+}
+
+// Credit packs catalogue
+model CreditPack {
+  id          String    @id @default(uuid())
+  name        String    // 'starter'|'active'|'pro'
+  credits     Int
+  priceNpr    Int
+  features    Json      // array of feature strings
+  isActive    Boolean   @default(true)
+  purchases   CreditPurchase[]
+
+  @@map("credit_packs")
+}
+
+// Credit purchase records
+model CreditPurchase {
+  id            String     @id @default(uuid())
+  providerId    Int
+  packId        String
+  creditsAdded  Int
+  amountNpr     Int
+  paymentMethod String     // 'khalti'|'esewa'
+  paymentRef    String?
+  status        String     // 'pending'|'completed'|'failed'
+  createdAt     DateTime   @default(now())
+
+  provider      provider   @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  pack          CreditPack @relation(fields: [packId], references: [id])
+  @@map("credit_purchases")
+}
+
+// Provider credit wallet
+model CreditWallet {
+  id           String   @id @default(uuid())
+  providerId   Int      @unique
+  balance      Int      @default(0)
+  totalEarned  Int      @default(0)
+  totalSpent   Int      @default(0)
+  updatedAt    DateTime @updatedAt
+
+  provider     provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  @@map("credit_wallets")
+}
+
+// Credit deduction log
+model CreditDeduction {
+  id          String   @id @default(uuid())
+  providerId  Int
+  amount      Int
+  reason      String   // 'boost_booking_accepted'|'featured_slot'
+  bookingId   Int?
+  createdAt   DateTime @default(now())
+
+  provider    provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  booking     Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  @@map("credit_deductions")
+}
+
+// Trust badge catalogue & purchases
+model ProviderBadge {
+  id           String   @id @default(uuid())
+  providerId   Int
+  badgeType    String   // 'skill_verified'|'background_checked'|'insured'
+  status       String   // 'pending'|'active'|'expired'
+  verifiedBy   Int?     // admin user ID
+  expiresAt    DateTime?
+  amountNpr    Int
+  purchasedAt  DateTime @default(now())
+
+  provider     provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  admin        user?    @relation("AdminVerifiedBadges", fields: [verifiedBy], references: [id], onDelete: SetNull)
+  @@map("provider_badges")
+}
+
+// Reviews model
+model Review {
+  id          String   @id @default(uuid())
+  bookingId   Int
+  customerId  Int
+  providerId  Int
+  rating      Int      // 1-5
+  comment     String   @db.Text
+  reply       String?  @db.Text
+  isAuthentic Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  booking     Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  customer    user     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  provider    provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  @@map("reviews")
+}
+
+// Complaints model
+model Complaint {
+  id            String   @id @default(uuid())
+  bookingId     Int?
+  customerId    Int
+  providerId    Int
+  type          String   // 'quality' | 'no-show' | 'overcharging' | 'abuse' | 'fraud'
+  description   String   @db.Text
+  status        String   @default("PENDING") // 'PENDING' | 'INVESTIGATING' | 'RESOLVED' | 'DISMISSED'
+  adminResponse String?  @db.Text
+  resolution    String?  @db.Text
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  booking       Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  customer      user     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  provider      provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  @@map("complaints")
 }
