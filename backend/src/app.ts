@@ -4,7 +4,7 @@ import cors from 'cors';
 import type { Request, Response, NextFunction } from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
-
+import cookieParser from 'cookie-parser'
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 import categoryRoutes from "./routes/categoryRoute.ts";
@@ -29,6 +29,8 @@ app.use('/uploads', express.static(uploadsPath));
 const allowedOrigin = [
   process.env.FRONTEND_URL
 ]
+// Add after app.use(express.urlencoded(...))
+app.use(cookieParser())
 
 app.use(
   cors({

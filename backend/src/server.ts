@@ -1,6 +1,6 @@
 import { createServer } from 'http';
 import app from "./app.ts";
-import prismaClient from "./config/db.ts";
+import prisma
 import { initializeSocket } from "./config/socketConfig.ts";
 import { setSocketIO } from "./config/socketHandlers.ts";
 

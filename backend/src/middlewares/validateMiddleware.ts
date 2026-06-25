@@ -1,19 +1,29 @@
-import type { Request, Response, NextFunction } from 'express'
-import joi from "joi";
+import { Request, Response, NextFunction } from 'express'
+import { ZodSchema, ZodError } from 'zod'
 
-//generic validation middleware factory
-
-export const validationMiddleware = (schema: joi.ObjectSchema, property: 'body' | 'query' | 'params' = 'body') => {
-    return (req: Request, res: Response, next: NextFunction) => {
-        const { error } = schema.validate(req[property], { abortEarly: false, allowUnknown: true });
-        if (error) {
-            const errorMessages = error.details.map(detail => detail.message).join(", ");
-            console.log("Validation Error:", errorMessages);
-            return res.status(400).json({ message: errorMessages, errors: error.details.map(detail => detail.message) });
-        }
-        next();
+export const validate =
+  (schema: ZodSchema) =>
+  (req: Request, res: Response, next: NextFunction): void => {
+    try {
+      req.body = schema.parse(req.body)
+      next()
+    } catch (err) {
+      if (err instanceof ZodError) {
+        res.status(422).json({
+          success: false,
+          message: 'Validation failed',
+          error: {
+            code:    'VALIDATION_ERROR',
+            message: 'Invalid request data',
+            status:  422,
+            fields:  err.errors.map((e) => ({
+              field:   e.path.join('.'),
+              message: e.message,
+            })),
+          },
+        })
+        return
+      }
+      next(err)
     }
-}
-
-export const validate = validationMiddleware;
-
+  }

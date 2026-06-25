@@ -1,224 +1,158 @@
-import type { Request, Response } from "express";
-import prismaClient from "../config/db.ts";
-import Jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs";
-import { JWT_SECRET, JWT_EXPIRES_IN } from "../config/jwt.ts";
-import { generateOTP } from "../utils/otp.ts";
-import { setAuthCookie } from "../utils/cookie.ts";
-import { mailTransporter } from "../config/mail.ts";
+import { Request, Response, NextFunction } from 'express'
+import * as AuthService from '../services/authService'
+import { sendSuccess, sendError } from '../utils/response'
 
+// ── POST /api/v1/auth/register ────────────────
 
-
-
-const sendOtpEmail = async (email: string, otp: string) => {
-  await mailTransporter.sendMail({
-    from: `"BishwasSetu" <${process.env.EMAIL_USER}>`,
-    to: email,
-    subject: "Your BishwasSetu OTP",
-    html: `
-      <h2>Your OTP Code</h2>
-      <p>Use the OTP below to continue:</p>
-      <h1>${otp}</h1>
-      <p>This OTP is valid for 5 minutes.</p>
-    `
-  });
-};
-
-
-//register the user
-export const registerUser = async (req: Request, res: Response) => {
+export const register = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
-    const { name, email, phone, password, role } = req.body;
-    const normalizedEmail = typeof email === "string" ? email.toLowerCase().trim() : email;
-    if (!email || !name || !phone || !password) {
-      res.status(400).json({ success: false, error: { code: "INVALID_INPUT", message: "name,email and password are required" } })
-      return;
+    const result = await AuthService.registerUser(req.body)
+    sendSuccess(res, result, 'Registration successful. Please verify OTP.', 201)
+  } catch (err: any) {
+    if (err.code) {
+      sendError(res, err.message, err.code, err.status)
+      return
     }
-
-    // Validate role
-    const validRoles = ["CUSTOMER", "PROVIDER", "ADMIN"];
-    if (!role || !validRoles.includes(role)) {
-      res.status(400).json({ message: "Validation Error: Invalid role selected" })
-      return;
-    }
-    const existingUser = await prismaClient.user.findFirst({
-      where: {
-        OR: [{ email: normalizedEmail }]
-      }
-    })
-    if (existingUser) {
-      console.log("Registration failed: User already exists", normalizedEmail);
-      return res.status(400).json({ message: "User already existed" })
-    }
-    const otp = generateOTP();
-    const otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await prismaClient.user.create({
-      data: {
-        name,
-        email: normalizedEmail,
-        phone,
-        password: hashedPassword,
-        role,
-        otp,
-        otpExpiry
-      }
-    })
-
-    await sendOtpEmail(normalizedEmail, otp);
-    res.status(201).json({
-      message: "OTP sent to email",
-      UserID: user.id
-    })
-  }
-  catch (error) {
-    console.error("Registration Error:", error);
-    res.status(500).json({ message: "Registration failed" })
+    next(err)
   }
 }
 
+// ── POST /api/v1/auth/verify-otp ─────────────
 
-//login user 
-
-export const loginUser = async (req: Request, res: Response) => {
+export const verifyOtp = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
-    const { identifier, password } = req.body;
-    const normalizedIdentifier = typeof identifier === "string" ? identifier.toLowerCase().trim() : identifier;
+    const { userId, code } = req.body
+    const result = await AuthService.verifyUserOtp(userId, code)
 
-    const user = await prismaClient.user.findFirst({
-      where: { email: normalizedIdentifier }
-    })
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      return res.status(401).json({ message: "Invalid credentials" })
-    }
-
-    const token = Jwt.sign(
-      { id: user.id, role: user.role },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN }
-    );
-    setAuthCookie(res, token);
-    res.json({ message: "Login successful" });
-
-  }
-  catch (error) {
-    res.status(500).json({ message: "login failed" })
-  }
-
-
-}
-
-
-// verify otp 
-export const verifyOTP = async (req: Request, res: Response) => {
-  try {
-    const { userId, otp } = req.body;
-    const idNum = typeof userId === "string" ? Number(userId) : userId;
-    if (!idNum || Number.isNaN(idNum)) {
-      return res.status(400).json({ message: "Invalid userId" });
-    }
-    const user = await prismaClient.user.findUnique({ where: { id: idNum } });
-
-    if (!user || user.otp !== otp || !user.otpExpiry || user.otpExpiry < new Date()) {
-      return res.status(400).json({ message: "Invalid or expiry OTP" })
-    }
-    await prismaClient.user.update({
-      where: { id: idNum },
-      data: {
-        otp: null, otpExpiry: null, isVerified: true
-      }
+    // Set refresh token in HttpOnly cookie
+    res.cookie('refreshToken', result.refreshToken, {
+      httpOnly: true,
+      secure:   process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge:   7 * 24 * 60 * 60 * 1000, // 7 days
     })
 
-    const token = Jwt.sign(
-      { id: user.id, role: user.role },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN }
-    );
-    setAuthCookie(res, token);
-    res.json({ message: "Authentication successful" });
-
-  } catch (error) {
-    res.status(500).json({ message: "otp failed" })
-
+    sendSuccess(res, {
+      accessToken: result.accessToken,
+      user:        result.user,
+    }, 'OTP verified. Logged in.')
+  } catch (err: any) {
+    if (err.code) {
+      sendError(res, err.message, err.code, err.status)
+      return
+    }
+    next(err)
   }
 }
 
+// ── POST /api/v1/auth/login ───────────────────
 
-
-//logout user 
-export const logout = async (req: Request, res: Response) => {
-  res.clearCookie("token");
-  res.json({ message: "logout successfully" })
+export const login = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const result = await AuthService.loginUser(req.body)
+    sendSuccess(res, result, 'OTP sent. Please verify to continue.')
+  } catch (err: any) {
+    if (err.code) {
+      sendError(res, err.message, err.code, err.status)
+      return
+    }
+    next(err)
+  }
 }
 
+// ── POST /api/v1/auth/refresh ─────────────────
 
-export const resendOTP = async (req: Request, res: Response) => {
+export const refresh = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
-    const { userId } = req.body;
-    const idNum = typeof userId === "string" ? Number(userId) : userId;
-    if (!idNum || Number.isNaN(idNum)) {
-      return res.status(400).json({ message: "Invalid userId" });
+    // Accept token from cookie (web) or body (mobile)
+    const token =
+      req.cookies?.refreshToken || req.body?.refreshToken
+
+    if (!token) {
+      sendError(res, 'Refresh token required', 'MISSING_REFRESH_TOKEN', 401)
+      return
     }
-    const user = await prismaClient.user.findUnique({ where: { id: idNum } });
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+
+    const result = await AuthService.refreshAccessToken(token)
+
+    // Rotate cookie
+    res.cookie('refreshToken', result.refreshToken, {
+      httpOnly: true,
+      secure:   process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge:   7 * 24 * 60 * 60 * 1000,
+    })
+
+    sendSuccess(res, { accessToken: result.accessToken }, 'Token refreshed')
+  } catch (err: any) {
+    if (err.code) {
+      sendError(res, err.message, err.code, err.status)
+      return
     }
-    const otp = generateOTP();
-    const otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
-    await prismaClient.user.update({
-      where: { id: user.id },
-      data: { otp, otpExpiry },
-    });
-    await sendOtpEmail(user.email, otp);
-    return res.json({ message: "OTP resent to email" });
-  } catch (error) {
-    return res.status(500).json({ message: "Failed to resend OTP" });
+    next(err)
   }
-};
+}
 
+// ── POST /api/v1/auth/logout ──────────────────
 
-
-//GET /api/users/me
-export const getMe = async (req: Request, res: Response) => {
+export const logout = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
-    if (!req.user?.id) {
-      return res.status(401).json({ message: "Authentication required" });
+    const token =
+      req.cookies?.refreshToken || req.body?.refreshToken
+
+    if (token) {
+      await AuthService.logoutUser(token)
     }
-    const user = await prismaClient.user.findUnique({
-      where: { id: req.user.id },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        isVerified: true,
-        phone: true,
-        address: true,
-        district: true,
-        municipality: true,
-        gender: true,
-        provider: {
-          include: {
-            category: true,
-            kycDocuments: true,
-            user: true,
-            service: true
-          }
-        },
-        createdAt: true,
-      },
-    });
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    return res.json(user);
-  } catch (error) {
-    return res.status(500).json({ message: "Failed to fetch profile" });
+
+    res.clearCookie('refreshToken')
+    sendSuccess(res, null, 'Logged out successfully')
+  } catch (err) {
+    next(err)
   }
-};
+}
+
+// ── POST /api/v1/auth/resend-otp ─────────────
+
+export const resendOtp = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { userId } = req.body
+
+    if (!userId) {
+      sendError(res, 'userId is required', 'MISSING_USER_ID', 400)
+      return
+    }
+
+    const result = await AuthService.resendOtp(userId)
+    sendSuccess(res, result, result.message)
+  } catch (err: any) {
+    if (err.code) {
+      sendError(res, err.message, err.code, err.status)
+      return
+    }
+    next(err)
+  }
+}

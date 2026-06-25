@@ -1,50 +1,120 @@
-import type { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
+import { Request, Response, NextFunction } from 'express'
+import { verifyAccessToken } from '../utils/jwt'
+import { prisma } from '../config/db'
+import { Role } from '@prisma/client'
 
-// Extend Express Request to include `user`
-declare global {
-  namespace Express {
-    interface Request {
-      user?: JwtPayload;
-    }
-  }
-}
+// ── Protect any route — requires valid access token ──
 
-interface JwtPayload {
-  id: number;
-  role: "CUSTOMER" | "PROVIDER" | "ADMIN";
-}
-
-export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
-  let token = req.header("Authorization")?.replace("Bearer ", "");
-
-  // Fallback to cookie if Authorization header not present
-  if (!token) {
-    const cookieHeader = req.headers.cookie || "";
-    const parts = cookieHeader.split(";").map((c) => c.trim());
-    const tokenPair = parts.find((p) => p.startsWith("token="));
-    if (tokenPair) token = tokenPair.substring("token=".length);
-  }
-
-  if (!token) {
-    return res.status(401).json({ message: "Authentication required" });
-  }
-
+export const protect = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as JwtPayload;
-    req.user = decoded; // Attach payload to request
-    next();
-  } catch (error) {
-    return res.status(401).json({ message: "Invalid or expired token" });
-  }
-};
+    const authHeader = req.headers.authorization
 
-// Role-based authorization middleware
-export const authorize = (roles: JwtPayload["role"][]) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    if (!req.user || !roles.includes(req.user.role)) {
-      return res.status(403).json({ message: "Access denied" });
+    if (!authHeader?.startsWith('Bearer ')) {
+      res.status(401).json({
+        success: false,
+        message: 'No token provided',
+        error: { code: 'UNAUTHORIZED', message: 'Authentication required', status: 401 },
+      })
+      return
     }
-    next();
-  };
-};
+
+    const token = authHeader.split(' ')[1]
+    const decoded = verifyAccessToken(token)
+
+    // Verify user still exists and is active
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+      select: {
+        id:       true,
+        role:     true,
+        isActive: true,
+        provider: { select: { id: true } },
+      },
+    })
+
+    if (!user || !user.isActive) {
+      res.status(401).json({
+        success: false,
+        message: 'User not found or deactivated',
+        error: { code: 'UNAUTHORIZED', message: 'Invalid token', status: 401 },
+      })
+      return
+    }
+
+    req.user = {
+      id:         user.id,
+      role:       user.role,
+      providerId: user.provider?.id,
+    }
+
+    next()
+  } catch {
+    res.status(401).json({
+      success: false,
+      message: 'Invalid or expired token',
+      error: { code: 'TOKEN_EXPIRED', message: 'Please login again', status: 401 },
+    })
+  }
+}
+
+// ── Role guard — restrict to specific roles ──
+
+export const restrictTo =
+  (...roles: Role[]) =>
+  (req: Request, res: Response, next: NextFunction): void => {
+    if (!req.user || !roles.includes(req.user.role as Role)) {
+      res.status(403).json({
+        success: false,
+        message: 'Access denied',
+        error: { code: 'FORBIDDEN', message: 'Insufficient permissions', status: 403 },
+      })
+      return
+    }
+    next()
+  }
+
+// ── Verified provider guard ───────────────────
+// Enforces: KYC must be VERIFIED before accepting bookings
+
+export const requireVerifiedProvider = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!req.user?.providerId) {
+      res.status(403).json({
+        success: false,
+        message: 'Provider profile not found',
+        error: { code: 'PROVIDER_NOT_FOUND', message: 'Complete provider onboarding first', status: 403 },
+      })
+      return
+    }
+
+    const provider = await prisma.provider.findUnique({
+      where:  { id: req.user.providerId },
+      select: { kycStatus: true },
+    })
+
+    if (provider?.kycStatus !== 'VERIFIED') {
+      res.status(403).json({
+        success: false,
+        message: 'KYC verification required',
+        error: {
+          code:    'PROVIDER_NOT_VERIFIED',
+          message: 'Complete KYC verification before accepting bookings',
+          status:  403,
+        },
+      })
+      return
+    }
+
+    next()
+  } catch (err) {
+    next(err)
+  }
+}

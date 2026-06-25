@@ -1,43 +1,37 @@
-import Joi from "joi";
+import { z } from 'zod'
 
-export const registerSchema = Joi.object({
-  name: Joi.string().min(3).max(30).required(),
-  email: Joi.string().email().required(),
-  password: Joi.string().min(6).required(),
-  phone: Joi.string().pattern(/^[0-9]{10,15}$/).required(),
-  role: Joi.string()
-    .valid("CUSTOMER", "PROVIDER", "ADMIN")
-    .required()
-    .messages({
-      "any.only": "Invalid role selected",
-      "any.required": "Role is required",
-    }),
-});
-
-
-// Login validation schema
-export const loginSchema = Joi.object({
-    identifier: Joi.string().required().messages({
-        "string.base": "Identifier must be a string",
-        "string.empty": "Identifier is required",
-        "any.required": "Identifier is required",
-    }),
-    password: Joi.string().required().messages({
-        "string.base": "Password must be a string",
-        "string.empty": "Password is required",
-        "any.required": "Password is required",
-    }),
+export const RegisterSchema = z.object({
+  name:     z.string().min(2).max(100).trim(),
+  email:    z.string().email().optional(),
+  phone:    z
+    .string()
+    .regex(/^(\+977)?[9][6-9]\d{8}$/, 'Invalid Nepal phone number')
+    .optional(),
+  password: z.string().min(8).max(100),
+  role:     z.enum(['CUSTOMER', 'PROVIDER']).default('CUSTOMER'),
+}).refine((data) => data.email || data.phone, {
+  message: 'Provide either email or phone number',
+  path:    ['email'],
 })
 
-export const verifyOtpSchema = Joi.object({
-  userId: Joi.alternatives()
-    .try(Joi.number().integer(), Joi.string().pattern(/^\d+$/))
-    .required(),
-  otp: Joi.string().length(6).required()
-});
+export const LoginSchema = z.object({
+  email:    z.string().email().optional(),
+  phone:    z.string().optional(),
+  password: z.string().min(1),
+}).refine((data) => data.email || data.phone, {
+  message: 'Provide either email or phone',
+  path:    ['email'],
+})
 
-export const resendOtpSchema = Joi.object({
-  userId: Joi.alternatives()
-    .try(Joi.number().integer(), Joi.string().pattern(/^\d+$/))
-    .required(),
-});
+export const VerifyOtpSchema = z.object({
+  userId: z.string().uuid(),
+  code:   z.string().length(6).regex(/^\d{6}$/, 'OTP must be 6 digits'),
+})
+
+export const RefreshTokenSchema = z.object({
+  refreshToken: z.string().min(1),
+})
+
+export type RegisterInput  = z.infer<typeof RegisterSchema>
+export type LoginInput     = z.infer<typeof LoginSchema>
+export type VerifyOtpInput = z.infer<typeof VerifyOtpSchema>
