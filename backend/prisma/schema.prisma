@@ -7,361 +7,550 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Category {
-  id          String   @id @default(uuid())
-  name        String   @unique
-  icon        String?
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+// ─────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────
 
-  providers provider[] // ✅ ADD THIS LINE
-  service   Service[]
-}
-
-model kycdocument {
-  id         Int                @id @default(autoincrement())
-  providerId Int
-  type       kycdocument_type
-  fileUrl    String
-  status     kycdocument_status @default(PENDING)
-  createdAt  DateTime           @default(now())
-  provider   provider           @relation(fields: [providerId], references: [id], onDelete: Cascade, map: "KYCDocument_providerId_fkey")
-
-  @@index([providerId], map: "KYCDocument_providerId_fkey")
-}
-
-model provider {
-  id                    Int                         @id @default(autoincrement())
-  userId                Int                         @unique(map: "Provider_userId_key")
-  categoryId            String?
-  legalName             String
-  experienceYears       Int
-  bio                   String                      @db.Text
-  skills                String?                     @db.Text
-  prevCompany           String?
-  prevRole              String?
-  workDuration          String?
-  portfolioUrls         String?                     @db.Text
-  tradeLicenseUrl       String?
-  serviceDistrict       String?
-  serviceMunicipality   String?
-  availabilityDays      String?
-  availabilityTime      String?
-  isEmergencyAvailable  Boolean                     @default(false)
-  emergencyResponseTime String?
-  emergencyExtraCharge  Float?
-  price                 Float?
-  duration              String?
-  profilePhotoUrl       String?
-  verificationStatus    provider_verificationStatus @default(INCOMPLETE)
-  trustScore            Float                       @default(0)
-  createdAt             DateTime                    @default(now())
-  updatedAt             DateTime
-  category              Category?                   @relation(fields: [categoryId], references: [id], onDelete: SetNull, map: "Provider_categoryId_fkey")
-  kycDocuments          kycdocument[]
-  user                  user                        @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Provider_userId_fkey")
-  service               Service[]
-  bookings              Booking[]
-  trustScoreEvents      TrustScoreEvent[]
-  kycAiDecisions        KycAiDecision[]
-  creditPurchases       CreditPurchase[]
-  creditWallet          CreditWallet?
-  creditDeductions      CreditDeduction[]
-  badges                ProviderBadge[]
-  reviews               Review[]
-  complaints            Complaint[]
-}
-
-model Service {
-  id          Int       @id @default(autoincrement())
-  providerId  Int
-  categoryId  String
-  title       String
-  icon        String?   @db.VarChar(50)
-  description String    @db.Text
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime
-  category    Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade, map: "Service_categoryId_fkey")
-  provider    provider  @relation(fields: [providerId], references: [id], onDelete: Cascade, map: "Service_providerId_fkey")
-  bookings    Booking[]
-
-  @@index([categoryId], map: "Service_categoryId_fkey")
-  @@index([providerId], map: "Service_providerId_fkey")
-}
-
-model Booking {
-  id          Int            @id @default(autoincrement())
-  customerId  Int
-  providerId  Int
-  serviceId   Int
-  bookingDate DateTime
-  status      booking_status @default(PENDING)
-  notes       String?        @db.Text
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime
-  customer          user              @relation("CustomerBookings", fields: [customerId], references: [id], onDelete: Cascade, map: "Booking_customerId_fkey")
-  provider          provider          @relation(fields: [providerId], references: [id], onDelete: Cascade, map: "Booking_providerId_fkey")
-  service           Service           @relation(fields: [serviceId], references: [id], onDelete: Cascade, map: "Booking_serviceId_fkey")
-  creditDeductions  CreditDeduction[]
-  reviews           Review[]
-  complaints        Complaint[]
-
-  @@index([customerId], map: "Booking_customerId_fkey")
-  @@index([providerId], map: "Booking_providerId_fkey")
-  @@index([serviceId], map: "Booking_serviceId_fkey")
-}
-
-model user {
-  id               Int         @id @default(autoincrement())
-  email            String      @unique(map: "User_email_key")
-  name             String?
-  address          String?
-  district         String?
-  municipality     String?
-  gender           String?
-  phone            String?
-  password         String
-  role             user_role
-  status           user_status @default(ACTIVE)
-  isVerified       Boolean     @default(false)
-  lastLogin        DateTime?
-  otp              String?
-  otpExpiry        DateTime?
-  createdAt        DateTime    @default(now())
-  provider          provider?
-  customerBookings  Booking[]          @relation("CustomerBookings")
-  assistantSessions AssistantSession[]
-  verifiedBadges    ProviderBadge[]    @relation("AdminVerifiedBadges")
-  reviews           Review[]
-  complaints        Complaint[]
-}
-
-enum kycdocument_type {
-  GOVERNMENT_ID
-  CERTIFICATE
-  PROFILE_PHOTO
-}
-
-enum kycdocument_status {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
-enum user_role {
+enum Role {
   CUSTOMER
   PROVIDER
+  MODERATOR
   ADMIN
 }
 
-enum user_status {
-  ACTIVE
-  INACTIVE
-  SUSPENDED
-}
-
-enum provider_verificationStatus {
+enum KycStatus {
   INCOMPLETE
-  DOCUMENTS_PENDING
+  PENDING_DOCUMENTS
   UNDER_REVIEW
   VERIFIED
   REJECTED
 }
 
-enum booking_status {
-  PENDING
+enum ExperienceBadge {
+  NAVIN      // < 1 year
+  ANUBHAVI   // 1–2 years
+  PRABIN     // > 2 years
+}
+
+enum BookingStatus {
+  REQUESTED
   ACCEPTED
   IN_PROGRESS
   COMPLETED
+  REJECTED
   CANCELLED
 }
 
-// ==========================================
-// NEW MODELS ADDED FOR AI & CREDITS
-// ==========================================
-
-// Knowledge base for RAG assistant
-model KbArticle {
-  id         String   @id @default(uuid())
-  category   String   // 'policy'|'faq'|'provider_info'|'booking_guide'|'credits'
-  title      String
-  content    String   @db.Text
-  lang       String   @default("ne")  // 'ne' | 'en'
-  updatedAt  DateTime @updatedAt
-
-  @@map("kb_articles")
+enum ComplaintType {
+  SERVICE_QUALITY
+  NO_SHOW
+  OVERCHARGING
+  ABUSIVE_BEHAVIOR
+  FRAUD
 }
 
-// Assistant session log
-model AssistantSession {
-  id          String   @id @default(uuid())
-  userId      Int?
-  sessionId   String   @unique
-  contextType String?
-  contextId   String?
-  messages    Json     // [{ role, content, retrieved_chunks }]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  user        user?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  @@map("assistant_sessions")
+enum ComplaintStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  DISMISSED
 }
 
-// Trust score event log
-model TrustScoreEvent {
-  id         String   @id @default(uuid())
-  providerId Int
-  score      Float
-  prevScore  Float
-  trigger    String   // 'review'|'complaint'|'vouch'|'decay'|'booking'
-  inputs     Json     // full breakdown snapshot
-  aiFlags    Json?
-  modelVer   String?
-  createdAt  DateTime @default(now())
-
-  provider   provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
-  @@map("trust_score_events")
+enum BadgeType {
+  SKILL_VERIFIED
+  BACKGROUND_CHECKED
+  INSURED
 }
 
-// KYC AI decision log
+enum BadgeStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+}
+
+enum CreditReason {
+  BOOST_BOOKING_ACCEPTED
+  FEATURED_SLOT
+}
+
+enum PaymentMethod {
+  KHALTI
+  ESEWA
+  CASH
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+// ─────────────────────────────────────────────
+// USER
+// ─────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(uuid()) @db.Char(36)
+  name          String    @db.VarChar(100)
+  email         String?   @unique @db.VarChar(255)
+  phone         String?   @unique @db.VarChar(20)
+  passwordHash  String?   @db.VarChar(255)
+  role          Role      @default(CUSTOMER)
+  isActive      Boolean   @default(true)
+  deletedAt     DateTime? // soft delete
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  otps          Otp[]
+  refreshTokens RefreshToken[]
+  provider      Provider?
+  bookings      Booking[]       @relation("CustomerBookings")
+  reviews       Review[]
+  complaints    Complaint[]     @relation("CustomerComplaints")
+  sessions      AssistantSession[]
+
+  @@map("users")
+}
+
+// ─────────────────────────────────────────────
+// OTP
+// ─────────────────────────────────────────────
+
+model Otp {
+  id        String   @id @default(uuid()) @db.Char(36)
+  userId    String   @db.Char(36)
+  code      String   @db.VarChar(6)
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("otps")
+}
+
+// ─────────────────────────────────────────────
+// REFRESH TOKEN
+// ─────────────────────────────────────────────
+
+model RefreshToken {
+  id        String   @id @default(uuid()) @db.Char(36)
+  userId    String   @db.Char(36)
+  token     String   @unique @db.VarChar(512)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+// ─────────────────────────────────────────────
+// PROVIDER
+// ─────────────────────────────────────────────
+
+model Provider {
+  id              String          @id @default(uuid()) @db.Char(36)
+  userId          String          @unique @db.Char(36)
+  legalName       String          @db.VarChar(100)
+  profilePhoto    String?         @db.VarChar(500)  // Cloudinary URL
+  bio             String?         @db.Text
+  serviceArea     String?         @db.VarChar(100)  // district/zone
+  experienceYears Int             @default(0)
+  experienceBadge ExperienceBadge @default(NAVIN)
+  kycStatus       KycStatus       @default(INCOMPLETE)
+  trustScore      Float           @default(0) @db.Float
+  isAvailable     Boolean         @default(true)
+  embedding       Json?           // service description embedding vector (for AI reranking)
+  rejectionReason String?         @db.Text
+  deletedAt       DateTime?
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  // Relations
+  user            User            @relation(fields: [userId], references: [id])
+  skills          ProviderSkill[]
+  categories      ProviderCategory[]
+  documents       KycDocument[]
+  availability    ProviderAvailability[]
+  bookings        Booking[]       @relation("ProviderBookings")
+  reviews         Review[]
+  complaints      Complaint[]     @relation("ProviderComplaints")
+  trustEvents     TrustScoreEvent[]
+  kycDecisions    KycAiDecision[]
+  badges          ProviderBadge[]
+  wallet          CreditWallet?
+  purchases       CreditPurchase[]
+  deductions      CreditDeduction[]
+
+  @@index([kycStatus])
+  @@index([trustScore])
+  @@index([serviceArea])
+  @@map("providers")
+}
+
+// ─────────────────────────────────────────────
+// PROVIDER SKILLS & CATEGORIES
+// ─────────────────────────────────────────────
+
+model ProviderSkill {
+  id         String   @id @default(uuid()) @db.Char(36)
+  providerId String   @db.Char(36)
+  skill      String   @db.VarChar(100)
+
+  provider   Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([providerId])
+  @@map("provider_skills")
+}
+
+model Category {
+  id          String             @id @default(uuid()) @db.Char(36)
+  name        String             @unique @db.VarChar(100)
+  nameNp      String             @db.VarChar(100)  // Nepali name
+  icon        String?            @db.VarChar(100)
+  description String?            @db.Text
+  isActive    Boolean            @default(true)
+  createdAt   DateTime           @default(now())
+
+  providers   ProviderCategory[]
+  bookings    Booking[]
+
+  @@map("categories")
+}
+
+model ProviderCategory {
+  id         String   @id @default(uuid()) @db.Char(36)
+  providerId String   @db.Char(36)
+  categoryId String   @db.Char(36)
+
+  provider   Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  @@unique([providerId, categoryId])
+  @@map("provider_categories")
+}
+
+// ─────────────────────────────────────────────
+// PROVIDER AVAILABILITY
+// ─────────────────────────────────────────────
+
+model ProviderAvailability {
+  id         String   @id @default(uuid()) @db.Char(36)
+  providerId String   @db.Char(36)
+  dayOfWeek  Int      // 0 = Sunday, 6 = Saturday
+  startTime  String   @db.VarChar(5)   // "08:00"
+  endTime    String   @db.VarChar(5)   // "18:00"
+
+  provider   Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([providerId])
+  @@map("provider_availability")
+}
+
+// ─────────────────────────────────────────────
+// KYC DOCUMENTS
+// ─────────────────────────────────────────────
+
+model KycDocument {
+  id           String   @id @default(uuid()) @db.Char(36)
+  providerId   String   @db.Char(36)
+  type         String   @db.VarChar(30)   // 'government_id'|'selfie'|'certificate'
+  cloudinaryId String   @db.VarChar(200)  // Cloudinary public_id (restricted folder)
+  url          String   @db.VarChar(500)  // signed delivery URL (refreshed on access)
+  uploadedAt   DateTime @default(now())
+
+  provider     Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([providerId])
+  @@map("kyc_documents")
+}
+
+// ─────────────────────────────────────────────
+// KYC AI DECISION LOG
+// ─────────────────────────────────────────────
+
 model KycAiDecision {
-  id            String   @id @default(uuid())
-  providerId    Int
+  id            String   @id @default(uuid()) @db.Char(36)
+  providerId    String   @db.Char(36)
   ocrResult     Json
-  faceScore     Float?
-  forgeryRisk   String   // 'low'|'medium'|'high'
-  confidence    Float
-  decision      String   // 'AUTO_APPROVE'|'HUMAN_QUEUE'
-  adminOverride String?  // 'APPROVE'|'REJECT'
-  modelVer      String
+  faceScore     Float?   @db.Float
+  forgeryRisk   String   @db.VarChar(10)   // 'low'|'medium'|'high'
+  confidence    Float    @db.Float
+  decision      String   @db.VarChar(20)   // 'AUTO_APPROVE'|'HUMAN_QUEUE'
+  adminOverride String?  @db.VarChar(10)   // 'APPROVE'|'REJECT'
+  modelVer      String   @db.VarChar(50)
   createdAt     DateTime @default(now())
 
-  provider      provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  provider      Provider @relation(fields: [providerId], references: [id])
+
+  @@index([providerId])
   @@map("kyc_ai_decisions")
 }
 
-// Content moderation log
-model ModerationLog {
-  id         String   @id @default(uuid())
-  entityType String   // 'review'|'complaint'|'profile'
-  entityId   String
-  result     String   // 'PASSED'|'FLAGGED'
-  category   String?
-  confidence Float
-  createdAt  DateTime @default(now())
+// ─────────────────────────────────────────────
+// BOOKING
+// ─────────────────────────────────────────────
 
-  @@map("moderation_logs")
+model Booking {
+  id           String        @id @default(uuid()) @db.Char(36)
+  customerId   String        @db.Char(36)
+  providerId   String        @db.Char(36)
+  categoryId   String        @db.Char(36)
+  status       BookingStatus @default(REQUESTED)
+  description  String?       @db.Text
+  scheduledAt  DateTime
+  completedAt  DateTime?
+  priceNpr     Int?
+  commission   Int?          // platform commission in NPR
+  paymentMethod PaymentMethod @default(CASH)
+  isBoosted    Boolean       @default(false)   // was booking from a boost slot?
+  cancelReason String?       @db.VarChar(500)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  customer     User          @relation("CustomerBookings", fields: [customerId], references: [id])
+  provider     Provider      @relation("ProviderBookings", fields: [providerId], references: [id])
+  category     Category      @relation(fields: [categoryId], references: [id])
+  review       Review?
+  complaint    Complaint?
+
+  @@index([customerId])
+  @@index([providerId])
+  @@index([status])
+  @@map("bookings")
 }
 
-// Credit packs catalogue
+// ─────────────────────────────────────────────
+// REVIEW
+// ─────────────────────────────────────────────
+
+model Review {
+  id              String   @id @default(uuid()) @db.Char(36)
+  bookingId       String   @unique @db.Char(36)
+  customerId      String   @db.Char(36)
+  providerId      String   @db.Char(36)
+  rating          Int      // 1–5
+  comment         String?  @db.VarChar(500)
+  isAuthentic     Boolean? // null = pending AI check, true = passed, false = flagged
+  authenticityScore Float? @db.Float
+  providerReply   String?  @db.VarChar(500)
+  isVisible       Boolean  @default(false) // hidden until AI screening passes
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  booking         Booking  @relation(fields: [bookingId], references: [id])
+  customer        User     @relation(fields: [customerId], references: [id])
+  provider        Provider @relation(fields: [providerId], references: [id])
+
+  @@index([providerId])
+  @@index([isVisible])
+  @@map("reviews")
+}
+
+// ─────────────────────────────────────────────
+// COMPLAINT
+// ─────────────────────────────────────────────
+
+model Complaint {
+  id           String          @id @default(uuid()) @db.Char(36)
+  bookingId    String          @unique @db.Char(36)
+  customerId   String          @db.Char(36)
+  providerId   String          @db.Char(36)
+  type         ComplaintType
+  status       ComplaintStatus @default(OPEN)
+  description  String          @db.Text
+  aiCategory   String?         @db.VarChar(50)   // AI triage classification
+  resolution   String?         @db.Text
+  resolvedBy   String?         @db.Char(36)      // admin user ID
+  resolvedAt   DateTime?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  booking      Booking         @relation(fields: [bookingId], references: [id])
+  customer     User            @relation("CustomerComplaints", fields: [customerId], references: [id])
+  provider     Provider        @relation("ProviderComplaints", fields: [providerId], references: [id])
+
+  @@index([status])
+  @@index([providerId])
+  @@map("complaints")
+}
+
+// ─────────────────────────────────────────────
+// TRUST SCORE
+// ─────────────────────────────────────────────
+
+model TrustScoreEvent {
+  id         String   @id @default(uuid()) @db.Char(36)
+  providerId String   @db.Char(36)
+  score      Float    @db.Float
+  prevScore  Float    @db.Float
+  trigger    String   @db.VarChar(20)  // 'review'|'complaint'|'vouch'|'decay'|'booking'
+  inputs     Json
+  aiFlags    Json?
+  modelVer   String?  @db.VarChar(50)
+  createdAt  DateTime @default(now())
+
+  provider   Provider @relation(fields: [providerId], references: [id])
+
+  @@index([providerId])
+  @@map("trust_score_events")
+}
+
+// ─────────────────────────────────────────────
+// VOUCH
+// ─────────────────────────────────────────────
+
+model Vouch {
+  id          String   @id @default(uuid()) @db.Char(36)
+  voucherId   String   @db.Char(36)   // provider giving the vouch
+  voucheeId   String   @db.Char(36)   // provider receiving the vouch
+  weight      Float    @db.Float      // voucherTrustScore / 100
+  createdAt   DateTime @default(now())
+
+  @@unique([voucherId, voucheeId])
+  @@index([voucheeId])
+  @@map("vouches")
+}
+
+// ─────────────────────────────────────────────
+// CREDITS
+// ─────────────────────────────────────────────
+
 model CreditPack {
-  id          String    @id @default(uuid())
-  name        String    // 'starter'|'active'|'pro'
-  credits     Int
-  priceNpr    Int
-  features    Json      // array of feature strings
-  isActive    Boolean   @default(true)
-  purchases   CreditPurchase[]
+  id        String           @id @default(uuid()) @db.Char(36)
+  name      String           @db.VarChar(20)   // 'starter'|'active'|'pro'
+  credits   Int
+  priceNpr  Int
+  features  Json
+  isActive  Boolean          @default(true)
+
+  purchases CreditPurchase[]
 
   @@map("credit_packs")
 }
 
-// Credit purchase records
 model CreditPurchase {
-  id            String     @id @default(uuid())
-  providerId    Int
-  packId        String
+  id            String        @id @default(uuid()) @db.Char(36)
+  providerId    String        @db.Char(36)
+  packId        String        @db.Char(36)
   creditsAdded  Int
   amountNpr     Int
-  paymentMethod String     // 'khalti'|'esewa'
-  paymentRef    String?
-  status        String     // 'pending'|'completed'|'failed'
-  createdAt     DateTime   @default(now())
+  paymentMethod PaymentMethod
+  paymentRef    String?       @db.VarChar(100)
+  status        PaymentStatus @default(PENDING)
+  createdAt     DateTime      @default(now())
 
-  provider      provider   @relation(fields: [providerId], references: [id], onDelete: Cascade)
-  pack          CreditPack @relation(fields: [packId], references: [id])
+  provider      Provider      @relation(fields: [providerId], references: [id])
+  pack          CreditPack    @relation(fields: [packId], references: [id])
+
+  @@index([providerId])
   @@map("credit_purchases")
 }
 
-// Provider credit wallet
 model CreditWallet {
-  id           String   @id @default(uuid())
-  providerId   Int      @unique
-  balance      Int      @default(0)
-  totalEarned  Int      @default(0)
-  totalSpent   Int      @default(0)
-  updatedAt    DateTime @updatedAt
+  id          String   @id @default(uuid()) @db.Char(36)
+  providerId  String   @unique @db.Char(36)
+  balance     Int      @default(0)
+  totalEarned Int      @default(0)
+  totalSpent  Int      @default(0)
+  updatedAt   DateTime @updatedAt
 
-  provider     provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  provider    Provider @relation(fields: [providerId], references: [id])
+
   @@map("credit_wallets")
 }
 
-// Credit deduction log
 model CreditDeduction {
-  id          String   @id @default(uuid())
-  providerId  Int
-  amount      Int
-  reason      String   // 'boost_booking_accepted'|'featured_slot'
-  bookingId   Int?
-  createdAt   DateTime @default(now())
+  id         String       @id @default(uuid()) @db.Char(36)
+  providerId String       @db.Char(36)
+  amount     Int
+  reason     CreditReason
+  bookingId  String?      @db.Char(36)
+  createdAt  DateTime     @default(now())
 
-  provider    provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
-  booking     Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  provider   Provider     @relation(fields: [providerId], references: [id])
+
+  @@index([providerId])
   @@map("credit_deductions")
 }
 
-// Trust badge catalogue & purchases
-model ProviderBadge {
-  id           String   @id @default(uuid())
-  providerId   Int
-  badgeType    String   // 'skill_verified'|'background_checked'|'insured'
-  status       String   // 'pending'|'active'|'expired'
-  verifiedBy   Int?     // admin user ID
-  expiresAt    DateTime?
-  amountNpr    Int
-  purchasedAt  DateTime @default(now())
+// ─────────────────────────────────────────────
+// BADGES
+// ─────────────────────────────────────────────
 
-  provider     provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
-  admin        user?    @relation("AdminVerifiedBadges", fields: [verifiedBy], references: [id], onDelete: SetNull)
+model ProviderBadge {
+  id          String      @id @default(uuid()) @db.Char(36)
+  providerId  String      @db.Char(36)
+  badgeType   BadgeType
+  status      BadgeStatus @default(PENDING)
+  verifiedBy  String?     @db.Char(36)
+  expiresAt   DateTime?
+  amountNpr   Int
+  purchasedAt DateTime    @default(now())
+
+  provider    Provider    @relation(fields: [providerId], references: [id])
+
+  @@index([providerId])
   @@map("provider_badges")
 }
 
-// Reviews model
-model Review {
-  id          String   @id @default(uuid())
-  bookingId   Int
-  customerId  Int
-  providerId  Int
-  rating      Int      // 1-5
-  comment     String   @db.Text
-  reply       String?  @db.Text
-  isAuthentic Boolean  @default(true)
-  createdAt   DateTime @default(now())
+// ─────────────────────────────────────────────
+// MODERATION LOG
+// ─────────────────────────────────────────────
 
-  booking     Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  customer    user     @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  provider    provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
-  @@map("reviews")
+model ModerationLog {
+  id         String   @id @default(uuid()) @db.Char(36)
+  entityType String   @db.VarChar(20)   // 'review'|'complaint'|'profile'
+  entityId   String   @db.Char(36)
+  result     String   @db.VarChar(10)   // 'PASSED'|'FLAGGED'
+  category   String?  @db.VarChar(50)
+  confidence Float    @db.Float
+  createdAt  DateTime @default(now())
+
+  @@index([entityId])
+  @@map("moderation_logs")
 }
 
-// Complaints model
-model Complaint {
-  id            String   @id @default(uuid())
-  bookingId     Int?
-  customerId    Int
-  providerId    Int
-  type          String   // 'quality' | 'no-show' | 'overcharging' | 'abuse' | 'fraud'
-  description   String   @db.Text
-  status        String   @default("PENDING") // 'PENDING' | 'INVESTIGATING' | 'RESOLVED' | 'DISMISSED'
-  adminResponse String?  @db.Text
-  resolution    String?  @db.Text
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+// ─────────────────────────────────────────────
+// RAG KNOWLEDGE BASE
+// ─────────────────────────────────────────────
 
-  booking       Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
-  customer      user     @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  provider      provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
-  @@map("complaints")
+// FULLTEXT index applied via raw SQL migration
+// See: prisma/migrations/add_fulltext_index.sql
+model KbArticle {
+  id        String   @id @default(uuid()) @db.Char(36)
+  category  String   @db.VarChar(50)   // 'policy'|'faq'|'provider_info'|'booking_guide'|'credits'
+  title     String   @db.VarChar(500)
+  content   String   @db.Text
+  lang      String   @default("ne") @db.VarChar(5)   // 'ne'|'en'
+  updatedAt DateTime @updatedAt
+
+  @@map("kb_articles")
+}
+
+// ─────────────────────────────────────────────
+// ASSISTANT SESSION
+// ─────────────────────────────────────────────
+
+model AssistantSession {
+  id          String   @id @default(uuid()) @db.Char(36)
+  userId      String?  @db.Char(36)
+  sessionId   String   @unique @db.VarChar(100)
+  contextType String?  @db.VarChar(20)   // 'booking'|'provider'|'complaint'|'general'
+  contextId   String?  @db.Char(36)
+  messages    Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User?    @relation(fields: [userId], references: [id])
+
+  @@index([sessionId])
+  @@map("assistant_sessions")
 }
