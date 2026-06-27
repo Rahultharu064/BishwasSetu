@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
-import prismaClient from "../config/db.ts";
-import { emitBookingStatusUpdate, emitNewBooking, emitBookingCancelled } from "../config/socketHandlers.ts";
+import prismaClient from "../config/db";
+import { emitBookingStatusUpdate, emitNewBooking, emitBookingCancelled } from "../config/socketHandlers";
 
 // Create a new booking
 export const createBooking = async (req: Request, res: Response) => {

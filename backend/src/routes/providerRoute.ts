@@ -1,6 +1,6 @@
 import express from "express";
-import { authMiddleware, authorize } from "../middlewares/authMiddleware.ts";
-import { validate } from "../middlewares/validateMiddleware.ts";
+import { authMiddleware, authorize } from "../middlewares/authMiddleware";
+import { validate } from "../middlewares/validateMiddleware";
 import {
     becomeProvider,
     completeProviderProfile,
@@ -11,9 +11,9 @@ import {
     getMyProviderProfile,
     getAllVerifiedProviders,
     searchProviders
-} from "../controllers/providerController.ts";
-import {providerCreateSchema, providerUpdateSchema ,kycUploadSchema} from "../validators/providervalidator.ts";
-import { providerOnboardingUpload ,uploadSingle} from "../middlewares/multerMiddleware.ts"; // Import the new upload config
+} from "../controllers/providerController";
+import {providerCreateSchema, providerUpdateSchema ,kycUploadSchema} from "../validators/providervalidator";
+import { providerOnboardingUpload ,uploadSingle} from "../middlewares/multerMiddleware"; // Import the new upload config
 
 const router = express.Router();
 

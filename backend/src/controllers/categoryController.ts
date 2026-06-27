@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 
-import prismaClient from "../config/db.ts";
+import prismaClient from "../config/db";
 
 // ------------------- Create Category -------------------
 export const createCategory = async (

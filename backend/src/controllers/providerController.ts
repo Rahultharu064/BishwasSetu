@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import prismaClient from "../config/db.ts";
+import prismaClient from "../config/db";
 
 
 // Become a Provider (First-time registration)

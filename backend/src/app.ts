@@ -3,17 +3,14 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import type { Request, Response, NextFunction } from 'express';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import cookieParser from 'cookie-parser'
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-import categoryRoutes from "./routes/categoryRoute.ts";
-import authRoutes from "./routes/authRoute.ts"
-import providerRoutes from "./routes/providerRoute.ts"
-import serviceRoutes from "./routes/serviceRoute.ts"
-import bookingRoutes from "./routes/bookingRoute.ts"
-import adminRoutes from "./routes/adminRoute.ts"
-import reviewRoutes from "./routes/reviewRoute.ts"
+import categoryRoutes from "./routes/categoryRoute";
+import authRoutes from "./routes/authRoute"
+import providerRoutes from "./routes/providerRoute"
+import serviceRoutes from "./routes/serviceRoute"
+import bookingRoutes from "./routes/bookingRoute"
+import adminRoutes from "./routes/adminRoute"
+import reviewRoutes from "./routes/reviewRoute"
 
 dotenv.config();
 

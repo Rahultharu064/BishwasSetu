@@ -118,3 +118,7 @@ export const requireVerifiedProvider = async (
     next(err)
   }
 }
+
+// ── Aliases for backward compatibility ──
+export const authMiddleware = protect
+export const authorize = (roles: string[]) => restrictTo(...(roles as Role[]))

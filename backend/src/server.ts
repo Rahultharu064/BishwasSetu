@@ -1,8 +1,8 @@
 import { createServer } from 'http';
-import app from "./app.ts";
-import prisma
-import { initializeSocket } from "./config/socketConfig.ts";
-import { setSocketIO } from "./config/socketHandlers.ts";
+import app from "./app";
+import { prisma } from "./config/db";
+import { initializeSocket } from "./config/socketConfig";
+import { setSocketIO } from "./config/socketHandlers";
 
 const port = process.env.PORT;
 

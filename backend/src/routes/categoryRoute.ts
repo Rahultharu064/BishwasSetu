@@ -6,12 +6,12 @@ import {
   updateCategory,
   deleteCategory,
   getCategoriesWithStats
-} from "../controllers/categoryController.ts";
+} from "../controllers/categoryController";
 import {
   createCategorySchema,
   updateCategorySchema
-} from "../validators/categoryValidator.ts";
-import { validationMiddleware } from "../middlewares/validateMiddleware.ts";
+} from "../validators/categoryValidator";
+import { validationMiddleware } from "../middlewares/validateMiddleware";
 
 const categoryRoutes = express.Router();
 

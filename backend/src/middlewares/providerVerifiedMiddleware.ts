@@ -1,5 +1,5 @@
 import type{ Request, Response, NextFunction } from "express";
-import prismaClient from "../config/db.ts";
+import prismaClient from "../config/db";
 
 export const requireVerifiedProvider = async (req: Request, res: Response, next: NextFunction) => {
   try {

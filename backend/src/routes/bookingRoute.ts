@@ -1,8 +1,8 @@
 import { Router } from "express";
-import * as BookingController from "../controllers/bookingController.ts";
-import { validationMiddleware } from "../middlewares/validateMiddleware.ts";
-import { authMiddleware } from "../middlewares/authMiddleware.ts";
-import { createBookingSchema, updateBookingStatusSchema } from "../validators/bookingValidator.ts";
+import * as BookingController from "../controllers/bookingController";
+import { validationMiddleware } from "../middlewares/validateMiddleware";
+import { authMiddleware } from "../middlewares/authMiddleware";
+import { createBookingSchema, updateBookingStatusSchema } from "../validators/bookingValidator";
 
 const router = Router();
 

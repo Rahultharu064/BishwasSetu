@@ -1,6 +1,6 @@
 import express from "express";
-import { authMiddleware, authorize } from "../middlewares/authMiddleware.ts";
-import { validate } from "../middlewares/validateMiddleware.ts";
+import { authMiddleware, authorize } from "../middlewares/authMiddleware";
+import { validate } from "../middlewares/validateMiddleware";
 import {
     createService,
     getServicesByProvider,
@@ -11,8 +11,8 @@ import {
     getServicesWithFilters,
     getServiceStats,
     getServiceById
-} from "../controllers/serviceController.ts";
-import { createServiceSchema, updateServiceSchema, searchServiceSchema } from "../validators/serviceValidator.ts";
+} from "../controllers/serviceController";
+import { createServiceSchema, updateServiceSchema, searchServiceSchema } from "../validators/serviceValidator";
 
 const router = express.Router();
 

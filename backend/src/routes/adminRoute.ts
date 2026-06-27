@@ -1,5 +1,5 @@
 import express from "express";
-import { authMiddleware, authorize } from "../middlewares/authMiddleware.ts";
+import { authMiddleware, authorize } from "../middlewares/authMiddleware";
 import {
     getAllUsers,
     getAllProviders,
@@ -7,7 +7,7 @@ import {
     acceptProvider,
     rejectProvider,
     getPendingProviders
-} from "../controllers/adminController.ts";
+} from "../controllers/adminController";
 
 const router = express.Router();
 
