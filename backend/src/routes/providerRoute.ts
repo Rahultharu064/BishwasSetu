@@ -1,66 +1,47 @@
-import express from "express";
-import { authMiddleware, authorize } from "../middlewares/authMiddleware";
-import { validate } from "../middlewares/validateMiddleware";
+import { Router } from 'express'
+import {getPublicProfile} from '../controllers/providerController'
+import { protect, restrictTo }  from '../middlewares/authMiddleware'
+import { validate }             from '../middlewares/validateMiddleware'
 import {
-    becomeProvider,
-    completeProviderProfile,
-    uploadProfilePhoto,
-    uploadKyc,
-    getKycStatus,
-    getProviderById,
-    getMyProviderProfile,
-    getAllVerifiedProviders,
-    searchProviders
-} from "../controllers/providerController";
-import {providerCreateSchema, providerUpdateSchema ,kycUploadSchema} from "../validators/providervalidator";
-import { providerOnboardingUpload ,uploadSingle} from "../middlewares/multerMiddleware"; // Import the new upload config
+  CompleteProfileSchema,
+  UpdateProviderSchema,
+} from '../validators/providervalidator'
 
-const router = express.Router();
+const router = Router()
 
-// Public routes
-router.get("/", getAllVerifiedProviders);
-router.get("/:id", getProviderById);
+// ── Public routes ──────────────────────────────
+router.get('/',    searchProviders)
+router.get('/:id', getPublicProfile)
 
-// Protected routes
+// ── Provider-only routes ───────────────────────
+router.use(protect, restrictTo('PROVIDER'))
 
-// BECOME PROVIDER - For new providers (USER role)
+router.get(
+  '/me',
+  ProviderController.getMyProfile
+)
+
 router.post(
-    "/become-provider",
-    authMiddleware,
-    providerOnboardingUpload, // Use the new config
-    becomeProvider
-);
+  '/me/complete',
+  validate(CompleteProfileSchema),
+  ProviderController.completeProfile
+)
 
-// COMPLETE PROFILE - For existing providers (PROVIDER role)
 router.put(
-    "/profile/complete",
-    authMiddleware,
-    authorize(["PROVIDER"]),
-    providerOnboardingUpload, // Use the same config
-    completeProviderProfile
-);
+  '/me',
+  validate(UpdateProviderSchema),
+  ProviderController.updateProfile
+)
 
-// SINGLE UPLOAD ENDPOINTS
-router.post(
-    "/profile/photo",
-    authMiddleware,
-    authorize(["PROVIDER"]),
-    uploadSingle("photo"),
-    uploadProfilePhoto
-);
-// Add to your router file
-router.get("/profile/me", authMiddleware, authorize(["PROVIDER"]), getMyProviderProfile);
+router.get(
+  '/me/dashboard',
+  ProviderController.getDashboard
+)
 
 router.post(
-    "/kyc/upload",
-    authMiddleware,
-    authorize(["PROVIDER"]),
-    uploadSingle("file"),
-    validate(kycUploadSchema),
-    uploadKyc
-);
+  '/me/photo',
+  profilePhotoUpload,
+  ProviderController.uploadProfilePhoto
+)
 
-router.get("/kyc/status", authMiddleware, authorize(["PROVIDER"]), getKycStatus);
-router.get("/search", authMiddleware, authorize(["PROVIDER"]), searchProviders);
-
-export default router;
+export default router

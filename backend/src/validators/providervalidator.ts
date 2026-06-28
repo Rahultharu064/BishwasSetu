@@ -1,93 +1,22 @@
-import Joi from "joi";
+import { z } from 'zod'
 
-export const providerCreateSchema = Joi.object({
-  // Personal Info
-  gender: Joi.string().valid("Male", "Female", "Other", "Prefer not to say").optional(),
-  address: Joi.string().max(255).optional(),
-  district: Joi.string().max(100).optional(),
-  municipality: Joi.string().max(100).optional(),
+export const CompleteProfileSchema = z.object({
+  legalName:      z.string().min(2).max(100).trim(),
+  bio:            z.string().max(1000).optional(),
+  serviceArea:    z.string().min(2).max(100).trim(),
+  experienceYears: z.coerce.number().min(0).max(50),
+  skills:         z.array(z.string().min(1).max(100)).min(1).max(20),
+  categoryIds:    z.array(z.string().uuid()).min(1).max(5),
+  availability:   z.array(
+    z.object({
+      dayOfWeek: z.number().min(0).max(6),
+      startTime: z.string().regex(/^\d{2}:\d{2}$/, 'Format: HH:MM'),
+      endTime:   z.string().regex(/^\d{2}:\d{2}$/, 'Format: HH:MM'),
+    })
+  ).min(1),
+})
 
-  // Professional Info
-  categoryId: Joi.string().optional(),
-  legalName: Joi.string().min(3).max(100).required(),
-  experienceYears: Joi.number().integer().min(0).max(50).required(),
-  bio: Joi.string().min(150).max(1000).required(),
-  skills: Joi.string().allow(null, "").optional(),
+export const UpdateProviderSchema = CompleteProfileSchema.partial()
 
-  prevCompany: Joi.string().allow(null, "").optional(),
-  prevRole: Joi.string().allow(null, "").optional(),
-  workDuration: Joi.string().allow(null, "").optional(),
-
-  portfolioUrls: Joi.string().allow(null, "").optional(),
-
-  serviceDistrict: Joi.string().optional(),
-  serviceMunicipality: Joi.string().optional(),
-  availabilityDays: Joi.string().optional(),
-  availabilityTime: Joi.string().optional(),
-
-  isEmergencyAvailable: Joi.alternatives().try(
-    Joi.boolean(),
-    Joi.string().valid("true", "false")
-  ).optional(),
-
-  emergencyResponseTime: Joi.string().optional(),
-  emergencyExtraCharge: Joi.alternatives().try(
-    Joi.number().min(0),
-    Joi.string().allow("")
-  ).optional(),
-
-  price: Joi.alternatives().try(
-    Joi.number().min(0),
-    Joi.string().allow("")
-  ).optional(),
-
-  duration: Joi.string().min(2).max(50).optional()
-});
-
-
-export const providerUpdateSchema = Joi.object({
-  gender: Joi.string().valid("Male", "Female", "Other", "Prefer not to say").optional(),
-  address: Joi.string().max(255).optional(),
-  district: Joi.string().max(100).optional(),
-  municipality: Joi.string().max(100).optional(),
-
-  categoryId: Joi.string().optional(),
-  legalName: Joi.string().min(3).max(100).optional(),
-  experienceYears: Joi.number().integer().min(0).max(50).optional(),
-  bio: Joi.string().min(150).max(1000).optional(),
-  skills: Joi.string().allow(null, "").optional(),
-
-  prevCompany: Joi.string().allow(null, "").optional(),
-  prevRole: Joi.string().allow(null, "").optional(),
-  workDuration: Joi.string().allow(null, "").optional(),
-
-  portfolioUrls: Joi.string().allow(null, "").optional(),
-
-  serviceDistrict: Joi.string().optional(),
-  serviceMunicipality: Joi.string().optional(),
-  availabilityDays: Joi.string().optional(),
-  availabilityTime: Joi.string().optional(),
-
-  isEmergencyAvailable: Joi.alternatives().try(
-    Joi.boolean(),
-    Joi.string().valid("true", "false")
-  ).optional(),
-
-  emergencyResponseTime: Joi.string().optional(),
-  emergencyExtraCharge: Joi.alternatives().try(
-    Joi.number().min(0),
-    Joi.string().allow("")
-  ).optional(),
-
-  price: Joi.alternatives().try(
-    Joi.number().min(0),
-    Joi.string().allow("")
-  ).optional(),
-
-  duration: Joi.string().min(2).max(50).optional(),
-  verificationStatus: Joi.string().optional()
-}).min(1); // 🔥 REQUIRED: at least one field
-
-export const kycUploadSchema = Joi.object({
-  type: Joi.string().valid("GOVERNMENT_ID", "CERTIFICATE", "PROFILE_PHOTO").required()
-});
+export type CompleteProfileInput = z.infer<typeof CompleteProfileSchema>
+export type UpdateProviderInput  = z.infer<typeof UpdateProviderSchema>
