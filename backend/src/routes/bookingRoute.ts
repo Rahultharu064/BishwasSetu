@@ -1,24 +1,44 @@
-import { Router } from "express";
-import * as BookingController from "../controllers/bookingController";
-import { validationMiddleware } from "../middlewares/validateMiddleware";
-import { authMiddleware } from "../middlewares/authMiddleware";
-import { createBookingSchema, updateBookingStatusSchema } from "../validators/bookingValidator";
+import { Router } from 'express'
+import * as BookingController from '../controllers/bookingController'
+import { authMiddleware, protect, restrictTo, requireVerifiedProvider } from '../middlewares/authMiddleware'
+import { validate } from '../middlewares/validateMiddleware'
+import { CreateBookingSchema, UpdateBookingStatusSchema } from '../validators/bookingValidator'
 
-const router = Router();
+const router = Router()
 
-// Create a new booking (Customer only)
-router.post("/", authMiddleware, validationMiddleware(createBookingSchema), BookingController.createBooking);
+// All booking routes require authentication
+router.use(protect)
 
-// Get booking by ID (Customer, Provider, Admin)
-router.get("/:id", authMiddleware, BookingController.getBookingById);
+// ── Customer routes ────────────────────────────────────
+router.post(
+  '/',
+  restrictTo('CUSTOMER'),
+  validate(CreateBookingSchema),
+  BookingController.createBooking
+)
 
-// Get bookings for customer (Customer only)
-router.get("/customer/my-bookings", authMiddleware, BookingController.getCustomerBookings);
+router.get(
+  '/customer/me',
+  restrictTo('CUSTOMER'),
+  BookingController.getCustomerBookings
+)
 
-// Get bookings for provider (Provider only)
-router.get("/provider/my-bookings", authMiddleware, BookingController.getProviderBookings);
+// ── Provider routes ────────────────────────────────────
+router.get(
+  '/provider/me',
+  restrictTo('PROVIDER'),
+  requireVerifiedProvider,
+  BookingController.getProviderBookings
+)
 
-// Update booking status (Provider or Admin only)
-router.put("/:id/status", authMiddleware, validationMiddleware(updateBookingStatusSchema), BookingController.updateBookingStatus);
+// ── Shared (customer + provider + admin) ───────────────
+router.get('/:id', BookingController.getBooking)
 
-export default router;
+router.put(
+  '/:id/status',
+  restrictTo('CUSTOMER', 'PROVIDER'),
+  validate(UpdateBookingStatusSchema),
+  BookingController.updateBookingStatus
+)
+
+export default router

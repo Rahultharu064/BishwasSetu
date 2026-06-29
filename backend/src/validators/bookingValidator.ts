@@ -1,31 +1,30 @@
-import Joi from "joi";
+import { z } from 'zod'
 
-export const createBookingSchema = Joi.object({
-  providerId: Joi.number().integer().required().messages({
-    "number.base": "Provider ID must be a number",
-    "number.integer": "Provider ID must be an integer",
-    "any.required": "Provider ID is required",
-  }),
-  serviceId: Joi.number().integer().required().messages({
-    "number.base": "Service ID must be a number",
-    "number.integer": "Service ID must be an integer",
-    "any.required": "Service ID is required",
-  }),
-  bookingDate: Joi.date().required().messages({
-    "date.base": "Booking date must be a valid date",
-    "any.required": "Booking date is required",
-  }),
-  notes: Joi.string().optional().allow("").messages({
-    "string.base": "Notes must be a string",
-  }),
-});
-
-export const updateBookingStatusSchema = Joi.object({
-  status: Joi.string()
-    .valid("PENDING", "ACCEPTED", "IN_PROGRESS", "COMPLETED", "CANCELLED")
-    .required()
-    .messages({
-      "any.only": "Invalid status",
-      "any.required": "Status is required",
+export const CreateBookingSchema = z.object({
+  providerId:    z.string().uuid(),
+  categoryId:    z.string().uuid(),
+  description:   z.string().min(10).max(1000).trim(),
+  scheduledAt:   z.string().datetime({ message: 'Must be a valid ISO datetime' })
+    .refine((d) => new Date(d) > new Date(), {
+      message: 'Scheduled time must be in the future',
     }),
-});
+  priceNpr:      z.coerce.number().min(100).max(500000),
+  paymentMethod: z.enum(['KHALTI', 'ESEWA', 'CASH']).default('CASH'),
+})
+
+export const UpdateBookingStatusSchema = z.object({
+  status:       z.enum(['ACCEPTED', 'REJECTED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']),
+  cancelReason: z.string().max(500).optional(),
+}).refine(
+  (data) => {
+    // Require cancelReason when rejecting or cancelling
+    if (['REJECTED', 'CANCELLED'].includes(data.status) && !data.cancelReason) {
+      return false
+    }
+    return true
+  },
+  { message: 'Reason is required when rejecting or cancelling', path: ['cancelReason'] }
+)
+
+export type CreateBookingInput        = z.infer<typeof CreateBookingSchema>
+export type UpdateBookingStatusInput  = z.infer<typeof UpdateBookingStatusSchema>
