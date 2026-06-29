@@ -18,7 +18,8 @@ enum Role {
   ADMIN
 }
 
-enum KycStatus {
+// Identity verification track — booking-access gate
+enum IdentityStatus {
   INCOMPLETE
   PENDING_DOCUMENTS
   UNDER_REVIEW
@@ -26,11 +27,22 @@ enum KycStatus {
   REJECTED
 }
 
-enum ExperienceBadge {
-  NAVIN      // < 1 year
-  ANUBHAVI   // 1–2 years
-  PRABIN     // > 2 years
+// Skill verification track — additive trust signal, never a booking gate
+enum SkillStatus {
+  UNVERIFIED      // no evidence submitted
+  SELF_DECLARED   // years/skills stated, no supporting evidence
+  PENDING_REVIEW  // evidence submitted, awaiting admin review
+  VERIFIED        // evidence reviewed and approved (Tier 1 by default)
 }
+
+// Platform-verified milestone badge — based on real booking history, not self-reporting
+enum MilestoneBadge {
+  NEW             // < 5 completed bookings
+  ESTABLISHED     // 5–49 completed bookings
+  TRUSTED_PRO     // 50–199 completed + trust score > 70
+  MASTER_PROVIDER // 200+ completed + trust score > 80
+}
+
 
 enum BookingStatus {
   REQUESTED
@@ -155,45 +167,54 @@ model RefreshToken {
 // ─────────────────────────────────────────────
 
 model Provider {
-  id              String          @id @default(uuid()) @db.Char(36)
-  userId          String          @unique @db.Char(36)
-  legalName       String          @db.VarChar(100)
-  profilePhoto    String?         @db.VarChar(500)  // Cloudinary URL
-  bio             String?         @db.Text
-  serviceArea     String?         @db.VarChar(100)  // district/zone
-  experienceYears Int             @default(0)
-  experienceBadge ExperienceBadge @default(NAVIN)
-  kycStatus       KycStatus       @default(INCOMPLETE)
-  trustScore      Float           @default(0) @db.Float
-  isAvailable     Boolean         @default(true)
-  embedding       Json?           // service description embedding vector (for AI reranking)
-  rejectionReason String?         @db.Text
-  deletedAt       DateTime?
+  id                String         @id @default(uuid()) @db.Char(36)
+  userId            String         @unique @db.Char(36)
+  legalName         String         @db.VarChar(100)
+  profilePhoto      String?        @db.VarChar(500)  // Cloudinary URL
+  bio               String?        @db.Text
+  serviceArea       String?        @db.VarChar(100)  // district/zone
+  yearsExperience   Int?           // self-reported, plain text only — never badged alone
+  identityStatus    String         @default("INCOMPLETE") @db.VarChar(20)
+  // INCOMPLETE | PENDING_DOCUMENTS | UNDER_REVIEW | VERIFIED | REJECTED
+  skillStatus       String         @default("UNVERIFIED") @db.VarChar(20)
+  // UNVERIFIED | SELF_DECLARED | PENDING_REVIEW | VERIFIED
+  milestoneBadge    String         @default("NEW") @db.VarChar(20)
+  // NEW | ESTABLISHED | TRUSTED_PRO | MASTER_PROVIDER
+  completedBookings Int            @default(0)       // used for milestone recompute
+  trustScore        Float          @default(0) @db.Float
+  isAvailable       Boolean        @default(true)
+  embedding         Json?          // service description embedding vector
+  identityRejectionReason String?  @db.Text
+  skillRejectionReason    String?  @db.Text
+  deletedAt         DateTime?
 
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
 
   // Relations
-  user            User            @relation(fields: [userId], references: [id])
-  skills          ProviderSkill[]
-  categories      ProviderCategory[]
-  documents       KycDocument[]
-  availability    ProviderAvailability[]
-  bookings        Booking[]       @relation("ProviderBookings")
-  reviews         Review[]
-  complaints      Complaint[]     @relation("ProviderComplaints")
-  trustEvents     TrustScoreEvent[]
-  kycDecisions    KycAiDecision[]
-  badges          ProviderBadge[]
-  wallet          CreditWallet?
-  purchases       CreditPurchase[]
-  deductions      CreditDeduction[]
+  user              User           @relation(fields: [userId], references: [id])
+  skills            ProviderSkill[]
+  categories        ProviderCategory[]
+  documents         KycDocument[]
+  skillEvidence     SkillEvidence[]
+  availability      ProviderAvailability[]
+  bookings          Booking[]      @relation("ProviderBookings")
+  reviews           Review[]
+  complaints        Complaint[]    @relation("ProviderComplaints")
+  trustEvents       TrustScoreEvent[]
+  kycDecisions      KycAiDecision[]
+  badges            ProviderBadge[]
+  wallet            CreditWallet?
+  purchases         CreditPurchase[]
+  deductions        CreditDeduction[]
 
-  @@index([kycStatus])
+  @@index([identityStatus])
+  @@index([skillStatus])
   @@index([trustScore])
   @@index([serviceArea])
   @@map("providers")
 }
+
 
 // ─────────────────────────────────────────────
 // PROVIDER SKILLS & CATEGORIES
@@ -261,7 +282,7 @@ model ProviderAvailability {
 model KycDocument {
   id           String   @id @default(uuid()) @db.Char(36)
   providerId   String   @db.Char(36)
-  type         String   @db.VarChar(30)   // 'government_id'|'selfie'|'certificate'
+  type         String   @db.VarChar(30)   // 'government_id'|'selfie'
   cloudinaryId String   @db.VarChar(200)  // Cloudinary public_id (restricted folder)
   url          String   @db.VarChar(500)  // signed delivery URL (refreshed on access)
   uploadedAt   DateTime @default(now())
@@ -271,6 +292,42 @@ model KycDocument {
   @@index([providerId])
   @@map("kyc_documents")
 }
+
+// ─────────────────────────────────────────────
+// SKILL EVIDENCE (v2.3 — separate, non-blocking track)
+// ─────────────────────────────────────────────
+
+model SkillEvidence {
+  id               String    @id @default(uuid()) @db.Char(36)
+  providerId       String    @db.Char(36)
+  type             String    @db.VarChar(20)    // 'certificate'|'work_photo'|'reference'
+  cloudinaryId     String    @db.VarChar(200)   // Cloudinary public_id (restricted folder)
+  fileUrl          String    @db.VarChar(500)   // signed delivery URL
+  certNumber       String?   @db.VarChar(100)   // extracted via OCR — for Phase 3 issuer lookup
+  issuerName       String?   @db.VarChar(200)   // extracted via OCR
+  aiPrecheck       Json?
+  // { documentType, ocrResult?, duplicateFlag?, stockPhotoFlag?, aiGeneratedFlag? }
+  reviewStatus     String    @default("PENDING") @db.VarChar(20)
+  // PENDING | APPROVED | REJECTED
+  authenticityTier String    @default("NONE") @db.VarChar(10)
+  // NONE | TIER_1 | TIER_2
+  // TIER_1: AI pre-check + human visual review (not obviously fake — cannot prove genuine issuance)
+  // TIER_2: certificate number confirmed against issuing institution's records (Phase 3 only)
+  issuerVerified   Boolean   @default(false)    // true only via Phase 3 CTEVT/institutional lookup
+  issuerVerifiedAt DateTime?
+  rejectReason     String?   @db.VarChar(500)
+  reviewedBy       String?   @db.Char(36)       // admin user ID
+  isPaidBadge      Boolean   @default(false)    // true = submitted via paid Skill Verified badge (7.4)
+  createdAt        DateTime  @default(now())
+  reviewedAt       DateTime?
+
+  provider         Provider  @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([providerId])
+  @@index([reviewStatus])
+  @@map("skill_evidence")
+}
+
 
 // ─────────────────────────────────────────────
 // KYC AI DECISION LOG

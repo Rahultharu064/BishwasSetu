@@ -1,9 +1,9 @@
 # BishwasSetu — Product Requirements Document
 
-**Version:** 2.1
+**Version:** 2.4
 **Status:** Active Development
 **Classification:** Internal — Engineering & Product
-**Last Updated:** 2026-06-23
+**Last Updated:** 2026-06-28
 
 ---
 
@@ -46,6 +46,7 @@ The informal home services economy in Nepal operates without accountability. Cus
 - Not an ad platform that sells ranking to the highest bidder
 - Not a lead-selling platform that auctions customer inquiries to multiple providers
 - Not a platform where money can override trust score in organic search ranking
+- Not a platform that conflates "identity confirmed" with "skill confirmed" under one ambiguous "Verified" label *(new in v2.3 — see 5.5)*
 
 These are deliberate architectural decisions, not feature gaps.
 
@@ -61,12 +62,14 @@ These are deliberate architectural decisions, not feature gaps.
 | Customer booking conversion | > 25% of provider profile views |
 | Trust Score false positive rate | < 5% of flagged reviews |
 | RAG Assistant resolution rate | > 60% of queries without human support |
+| Skill evidence submission rate *(new)* | > 40% of identity-verified providers submit at least one proof within 30 days |
 
 ### Key Performance Indicators
 
 | Metric | Month 3 | Month 6 | Month 12 |
 |---|---|---|---|
-| Verified providers | 200 | 1,000 | 3,000 |
+| Verified providers (identity) | 200 | 1,000 | 3,000 |
+| Skill-verified providers *(new)* | 30 | 250 | 1,000 |
 | Monthly bookings | 500 | 3,000 | 10,000 |
 | Average trust score | > 70 | > 75 | > 78 |
 | Complaint rate | < 5% | < 3% | < 2% |
@@ -81,20 +84,20 @@ These are deliberate architectural decisions, not feature gaps.
 
 - **Age:** 28 | **Location:** Kathmandu | **Device:** Android smartphone
 - **Behavior:** Finds home services via Facebook groups today. Frustrated by no-shows, unclear pricing, and no accountability.
-- **Need:** Book a reliable plumber or electrician with a verifiable quality guarantee.
+- **Need:** Book a reliable plumber or electrician with a verifiable quality guarantee — and to clearly understand *what* "verified" actually means before trusting it.
 - **Language:** Nepali primary, some English.
 
 ### Persona 2 — Rajan (Service Provider)
 
 - **Age:** 34 | **Location:** Lalitpur | **Device:** Basic Android
-- **Behavior:** Gets work via word-of-mouth. Has strong skills but no formal way to prove or scale his reputation.
-- **Need:** Consistent work and a reputation that travels with him — without paying platform fees during slow months.
+- **Behavior:** Gets work via word-of-mouth. Has strong skills but no formal way to prove or scale his reputation, and likely has no formal certificate to upload.
+- **Need:** Consistent work and a reputation that travels with him — without paying platform fees during slow months, and without being blocked from earning just because he lacks paperwork.
 - **Language:** Nepali. Limited English comfort.
 
 ### Persona 3 — Admin / Moderator
 
 - **Background:** Platform operations team member.
-- **Need:** Clear, AI-assisted queues for KYC review, complaint resolution, and trust anomaly flags — not raw database tables.
+- **Need:** Clear, AI-assisted queues for KYC review, skill evidence review, complaint resolution, and trust anomaly flags — not raw database tables.
 
 ---
 
@@ -130,7 +133,7 @@ These are deliberate architectural decisions, not feature gaps.
 └──────────────┘             └──────────────────┘
         │
 ┌───────┴─────────────────────────────────────────┐
-│  Shared Infra: PostgreSQL · Redis · Cloudinary · Groq API │
+│  Shared Infra: MySQL · Redis · Cloudinary · Groq API │
 └─────────────────────────────────────────────────┘
 ```
 
@@ -159,8 +162,8 @@ All public pages share a common **Sticky Header** (Logo, Nav: Home / Services / 
 #### Providers Page
 
 - Advanced filters: category, location, trust score range, verification status, availability
-- Provider cards: photo, skills, experience badge, trust score, verification badge, boost indicator
-- Provider profile detail: trust score breakdown, experience badge, reviews, availability calendar, "Book Service" CTA
+- Provider cards: photo, skills, milestone badge, trust score, identity verification badge, boost indicator *(updated — see 5.4)*
+- Provider profile detail: trust score breakdown, milestone badge, identity & skill verification status, reviews, availability calendar, "Book Service" CTA
 
 #### About Page
 
@@ -178,7 +181,7 @@ All public pages share a common **Sticky Header** (Logo, Nav: Home / Services / 
 
 - OTP expires in 5 minutes.
 - JWT access token TTL: 15 minutes. Refresh token TTL: 7 days.
-- Providers with status ≠ `VERIFIED` cannot accept bookings — enforced at middleware, not just UI.
+- Providers with `identityStatus` ≠ `VERIFIED` cannot accept bookings — enforced at middleware, not just UI. *(Booking gate is tied to identity verification only — see 5.5.)*
 
 **Endpoints**
 
@@ -203,7 +206,8 @@ POST /api/auth/logout
 **Provider Profile Page (Customer View)**
 
 - Trust score meter with breakdown
-- Experience badge display
+- Milestone badge display *(replaces standalone "Experience Badge" — see 5.4)*
+- Identity Verified indicator and Skill Verified indicator shown as **two distinct, separately labeled badges** — never merged into a single ambiguous "Verified" badge *(rule from v2.3)*. Skill Verified further distinguishes **Tier 1 ("Skill evidence submitted")** from **Tier 2 ("Skill Verified — Issuer Confirmed")** — the platform never implies institutional confirmation it hasn't actually performed *(refined, v2.4 — see 6.2.1)*
 - Reviews list with authenticity indicators
 - Availability slots
 - Book Service CTA
@@ -225,37 +229,57 @@ GET  /api/providers/:id/availability
 
 #### Mandatory Enforcement Rule
 
-> Providers **CANNOT** accept bookings until professional info & KYC are `VERIFIED`. Enforced at middleware — any attempt returns `403 Forbidden`.
+> Providers **CANNOT** accept bookings until `identityStatus` is `VERIFIED`. Enforced at middleware — any attempt returns `403 Forbidden`. Skill verification is **not** a booking gate — it is an additive trust signal layered on top, so providers without certificates or formal proof (the common case in Nepal's informal trades) are never blocked from earning a living.
 
-#### Onboarding Status
+#### Identity Verification Status *(renamed from "Onboarding Status" — formerly conflated identity + skill)*
 
 | Status | Description |
 |---|---|
 | `INCOMPLETE` | Profile fields not filled |
 | `PENDING_DOCUMENTS` | Professional info saved, documents not uploaded |
 | `UNDER_REVIEW` | Submitted, awaiting AI + human review |
-| `VERIFIED` | Full access unlocked |
+| `VERIFIED` | Full booking access unlocked |
 | `REJECTED` | Rejection reason shown with re-submission option |
+
+#### Skill Verification Status *(new, v2.3 — parallel, non-blocking track)*
+
+| Status | Description |
+|---|---|
+| `UNVERIFIED` | No skill evidence submitted yet |
+| `SELF_DECLARED` | Provider has stated years/skills but submitted no supporting evidence |
+| `PENDING_REVIEW` | Evidence (certificate, work photos, reference) submitted, awaiting admin review |
+| `VERIFIED` | Evidence reviewed and approved — or paid Skill Verified badge (7.4) approved |
+
+> **Why two tracks:** Identity KYC (6.2) proves a provider is a real, identifiable person. It does **not** prove competence. Skill verification is the separate claim that a provider can actually do the job — built from uploaded evidence, admin review, and ultimately reinforced by real completed-booking history (see Milestone Badge below). Collapsing these into one "VERIFIED" status overstates what identity KYC actually checks and risks misleading customers like Maya.
 
 #### Provider Professional Information
 
-Fields: Legal name · Phone & email · Service categories & skills · Years of experience · Service description · Service area (district/zone) · Availability schedule
+Fields: Legal name · Phone & email · Service categories & skills · Years of experience (self-reported, displayed as plain text, never as a badge on its own — see Milestone Badge) · Service description · Service area (district/zone) · Availability schedule
 
-#### Experience Badge Logic
+#### Milestone Badge Logic *(replaces the old self-reported Experience Badge)*
+
+The previous Experience Badge (New / Experienced / Expert) was based solely on self-reported years, which is unverifiable and collapses all providers with 2+ years into a single "Expert" tier regardless of actual platform performance. It is replaced with a **platform-verified milestone badge** derived from real, unforgeable booking and trust data:
 
 | Badge | Nepali | Condition |
 |---|---|---|
-| New | नविन (Navin) | < 1 year |
-| Experienced | अनुभवी (Anubhavi) | 1–2 years |
-| Expert | प्रवीन (Prabin) | > 2 years |
+| New | नविन (Navin) | < 5 completed bookings |
+| Established | स्थापित (Sthapit) | 5–49 completed bookings |
+| Trusted Pro | विश्वसनीय (Vishwasniya) | 50–199 completed bookings AND trust score > 70 |
+| Master Provider | निपुण (Nipun) | 200+ completed bookings AND trust score > 80 |
 
-#### Provider Dashboard (Verified Only)
+- Self-reported years of experience remains visible on the profile as plain text (e.g., "12 years in trade — self-reported") but is **never** rendered as a badge graphic, to avoid implying platform verification it doesn't have.
+- Milestone badge recomputes on every booking completion alongside trust score recompute (8.1 / 6.1 trigger).
+- This directly addresses the gap where a 3-year provider and a 20-year provider previously looked identical under "Expert" — ranking now reflects actual proven performance on the platform.
+
+#### Provider Dashboard (Identity-Verified Only)
 
 - Trust score overview with trend graph
+- Milestone badge progress (e.g., "12 bookings to Trusted Pro")
+- Skill verification status + "Submit evidence" CTA if `UNVERIFIED` or `SELF_DECLARED`
 - Credit balance widget (current credits, pack recharge CTA)
 - Incoming booking requests (accept / reject)
 - Earnings summary + commission breakdown
-- Verification badge display
+- Identity & skill verification badge display
 - AI Assistant chat widget (RAG-based)
 - Boost analytics: profile views, click-through rate, booking conversion
 
@@ -277,33 +301,50 @@ PUT  /api/bookings/:id/status
 
 **Step 1 — Professional Info** (fields from 5.4, saved as draft)
 
-**Step 2 — Document Upload**
+**Step 2 — Identity Document Upload**
 
 | Document | Required |
 |---|---|
 | Government-issued ID (Citizenship / Passport) | Yes |
 | Profile photo (selfie) | Yes |
-| Professional certificate | No (boosts trust score if provided) |
 
 Files uploaded to Cloudinary via signed upload URLs. Max 5 MB. Formats: JPG, PNG, PDF. KYC documents stored in a private, restricted Cloudinary folder — accessible only via signed delivery URLs.
 
-**Step 3 — Verification Status**
+> This step determines `identityStatus` only. It is the **booking-access gate** (5.4).
+
+**Step 3 — Identity Verification Status**
 
 - Status badge display
 - Admin feedback (REJECTED only)
 - Re-upload button (REJECTED only)
 
+**Step 4 — Skill Evidence (Optional, non-blocking)** *(new, v2.3)*
+
+| Evidence type | Examples |
+|---|---|
+| Certificate | Trade school, CTEVT, vendor training certificate |
+| Work photos | Before/after photos of past jobs |
+| Reference | Name + phone of a past customer/employer |
+
+- Entirely optional — skipping this step has **no effect** on booking access.
+- Skipping leaves `skillStatus` at `SELF_DECLARED` (if years/skills were filled in Step 1) or `UNVERIFIED`.
+- Submitted evidence enters the **Skill Evidence Review Queue** (new, see 5.11) — separate from the identity KYC queue.
+- Approved evidence sets `skillStatus = VERIFIED`, displays a distinct "Skill Verified" badge, and contributes to trust score under Verification Completeness (5.8).
+- Providers can return and submit evidence at any time after initial onboarding — not limited to first-time KYC.
+
 **Post-Submission Behavior**
 
-- Redirect to read-only dashboard
-- Booking functionality disabled until `VERIFIED`
-- Trust score displays as "Pending"
+- Redirect to read-only dashboard until `identityStatus = VERIFIED`
+- Booking functionality disabled until `identityStatus = VERIFIED` (skill status has no effect on this gate)
+- Trust score displays as "Pending" until identity verification completes
 
 **Endpoints**
 
 ```
 POST /api/providers/kyc/upload
 GET  /api/providers/kyc/status
+POST /api/providers/skill-evidence/upload
+GET  /api/providers/me/skill-evidence
 GET  /api/admin/providers/kyc
 PUT  /api/admin/providers/kyc/:id/approve
 PUT  /api/admin/providers/kyc/:id/reject
@@ -313,16 +354,16 @@ PUT  /api/admin/providers/kyc/:id/reject
 
 ### 5.6 Service Discovery & Advanced Search
 
-**Filter parameters:** category · lat/lng + radius · trust score min/max · verification status · availability date
+**Filter parameters:** category · lat/lng + radius · trust score min/max · identity verification status · skill verification status · availability date
 
-**Sorting:** Trust score (default organic) · Distance · Price · Experience · AI-ranked (with boost layer)
+**Sorting:** Trust score (default organic) · Distance · Price · Milestone badge · AI-ranked (with boost layer)
 
 With AI active (6.3), results are re-ranked by semantic intent before returning. Boost credits add a secondary featured layer — disclosed to customers and never overriding organic trust-score ranking.
 
 **Endpoints**
 
 ```
-GET /api/providers?category=&lat=&lng=&radius=&trust_min=&sort=
+GET /api/providers?category=&lat=&lng=&radius=&trust_min=&skill_status=&sort=
 GET /api/categories
 GET /api/categories/:id/providers
 GET /api/categories/:id/price-range
@@ -342,12 +383,13 @@ REQUESTED → ACCEPTED → IN_PROGRESS → COMPLETED → REVIEWED
 
 #### Business Rules
 
-- Only `VERIFIED` providers can transition `REQUESTED → ACCEPTED`.
+- Only providers with `identityStatus = VERIFIED` can transition `REQUESTED → ACCEPTED`.
 - Customers can cancel up to 2 hours before scheduled time.
 - 48-hour review window opens after `COMPLETED`.
 - Providers rejecting > 30% of bookings over 30 days receive a trust score penalty.
 - New providers (trust score < 40): first 3 bookings require manual completion confirmation from customer (Risk-Adaptive Booking — see 6.6).
 - Commission deducted automatically from provider payout on `COMPLETED`.
+- Every `COMPLETED` booking triggers a milestone badge recompute (5.4) alongside the existing trust score recompute (6.1).
 
 **Endpoints**
 
@@ -372,8 +414,10 @@ Score range 0–100. Recomputed on every review, complaint, vouch, and booking e
 | Review average (recency-weighted) | 40% |
 | Booking timeliness (on-time rate) | 20% |
 | Complaint ratio (complaints / bookings) | −20% |
-| Verification completeness | 10% |
+| Verification completeness (identity + skill) | 10% |
 | Community vouches | 10% |
+
+> Verification completeness now factors in **both** `identityStatus = VERIFIED` and `skillStatus = VERIFIED` — a provider with both verified earns a higher completeness score than identity-only, reflecting the stronger trust claim.
 
 #### AI-Augmented Signals (6.1)
 
@@ -439,12 +483,20 @@ GET  /api/admin/complaints
 
 ### 5.11 Admin & Moderator Panel
 
-**KYC Review Queue**
+**KYC Review Queue (Identity)**
 
 - Paginated pending KYC list
-- Document viewer (ID, selfie, certificate)
+- Document viewer (ID, selfie)
 - AI summary panel: confidence score, extracted fields, face match result, risk flag
 - One-click approve / reject with required rejection reason
+
+**Skill Evidence Review Queue** *(new, v2.3 — separate from identity KYC queue)*
+
+- Paginated pending skill evidence list (certificate / work photos / reference)
+- Evidence viewer
+- One-click approve / reject with required rejection reason
+- Approval sets `skillStatus = VERIFIED` and triggers trust score recompute (5.8)
+- Paid Skill Verified badge purchases (7.4) route into this same queue with priority flag
 
 **Complaint Review Page**
 
@@ -454,9 +506,9 @@ GET  /api/admin/complaints
 
 **Admin Dashboard**
 
-- User & provider management (search, filter by status/category/trust score)
+- User & provider management (search, filter by identity status / skill status / category / trust score)
 - Trust score audit log
-- Platform analytics (bookings by category/zone, trust score distribution)
+- Platform analytics (bookings by category/zone, trust score distribution, milestone badge distribution)
 - Fraud & abuse flag queue
 - Revenue analytics: commission by category · credit pack sales · badge purchase history
 
@@ -469,6 +521,9 @@ PUT  /api/admin/providers/:id/status
 GET  /api/admin/trust/anomalies
 GET  /api/admin/analytics/summary
 GET  /api/admin/analytics/revenue
+GET  /api/admin/providers/skill-evidence
+PUT  /api/admin/providers/skill-evidence/:id/approve
+PUT  /api/admin/providers/skill-evidence/:id/reject
 ```
 
 ---
@@ -477,7 +532,7 @@ GET  /api/admin/analytics/revenue
 
 **Notification Channels:** In-app · Push (Firebase FCM) · SMS (Sparrow SMS)
 
-**Notification Events:** Booking request received · Booking accepted/rejected · Job completed · Review received · KYC status update · Complaint resolved · Credit balance low (10 credits remaining)
+**Notification Events:** Booking request received · Booking accepted/rejected · Job completed · Review received · Identity KYC status update · Skill evidence status update · Milestone badge earned · Complaint resolved · Credit balance low (10 credits remaining)
 
 **Payment Methods:** Khalti · eSewa · Cash-on-completion
 
@@ -485,7 +540,7 @@ GET  /api/admin/analytics/revenue
 
 - Commission deducted from provider payout on booking completion — customer never sees platform fees.
 - Credit pack purchases: Khalti or eSewa, instant credit top-up on payment confirmation.
-- Trust badge purchases: one-time payment, badge activated on admin verification.
+- Trust badge purchases: one-time payment, badge activated on admin verification (routes through Skill Evidence Review Queue for skill-related badges).
 - Booking deposit held in escrow, released to provider on job completion + no active dispute.
 
 ---
@@ -510,11 +565,13 @@ The AI layer is additive. Every feature has a graceful degradation path — if a
 
 **Community Vouch Graph** — vouch weight = voucher's trust score / 100. Prevents trust farming via low-score accounts.
 
+**Milestone Badge Recompute** *(new, v2.3)* — triggered on every booking completion alongside trust score recompute; re-evaluates badge tier per thresholds in 5.4.
+
 **Endpoints**
 
 ```
 GET  /api/providers/:id/trust-score
-     Response: { score, breakdown, ai_signals, anomaly_flag, last_computed }
+     Response: { score, breakdown, ai_signals, anomaly_flag, last_computed, milestone_badge }
 
 POST /api/internal/trust/recompute/:id
      Triggered by: review, complaint, vouch, booking, decay job
@@ -524,11 +581,11 @@ GET  /api/admin/trust/anomalies
 
 ---
 
-### 6.2 AI KYC Verification
+### 6.2 AI KYC Verification (Identity)
 
 **Status:** Active (MVP)
 
-**Purpose:** Reduce KYC approval time from hours to minutes for clear-cut cases.
+**Purpose:** Reduce **identity** KYC approval time from hours to minutes for clear-cut cases. *(Scope clarified, v2.3 — this pipeline verifies identity only, not professional skill. See 6.2.1 for the separate skill evidence pipeline.)*
 
 **Pipeline**
 
@@ -541,7 +598,7 @@ Face Match (selfie ↔ ID photo)
         ↓
 Forgery Detection (EXIF, metadata, compression artifacts)
         ↓
-  Confidence ≥ 85% + no flags  →  AUTO-APPROVE
+  Confidence ≥ 85% + no flags  →  AUTO-APPROVE (sets identityStatus = VERIFIED)
   Confidence < 85% OR any flag  →  HUMAN QUEUE (admin sees AI report)
 ```
 
@@ -560,6 +617,65 @@ POST /api/admin/kyc/:id/override
 ```
 
 **Implementation:** OCR via AWS Textract · Vision analysis via Groq `llama-3.2-90b-vision-preview` · Face match via AWS Rekognition · Files stored on Cloudinary (signed upload, restricted delivery) · Bull queue on Redis · SLA: AI < 2 min, human queue < 4 hours.
+
+---
+
+### 6.2.1 AI Skill Evidence Review *(updated, v2.4 — two-tier authenticity model)*
+
+**Status:** Active (MVP) — lightweight, mostly human-reviewed at launch
+
+**Purpose:** Provide a first-pass quality and plausibility check on submitted skill evidence (certificates, work photos, references) before it reaches the admin queue — without claiming to assess actual trade competence, which AI cannot reliably do from a photo.
+
+#### Why this is harder than identity KYC
+
+Identity KYC (6.2) can auto-approve because forgery detection on a government ID is checking *image-level tampering* — a well-defined, narrow problem. Skill evidence forgery is a different and harder problem: a certificate can be a perfectly clean, untampered image of something that was simply **never issued by the institution it names** — including certificates generated or fabricated using AI image/document tools, which leave no editing artifacts to detect. EXIF analysis, compression-artifact checks, and OCR field-matching (the same techniques used for identity documents) **cannot prove a certificate is genuine** — they can only fail to catch *obvious* fakes. AI-generation detectors exist but lag behind generation tools and are advisory at best, never proof.
+
+Because of this, skill evidence authenticity is modeled in two distinct tiers, with the system never overstating which tier a given piece of evidence has reached.
+
+#### Authenticity Tiers
+
+| Tier | Label shown to customers | What it means | How it's established |
+|---|---|---|---|
+| **Tier 1 — Reviewed** | "Skill evidence submitted" | A document/photo was submitted and passed AI pre-check + human visual review. Confirms the document is *not obviously fake* — does **not** confirm it was genuinely issued. | AI pre-check (below) + admin visual review |
+| **Tier 2 — Issuer-Confirmed** | "Skill Verified — Issuer Confirmed" | The certificate number was cross-checked against the issuing institution's own records. This is the only tier that constitutes a real authenticity guarantee. | Certificate number/QR lookup against issuer API or manual institutional confirmation (CTEVT etc. — Phase 3, Section 12) |
+
+> At MVP, only **Tier 1** is achievable for most categories, since issuer integrations (CTEVT, vendor training bodies) don't yet exist. The platform must never display Tier 1 evidence with language implying institutional confirmation. `skillStatus = VERIFIED` at MVP always means Tier 1 unless `issuerVerified = true` is also set.
+
+#### Pipeline
+
+```
+Evidence Upload (Cloudinary — private folder)
+        ↓
+Document type classification (certificate / work photo / reference)
+        ↓
+  Certificate → OCR (AWS Textract) + field extraction (issuer name, cert number, date)
+                + EXIF/compression forgery check (catches edited/screenshotted fakes only)
+                + AI-image-generation flag (Groq vision — advisory signal, NOT proof)
+  Work photo  → image quality + duplicate/stock-photo detection across all submissions
+  Reference   → format validation only (name + phone present)
+        ↓
+ALWAYS routes to Skill Evidence Review Queue (5.11) for human admin decision
+        ↓
+Admin approve/reject → sets skillStatus + tier (Tier 1 by default)
+        ↓
+[Phase 3] If issuer database/API available for that institution →
+  Certificate number lookup → issuerVerified = true → Tier 2 badge unlocked
+```
+
+> There is **no auto-approve path** for skill evidence at MVP — even a clean AI pre-check always routes to a human. AI flags (duplicate certs, stock photos, generation artifacts) are advisory signals that help the admin prioritize and scrutinize, never an approval mechanism. This claim is too consequential, and too easy to fake convincingly with modern AI tools, to automate fully on day one.
+
+**Endpoints**
+
+```
+POST /api/providers/skill-evidence/upload
+GET  /api/providers/me/skill-evidence
+GET  /api/admin/providers/skill-evidence
+PUT  /api/admin/providers/skill-evidence/:id/approve
+PUT  /api/admin/providers/skill-evidence/:id/reject
+POST /api/admin/providers/skill-evidence/:id/issuer-verify   (Phase 3 — sets issuerVerified)
+```
+
+**Implementation:** Reuses Cloudinary signed-upload pattern from 6.2 · OCR via AWS Textract for certificates · Groq vision model for stock-photo/duplicate/AI-generation-artifact flagging on work photos and certificates · Bull queue on Redis · SLA: AI pre-check < 2 min, admin decision < 24 hours.
 
 ---
 
@@ -587,7 +703,7 @@ GET /api/providers/:id/availability-hint
 GET /api/categories/:id/price-range?zone=
 ```
 
-**Implementation:** pgvector on PostgreSQL 16 · cosine similarity at search time (< 100ms p95) · provider embeddings updated on profile edit via background job.
+**Implementation:** Provider embeddings stored as `JSON` column in MySQL · cosine similarity computed in application layer (Node.js) at search time · embeddings updated on profile edit via background job · target < 150ms p95 at MVP scale (upgrade to dedicated vector store post-Series A if needed).
 
 ---
 
@@ -606,7 +722,7 @@ Query Preprocessing
   - Language detection (Nepali / English)
   - Intent classification (booking / provider info / complaint / policy / credits)
       ↓
-Retrieval — PostgreSQL FTS (vectorless)
+Retrieval — MySQL FULLTEXT Search (vectorless)
   - BM25 keyword search over kb_articles
   - Context injection: session, active booking, viewed provider, credit balance
       ↓
@@ -619,33 +735,32 @@ Streamed Response → UI widget (SSE)
 
 #### Vectorless Retrieval Design
 
-PostgreSQL full-text search (`tsvector` + `GIN` index) — no separate vector database required at MVP scale.
+MySQL native `FULLTEXT` index — no separate vector database required at MVP scale.
+
+**Knowledge base structure:**
 
 ```sql
 CREATE TABLE kb_articles (
-  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  category    TEXT NOT NULL,  -- 'policy'|'faq'|'provider_info'|'booking_guide'|'credits'
-  title       TEXT NOT NULL,
-  content     TEXT NOT NULL,
-  lang        TEXT DEFAULT 'ne',  -- 'ne' | 'en'
-  search_vec  TSVECTOR GENERATED ALWAYS AS (
-                to_tsvector('english', title || ' ' || content)
-              ) STORED,
-  updated_at  TIMESTAMPTZ DEFAULT now()
-);
-
-CREATE INDEX kb_fts_idx ON kb_articles USING GIN(search_vec);
+  id          CHAR(36)      PRIMARY KEY DEFAULT (UUID()),
+  category    VARCHAR(50)   NOT NULL,  -- 'policy'|'faq'|'provider_info'|'booking_guide'|'credits'
+  title       VARCHAR(500)  NOT NULL,
+  content     TEXT          NOT NULL,
+  lang        VARCHAR(5)    NOT NULL DEFAULT 'ne',  -- 'ne' | 'en'
+  updated_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP
+              ON UPDATE CURRENT_TIMESTAMP,
+  FULLTEXT idx_fts (title, content)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
-Retrieval query:
+**Retrieval query:**
 
 ```sql
 SELECT id, title, content,
-       ts_rank(search_vec, query) AS rank
-FROM kb_articles,
-     plainto_tsquery('english', $1) AS query
-WHERE search_vec @@ query
-ORDER BY rank DESC
+       MATCH(title, content) AGAINST (? IN NATURAL LANGUAGE MODE) AS relevance
+FROM kb_articles
+WHERE MATCH(title, content) AGAINST (? IN NATURAL LANGUAGE MODE)
+  AND lang = ?
+ORDER BY relevance DESC
 LIMIT 5;
 ```
 
@@ -658,6 +773,7 @@ LIMIT 5;
 | Complaint filing | Complaint form schema, policy articles, past complaint status |
 | Credits / boost | Current credit balance, pack options, boost analytics |
 | Policy / FAQ | Top-ranked KB chunks |
+| Identity vs. skill verification *(new)* | KB article explaining the difference, provider's own current status |
 | General (Nepali) | Translated KB chunks; response in Nepali |
 
 #### UI Placement
@@ -667,7 +783,7 @@ Not a standalone chatbot page. Contextual widget:
 - Booking flow: appears after 30s inactivity on a step
 - Provider profile page: "Compare or ask about this provider"
 - Complaint page: structured complaint intake guide
-- Provider dashboard: booking, profile, and credits questions
+- Provider dashboard: booking, profile, credits, and skill evidence questions
 - Global help icon: always accessible
 
 #### Guardrails
@@ -698,7 +814,7 @@ PUT  /api/admin/kb/articles/:id
 DELETE /api/admin/kb/articles/:id
 ```
 
-**Implementation:** Groq API `llama-3.3-70b-versatile` streaming · PostgreSQL FTS · Redis session (TTL 30 min) · KB managed via admin panel, no engineer needed for content updates.
+**Implementation:** Groq API `llama-3.3-70b-versatile` streaming · MySQL FULLTEXT search · Redis session (TTL 30 min) · KB managed via admin panel, no engineer needed for content updates.
 
 ---
 
@@ -706,7 +822,7 @@ DELETE /api/admin/kb/articles/:id
 
 **Status:** Planned. Not in MVP scope.
 
-Planned sub-features: profile completion coach · rejection explainer · pricing advisor · review translator (Nepali ↔ English).
+Planned sub-features: profile completion coach · rejection explainer · pricing advisor · review translator (Nepali ↔ English) · skill evidence coach (suggests what proof to upload based on category).
 
 **Dependency:** Requires > 500 active providers for pricing benchmarks to be meaningful. Rejection explainer can ship earlier as a template-based feature.
 
@@ -723,6 +839,8 @@ Planned sub-features: profile completion coach · rejection explainer · pricing
 **Coordinated Fraud Signal** — device fingerprint + IP clustering detects multiple accounts from the same location. Admin alert triggered. No auto-ban (false positive risk in shared-WiFi environments).
 
 **Harmful Content Filter** — review text, complaint descriptions, and provider service descriptions pass through content moderation classifier at write time. Slurs, doxxing, threatening language caught before storage.
+
+**Skill Evidence Authenticity Check** *(new, v2.3)* — stock-photo and duplicate-certificate detection feeding into the Skill Evidence Review Queue (6.2.1). Flags, never auto-rejects — final decision is always human.
 
 **Risk-Adaptive Booking** — automatic friction for new providers (trust score < 40):
 - "New provider" badge on customer-facing card
@@ -849,16 +967,20 @@ Providers pay a one-time fee for additional verified credentials displayed publi
 
 | Badge | Fee | Verification Step |
 |---|---|---|
-| Citizenship verified | Free | Included in base KYC |
-| Skill verified | NPR 199 | AI assessment + admin review of work samples or certificate |
+| Identity verified | Free | Included in base identity KYC (6.2) |
+| Skill verified | NPR 199 | Routes through Skill Evidence Review Queue (5.11 / 6.2.1) — AI pre-check + admin review of work samples or certificate |
 | Background checked | NPR 499 | Criminal record check *(Phase 2 — NRN database integration)* |
 | Insured | NPR 299/year | Provider uploads insurance document; platform displays insurance status |
 
-**Provider motivation:** A "Skill verified" badge boosts trust score and search ranking — it pays for itself in the first additional booking it generates.
+> **Note (v2.3):** A paid Skill Verified purchase does **not** bypass review — it grants priority queue placement only. The underlying `skillStatus` field and review outcome are identical whether the evidence came in free (5.5 Step 4) or paid — payment buys speed, not approval.
+
+> **Note (v2.4):** Skill Verified has two authenticity tiers (6.2.1). At MVP, a paid purchase typically only achieves **Tier 1** ("evidence submitted and reviewed") since most institutions lack issuer-lookup integration yet. The badge UI must show which tier was reached — paying for priority review never upgrades the tier itself; only an actual issuer confirmation (Phase 3) does.
+
+**Provider motivation:** A "Skill verified" badge boosts trust score (via Verification Completeness, 5.8) and search ranking — it pays for itself in the first additional booking it generates.
 
 **Customer impact:** "Background checked" directly addresses the primary trust barrier for high-value bookings (renovation, home access). This is a real, verifiable claim — not a star rating.
 
-**Revenue characteristics:** One-time purchases with high margins (no variable cost beyond admin review time, which AI handles at scale). "Insured" badge is annual recurring — providers who let it lapse lose the badge publicly, creating strong renewal motivation.
+**Revenue characteristics:** One-time purchases with high margins (no variable cost beyond admin review time, which AI assists at scale). "Insured" badge is annual recurring — providers who let it lapse lose the badge publicly, creating strong renewal motivation.
 
 **Endpoints**
 
@@ -896,6 +1018,7 @@ Corporate accounts (hotels, apartment complexes, office buildings) pay a monthly
 | Third-party advertising | Destroys trust brand — customers on a "trusted" platform should not see competitor ads |
 | Customer-side booking fees | Adds friction at conversion moment → booking abandonment |
 | Auto-renewing credit charges | Provider must control their own spend — no auto-charge under any circumstance |
+| Paid bypass of skill evidence review *(new, v2.3)* | Payment may buy priority queue placement, never approval — guarantees the "Skill Verified" claim stays meaningful |
 
 ---
 
@@ -917,7 +1040,7 @@ Better verification → higher trust scores
 More verified providers (higher quality)
 ```
 
-Providers who invest in quality (earn high trust score) pay fewer credits to win the same bookings because their organic ranking is already strong. Quality and revenue alignment is structural — not an accident of pricing.
+Providers who invest in quality (earn high trust score, submit skill evidence, climb milestone tiers) pay fewer credits to win the same bookings because their organic ranking is already strong. Quality and revenue alignment is structural — not an accident of pricing.
 
 ---
 
@@ -955,7 +1078,7 @@ All authenticated routes: `Authorization: Bearer <access_token>`. Refresh via `P
   "success": false,
   "error": {
     "code": "PROVIDER_NOT_VERIFIED",
-    "message": "Provider must complete KYC verification before accepting bookings.",
+    "message": "Provider must complete identity KYC verification before accepting bookings.",
     "status": 403
   }
 }
@@ -986,10 +1109,14 @@ GET    /api/providers/:id/availability
 GET    /api/providers/:id/availability-hint
 GET    /api/providers/:id/badges
 
-── KYC ───────────────────────────────────────────────────────
+── IDENTITY KYC ──────────────────────────────────────────────
 POST   /api/providers/profile/complete
 POST   /api/providers/kyc/upload
 GET    /api/providers/kyc/status
+
+── SKILL EVIDENCE ────────────────────────────────────────────
+POST   /api/providers/skill-evidence/upload
+GET    /api/providers/me/skill-evidence
 
 ── CATEGORIES ────────────────────────────────────────────────
 GET    /api/categories
@@ -1037,6 +1164,9 @@ GET    /api/admin/providers/kyc
 PUT    /api/admin/providers/kyc/:id/approve
 PUT    /api/admin/providers/kyc/:id/reject
 POST   /api/admin/kyc/:id/override
+GET    /api/admin/providers/skill-evidence
+PUT    /api/admin/providers/skill-evidence/:id/approve
+PUT    /api/admin/providers/skill-evidence/:id/reject
 GET    /api/admin/complaints
 PUT    /api/complaints/:id/resolve
 GET    /api/admin/trust/anomalies
@@ -1059,16 +1189,103 @@ POST   /api/internal/moderation/content
 
 ## 9. Database Schema
 
+### Prisma Datasource (MySQL)
+
+```prisma
+// schema.prisma — datasource block
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+// DATABASE_URL format:
+// mysql://USER:PASSWORD@HOST:3306/bishwassetu?charset=utf8mb4
+```
+
+### Provider Core Fields *(updated, v2.3 — identity/skill split + milestone tracking)*
+
+```prisma
+model Provider {
+  id                  String   @id @default(uuid()) @db.Char(36)
+  userId              String   @unique @db.Char(36)
+
+  // Identity verification track — this is the booking-access gate
+  identityStatus      String   @default("INCOMPLETE") @db.VarChar(20)
+  // INCOMPLETE | PENDING_DOCUMENTS | UNDER_REVIEW | VERIFIED | REJECTED
+
+  // Skill verification track — additive trust signal, never a booking gate
+  skillStatus         String   @default("UNVERIFIED") @db.VarChar(20)
+  // UNVERIFIED | SELF_DECLARED | PENDING_REVIEW | VERIFIED
+
+  canAcceptBookings   Boolean  @default(false)
+  // derived/enforced from identityStatus == VERIFIED only
+
+  yearsExperience     Int?     // self-reported, displayed as plain text only — never badged alone
+  completedBookings   Int      @default(0)
+  trustScore          Float    @default(0) @db.Float
+
+  milestoneBadge      String   @default("NEW") @db.VarChar(20)
+  // NEW | ESTABLISHED | TRUSTED_PRO | MASTER_PROVIDER — recomputed on booking completion
+
+  // ... other existing fields (category, area, availability, etc.) ...
+
+  skillEvidence       SkillEvidence[]
+  badges              ProviderBadge[]
+  trustScoreEvents     TrustScoreEvent[]
+  kycAiDecisions       KycAiDecision[]
+  creditWallet         CreditWallet?
+  creditPurchases      CreditPurchase[]
+  creditDeductions     CreditDeduction[]
+
+  @@map("providers")
+}
+```
+
+### Skill Evidence Table *(updated, v2.4 — added two-tier authenticity fields)*
+
+```prisma
+model SkillEvidence {
+  id              String   @id @default(uuid()) @db.Char(36)
+  providerId      String   @db.Char(36)
+  type            String   @db.VarChar(20)   // 'certificate'|'work_photo'|'reference'
+  fileUrl         String   @db.VarChar(500)  // Cloudinary signed URL (private folder)
+  certNumber      String?  @db.VarChar(100)  // extracted via OCR, used for issuer lookup (Phase 3)
+  issuerName      String?  @db.VarChar(200)  // extracted via OCR
+  aiPrecheck      Json?    // { documentType, ocrResult?, duplicateFlag?, stockPhotoFlag?, aiGeneratedFlag? }
+  reviewStatus    String   @default("PENDING") @db.VarChar(20)
+  // PENDING | APPROVED | REJECTED
+  authenticityTier String  @default("NONE") @db.VarChar(10)
+  // NONE | TIER_1 | TIER_2 — TIER_1 set on admin approval, TIER_2 only via issuer verification
+  issuerVerified  Boolean  @default(false)
+  // true only when certNumber confirmed against issuing institution's own records (Phase 3)
+  issuerVerifiedAt DateTime?
+  rejectReason    String?  @db.VarChar(500)
+  reviewedBy      String?  @db.Char(36)      // admin user ID
+  isPaidBadge     Boolean  @default(false)   // true if submitted via paid Skill Verified badge purchase (7.4)
+  createdAt       DateTime @default(now())
+  reviewedAt      DateTime?
+
+  provider        Provider @relation(fields: [providerId], references: [id])
+  @@map("skill_evidence")
+}
+```
+
+> **Note:** `reviewStatus = APPROVED` alone only ever implies `authenticityTier = TIER_1` ("not obviously fake, human-reviewed"). The system must never render Tier 1 evidence with language suggesting institutional confirmation. Only `issuerVerified = true` unlocks the "Issuer Confirmed" customer-facing label (see 6.2.1).
+
 ### Core AI & Assistant Tables
 
 ```prisma
 // Knowledge base for RAG assistant
+// FULLTEXT index applied via raw SQL migration (see below)
 model KbArticle {
-  id         String   @id @default(uuid())
-  category   String   // 'policy'|'faq'|'provider_info'|'booking_guide'|'credits'
-  title      String
-  content    String
-  lang       String   @default("ne")  // 'ne' | 'en'
+  id         String   @id @default(uuid()) @db.Char(36)
+  category   String   @db.VarChar(50)  // 'policy'|'faq'|'provider_info'|'booking_guide'|'credits'
+  title      String   @db.VarChar(500)
+  content    String   @db.Text
+  lang       String   @default("ne") @db.VarChar(5)  // 'ne' | 'en'
   updatedAt  DateTime @updatedAt
 
   @@map("kb_articles")
@@ -1076,11 +1293,11 @@ model KbArticle {
 
 // Assistant session log
 model AssistantSession {
-  id          String   @id @default(uuid())
-  userId      String?
-  sessionId   String   @unique
-  contextType String?
-  contextId   String?
+  id          String   @id @default(uuid()) @db.Char(36)
+  userId      String?  @db.Char(36)
+  sessionId   String   @unique @db.VarChar(100)
+  contextType String?  @db.VarChar(50)
+  contextId   String?  @db.Char(36)
   messages    Json     // [{ role, content, retrieved_chunks }]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -1090,31 +1307,31 @@ model AssistantSession {
 
 // Trust score event log
 model TrustScoreEvent {
-  id         String   @id @default(uuid())
-  providerId String
-  score      Float
-  prevScore  Float
-  trigger    String   // 'review'|'complaint'|'vouch'|'decay'|'booking'
+  id         String   @id @default(uuid()) @db.Char(36)
+  providerId String   @db.Char(36)
+  score      Float    @db.Float
+  prevScore  Float    @db.Float
+  trigger    String   @db.VarChar(50)  // 'review'|'complaint'|'vouch'|'decay'|'booking'
   inputs     Json     // full breakdown snapshot
   aiFlags    Json?
-  modelVer   String?
+  modelVer   String?  @db.VarChar(50)
   createdAt  DateTime @default(now())
 
   provider   Provider @relation(fields: [providerId], references: [id])
   @@map("trust_score_events")
 }
 
-// KYC AI decision log
+// KYC AI decision log (identity only)
 model KycAiDecision {
-  id            String   @id @default(uuid())
-  providerId    String
+  id            String   @id @default(uuid()) @db.Char(36)
+  providerId    String   @db.Char(36)
   ocrResult     Json
-  faceScore     Float?
-  forgeryRisk   String   // 'low'|'medium'|'high'
-  confidence    Float
-  decision      String   // 'AUTO_APPROVE'|'HUMAN_QUEUE'
-  adminOverride String?  // 'APPROVE'|'REJECT'
-  modelVer      String
+  faceScore     Float?   @db.Float
+  forgeryRisk   String   @db.VarChar(10)   // 'low'|'medium'|'high'
+  confidence    Float    @db.Float
+  decision      String   @db.VarChar(20)   // 'AUTO_APPROVE'|'HUMAN_QUEUE'
+  adminOverride String?  @db.VarChar(10)   // 'APPROVE'|'REJECT'
+  modelVer      String   @db.VarChar(50)
   createdAt     DateTime @default(now())
 
   provider      Provider @relation(fields: [providerId], references: [id])
@@ -1123,12 +1340,12 @@ model KycAiDecision {
 
 // Content moderation log
 model ModerationLog {
-  id         String   @id @default(uuid())
-  entityType String   // 'review'|'complaint'|'profile'
-  entityId   String
-  result     String   // 'PASSED'|'FLAGGED'
-  category   String?
-  confidence Float
+  id         String   @id @default(uuid()) @db.Char(36)
+  entityType String   @db.VarChar(20)  // 'review'|'complaint'|'profile'|'skill_evidence'
+  entityId   String   @db.Char(36)
+  result     String   @db.VarChar(10)  // 'PASSED'|'FLAGGED'
+  category   String?  @db.VarChar(50)
+  confidence Float    @db.Float
   createdAt  DateTime @default(now())
 
   @@map("moderation_logs")
@@ -1140,27 +1357,27 @@ model ModerationLog {
 ```prisma
 // Credit packs catalogue
 model CreditPack {
-  id          String    @id @default(uuid())
-  name        String    // 'starter'|'active'|'pro'
-  credits     Int
-  priceNpr    Int
-  features    Json      // array of feature strings
-  isActive    Boolean   @default(true)
-  purchases   CreditPurchase[]
+  id        String    @id @default(uuid()) @db.Char(36)
+  name      String    @db.VarChar(20)   // 'starter'|'active'|'pro'
+  credits   Int
+  priceNpr  Int
+  features  Json      // array of feature strings
+  isActive  Boolean   @default(true)
+  purchases CreditPurchase[]
 
   @@map("credit_packs")
 }
 
 // Credit purchase records
 model CreditPurchase {
-  id            String     @id @default(uuid())
-  providerId    String
-  packId        String
+  id            String     @id @default(uuid()) @db.Char(36)
+  providerId    String     @db.Char(36)
+  packId        String     @db.Char(36)
   creditsAdded  Int
   amountNpr     Int
-  paymentMethod String     // 'khalti'|'esewa'
-  paymentRef    String?
-  status        String     // 'pending'|'completed'|'failed'
+  paymentMethod String     @db.VarChar(10)   // 'khalti'|'esewa'
+  paymentRef    String?    @db.VarChar(100)
+  status        String     @db.VarChar(10)   // 'pending'|'completed'|'failed'
   createdAt     DateTime   @default(now())
 
   provider      Provider   @relation(fields: [providerId], references: [id])
@@ -1170,55 +1387,65 @@ model CreditPurchase {
 
 // Provider credit wallet
 model CreditWallet {
-  id           String   @id @default(uuid())
-  providerId   String   @unique
-  balance      Int      @default(0)
-  totalEarned  Int      @default(0)
-  totalSpent   Int      @default(0)
-  updatedAt    DateTime @updatedAt
+  id          String   @id @default(uuid()) @db.Char(36)
+  providerId  String   @unique @db.Char(36)
+  balance     Int      @default(0)
+  totalEarned Int      @default(0)
+  totalSpent  Int      @default(0)
+  updatedAt   DateTime @updatedAt
 
-  provider     Provider @relation(fields: [providerId], references: [id])
+  provider    Provider @relation(fields: [providerId], references: [id])
   @@map("credit_wallets")
 }
 
 // Credit deduction log
 model CreditDeduction {
-  id          String   @id @default(uuid())
-  providerId  String
-  amount      Int
-  reason      String   // 'boost_booking_accepted'|'featured_slot'
-  bookingId   String?
-  createdAt   DateTime @default(now())
+  id         String   @id @default(uuid()) @db.Char(36)
+  providerId String   @db.Char(36)
+  amount     Int
+  reason     String   @db.VarChar(50)   // 'boost_booking_accepted'|'featured_slot'
+  bookingId  String?  @db.Char(36)
+  createdAt  DateTime @default(now())
 
-  provider    Provider @relation(fields: [providerId], references: [id])
+  provider   Provider @relation(fields: [providerId], references: [id])
   @@map("credit_deductions")
 }
 
-// Trust badge catalogue & purchases
+// Trust badge purchases
 model ProviderBadge {
-  id           String   @id @default(uuid())
-  providerId   String
-  badgeType    String   // 'skill_verified'|'background_checked'|'insured'
-  status       String   // 'pending'|'active'|'expired'
-  verifiedBy   String?  // admin user ID
-  expiresAt    DateTime?
-  amountNpr    Int
-  purchasedAt  DateTime @default(now())
+  id          String    @id @default(uuid()) @db.Char(36)
+  providerId  String    @db.Char(36)
+  badgeType   String    @db.VarChar(30)   // 'skill_verified'|'background_checked'|'insured'
+  status      String    @db.VarChar(10)   // 'pending'|'active'|'expired'
+  verifiedBy  String?   @db.Char(36)      // admin user ID
+  expiresAt   DateTime?
+  amountNpr   Int
+  purchasedAt DateTime  @default(now())
 
-  provider     Provider @relation(fields: [providerId], references: [id])
+  provider    Provider  @relation(fields: [providerId], references: [id])
   @@map("provider_badges")
 }
 ```
 
-### PostgreSQL FTS Index Migration
+### MySQL FULLTEXT Index Migration
+
+Prisma does not support `FULLTEXT` indexes natively for MySQL. Apply via a raw SQL migration file:
 
 ```sql
-ALTER TABLE kb_articles
-  ADD COLUMN search_vec TSVECTOR
-  GENERATED ALWAYS AS (to_tsvector('english', title || ' ' || content)) STORED;
+-- migrations/add_kb_fulltext_index.sql
+-- Run after prisma migrate deploy
 
-CREATE INDEX kb_fts_idx ON kb_articles USING GIN(search_vec);
+ALTER TABLE kb_articles
+  ADD FULLTEXT INDEX idx_fts (title, content);
 ```
+
+Add to your `package.json` post-migrate hook or run manually once after the initial migration:
+
+```bash
+mysql -u root -p bishwassetu < migrations/add_kb_fulltext_index.sql
+```
+
+> **Note:** MySQL `FULLTEXT` requires `ENGINE=InnoDB` and `utf8mb4` charset — both enforced in the Prisma datasource configuration above. Minimum word length for indexing defaults to 3 characters in MySQL; set `ft_min_word_len=2` in `my.cnf` if Nepali short words are not being indexed.
 
 ---
 
@@ -1228,21 +1455,21 @@ CREATE INDEX kb_fts_idx ON kb_articles USING GIN(search_vec);
 |---|---|
 | Runtime | Node.js 20 + TypeScript 5 |
 | Framework | Express 4 |
-| ORM | Prisma 5 |
-| Primary DB | PostgreSQL 16 |
+| ORM | Prisma 5 (MySQL provider) |
+| Primary DB | MySQL 8.0 (utf8mb4, InnoDB) |
 | Cache / Queue | Redis + Bull |
-| File Storage | Cloudinary (signed uploads, auto-optimization) |
+| File Storage | Cloudinary (signed uploads, restricted delivery for KYC + skill evidence) |
 | LLM — Assistant | Groq API — `llama-3.3-70b-versatile` (streaming SSE) |
 | LLM — KYC Vision | Groq API — `llama-3.2-90b-vision-preview` / AWS Textract (OCR) |
 | Face Match | AWS Rekognition CompareFaces |
 | Content Moderation | Groq API — classifier prompt on `llama-3.1-8b-instant` |
-| Embeddings / Reranking | pgvector on PostgreSQL 16 |
-| FTS — Assistant RAG | PostgreSQL `tsvector` + `GIN` index |
+| Embeddings / Reranking | JSON column in MySQL + cosine similarity in Node.js app layer |
+| FTS — Assistant RAG | MySQL `FULLTEXT` index (InnoDB, utf8mb4) |
 | Auth | JWT (HttpOnly cookies) + OTP |
 | Payments | Khalti · eSewa |
 | Notifications | Firebase FCM + Sparrow SMS |
 | CI/CD | GitHub Actions |
-| Hosting | AWS EC2 / Railway (MVP) |
+| Hosting | Railway (MVP) |
 
 ---
 
@@ -1255,14 +1482,16 @@ CREATE INDEX kb_fts_idx ON kb_articles USING GIN(search_vec);
 | Standard API (read) | < 200ms |
 | Search + AI rerank | < 500ms |
 | Assistant first token | < 1.5s |
-| KYC AI pipeline | < 2 minutes |
+| Identity KYC AI pipeline | < 2 minutes |
+| Skill evidence AI pre-check | < 2 minutes |
 | Credit purchase confirmation | < 3s |
 
 ### Security
 
-- All file uploads virus-scanned before storage.
+- All file uploads (identity documents and skill evidence) virus-scanned before storage.
 - PII (ID numbers, selfies) stored in Cloudinary private folders — never publicly accessible.
-- KYC documents served only via Cloudinary signed delivery URLs (15-minute TTL).
+- Identity KYC documents served only via Cloudinary signed delivery URLs (15-minute TTL).
+- Skill evidence files served only via Cloudinary signed delivery URLs (15-minute TTL) — same restricted-access pattern as identity documents.
 - All admin actions logged with actor ID and timestamp.
 - Rate limiting: 100 req/min authenticated · 20 req/min unauthenticated.
 - OWASP Top 10 checklist completed before launch.
@@ -1271,12 +1500,13 @@ CREATE INDEX kb_fts_idx ON kb_articles USING GIN(search_vec);
 ### Availability
 
 - Target uptime: 99.5% (MVP) · 99.9% (post-Series A)
-- AI pipeline failures degrade gracefully — KYC falls to human queue, assistant shows "currently unavailable", boost falls back to standard organic ranking.
+- AI pipeline failures degrade gracefully — identity KYC falls to human queue, skill evidence pre-check failure routes straight to human review with no flag, assistant shows "currently unavailable", boost falls back to standard organic ranking.
 
 ### Compliance
 
 - GDPR-style data handling: soft delete, data export on request, PII minimization.
-- KYC documents purged 90 days after account closure.
+- Identity KYC documents purged 90 days after account closure.
+- Skill evidence files purged 90 days after account closure (same retention policy as identity documents).
 - AI decision logs retained 2 years for audit.
 - Credit purchase records retained 7 years for financial compliance.
 
@@ -1286,9 +1516,10 @@ CREATE INDEX kb_fts_idx ON kb_articles USING GIN(search_vec);
 
 ### Phase 2 — Month 4–6
 
-- **6.5 Provider AI Copilot** — profile completion coach, rejection explainer, pricing advisor, review translator. Requires > 500 active providers.
+- **6.5 Provider AI Copilot** — profile completion coach, rejection explainer, pricing advisor, review translator, skill evidence coach. Requires > 500 active providers.
 - **6.7 Admin Intelligence Panel** — complaint triage AI, platform health monitor, churn prediction. Requires 3+ months data.
 - **Trust Badge: Background Checked** — NRN database integration for criminal record checks.
+- **Skill Evidence AI auto-approve path** — once enough admin-reviewed evidence exists to train a confidence threshold, introduce a conservative auto-approve tier (mirroring identity KYC's 6.2 design) for unambiguous cases only. This would still only ever produce Tier 1 evidence (6.2.1) — auto-approval is about review speed, not authenticity tier.
 - **Mobile App** — React Native for customer and provider.
 - **Credit pack gifting** — admin can grant bonus credits for onboarding incentives.
 
@@ -1296,67 +1527,13 @@ CREATE INDEX kb_fts_idx ON kb_articles USING GIN(search_vec);
 
 - Multi-city expansion beyond Kathmandu Valley.
 - B2B / Corporate contracts (7.5) — hotel and apartment building packages.
-- Provider certification partnerships (CTEVT integration for certificate verification).
+- Provider certification partnerships (CTEVT integration for certificate verification — feeds directly into Skill Evidence pipeline). **This is the mechanism that unlocks Tier 2 ("Issuer Confirmed") skill verification described in 6.2.1** — certificate numbers are cross-checked against CTEVT's own records rather than relying on document-image analysis alone.
 - Group bookings (multiple providers for single job — house moves, large events).
-- Trust Score portability API — providers take their verified score to partner platforms.
+- Trust Score portability API — providers take their verified score (and milestone badge history) to partner platforms.
 - International expansion track — Stripe integration, USD/INR pricing.
 
 ---
 
 *Document maintained by the BishwasSetu Engineering Team.*
-*Version history: v1.0 (2026-06-17) — initial release. v2.0 (2026-06-23) — subscription model removed, credit-based boost system added, business model section added as Section 7, database schema extended with credit and badge tables. v2.1 (2026-06-23) — LLM stack updated to Groq API (llama-3.3-70b-versatile for assistant, llama-3.2-90b-vision-preview for KYC vision, llama-3.1-8b-instant for moderation); file storage updated from AWS S3 to Cloudinary (signed uploads, restricted delivery for KYC documents).*
 
----
-
-## 13. Current Implementation Status & Recommended Next Steps
-
-### 13.1 Feature Status Matrix
-
-| Module / Feature | Status | Priority | Notes / Dependencies |
-|---|---|---|---|
-| **Multi-Role Auth (JWT & Email OTP)** | Partially Active | High | Works; Needs real SMS provider mapping (Sparrow SMS) in prod |
-| **Category & Service CRUD** | Active | High | Base tables and APIs fully functional |
-| **Booking Lifecycle / WebSockets** | Active | High | Core requested/accepted/cancelled flow works |
-| **KYC Document Upload (Local)** | Active | High | Files saved to local storage; Needs Cloudinary migration |
-| **Review & Rating System** | **Missing** | High | Requires database schema updates and controller implementation |
-| **Complaint & Resolution System** | **Missing** | High | Empty backend controller; Frontend relies on mock data |
-| **Trust Score Engine (Base)** | **Missing** | High | Score recomputation logic & `TrustScoreEvent` model |
-| **Database Schema Extensions** | **Missing** | Critical | Need to run prisma migrations for AI, Credits, and Badges |
-| **RAG Assistant Engine** | **Missing** | Medium | Needs Groq llama-3.3-70b-versatile + PostgreSQL FTS |
-| **Credit-Based Boost Wallet** | **Missing** | Medium | Wallet tracking, Khalti/eSewa webhook integration |
-| **Trust Badges Upgrades** | **Missing** | Medium | Badges catalogue, payment checks |
-| **AI KYC (OCR & Face Match)** | **Missing** | Low | AWS Rekognition / Textract integration |
-| **pgvector Smart Provider Search** | **Missing** | Low | Intent-aware search ranking fallback |
-
-### 13.2 Recommended Next Steps (Work Checklist)
-
-#### Step 1: Update Database Schema & Migrations
-Extend `schema.prisma` with all missing models:
-- [ ] `KbArticle` and `AssistantSession`
-- [ ] `TrustScoreEvent`
-- [ ] `KycAiDecision`
-- [ ] `ModerationLog`
-- [ ] `CreditPack`, `CreditPurchase`, `CreditWallet`, `CreditDeduction`
-- [ ] `ProviderBadge`
-- [ ] Run `npx prisma migrate dev` to generate client updates and sync with MySQL.
-
-#### Step 2: Implement Reviews & Ratings System
-Create the database tables for Reviews if not already in schema (need `Review` schema table linked to provider and booking).
-- [ ] Add `Review` model to `schema.prisma` mapping booking, customer, provider, ratings, text, and provider reply.
-- [ ] Write `reviewController.ts` endpoints for creation, replies, and list retrieval.
-- [ ] Wire up routes in `reviewRoute.ts` and register in `app.ts`.
-
-#### Step 3: Implement Complaints & Resolution System
-- [ ] Add `Complaint` model to `schema.prisma` mapping booking, customer, provider, complaint description, type, status, and resolution details.
-- [ ] Write `complaintController.ts` logic for users filing and admins managing resolution events.
-- [ ] Register routes in `complaintRoute.ts`.
-- [ ] Update frontend services and components to replace mock data with active endpoints.
-
-#### Step 4: Core Trust Score Calculation Engine
-- [ ] Write utility function `/utils/trustScore.ts` that implements the base formula (Recency-weighted reviews, timeliness, verification status, complaints, etc.).
-- [ ] Hook this recalculation logic into the Booking status updates (e.g. COMPLETED or CANCELLED) and Review submissions.
-- [ ] Create endpoint `GET /api/providers/:id/trust-score` returning score details and trend logs.
-
-#### Step 5: Credit Wallet & Boost Monetization
-- [ ] Seed credit packs.
-- [ ] Write wallets and credit deduction endpoints `/api/credits/balance` and payment hooks.
+*Version history: v1.0 (2026-06-17) — initial release. v2.0 (2026-06-23) — subscription model removed, credit-based boost system added, business model section added as Section 7, database schema extended with credit and badge tables. v2.1 (2026-06-23) — LLM stack updated to Groq API; file storage updated to Cloudinary. v2.2 (2026-06-23) — database updated from PostgreSQL 16 to MySQL 8.0 with Prisma MySQL provider; all schema types updated with MySQL-compatible `@db` annotations; PostgreSQL-specific FTS (`tsvector`/`GIN`) replaced with MySQL `FULLTEXT` index; pgvector replaced with JSON column + app-layer cosine similarity. v2.3 (2026-06-28) — replaced self-reported Experience Badge with platform-verified Milestone Badge system (New/Established/Trusted Pro/Master Provider) based on completed bookings + trust score; split provider verification into two independent, non-blocking tracks — Identity Verification (booking-access gate, unchanged KYC pipeline) and Skill Verification (additive trust signal via new Skill Evidence Review Queue); added `SkillEvidence` table and skill-evidence-related endpoints, AI pre-check pipeline (6.2.1), and admin queue; clarified that paid Skill Verified badge purchases grant review priority only, never bypass approval; updated trust score Verification Completeness signal, NFR retention/security policies, and roadmap to reflect the split. **v2.4 (2026-06-28) — introduced two-tier skill evidence authenticity model (6.2.1): Tier 1 ("Reviewed" — AI pre-check + human visual review, cannot prove genuine issuance) vs. Tier 2 ("Issuer Confirmed" — certificate number cross-checked against issuing institution's records, Phase 3/CTEVT integration); explicitly documented that EXIF/compression forgery checks and AI-generation-artifact detection are advisory signals only and cannot prove a certificate is genuine, since AI-generated and well-made fakes leave no detectable editing trace; added `certNumber`, `issuerName`, `authenticityTier`, `issuerVerified`, `issuerVerifiedAt` fields to `SkillEvidence` schema; added issuer-verify admin endpoint; updated customer-facing badge display rule (5.3), paid badge note (7.4), and roadmap (12) so the platform never implies institutional confirmation it hasn't actually performed.***

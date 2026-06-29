@@ -1,6 +1,6 @@
-import { prisma }                        from '../config/db'
-import { uploadToCloudinary, getSignedUrl } from '../config/cloudinary'
-import { kycQueue }                      from '../jobs/queue'
+import { prisma } from '../config/db'
+import { uploadToCloudinary, getSignedUrl } from '../utils/cloudinary'
+import { kycQueue } from '../jobs/queue'
 
 // ── Upload KYC documents ──────────────────────────────────────
 
@@ -14,7 +14,7 @@ export const uploadKycDocuments = async (
 ) => {
   const provider = await prisma.provider.findUnique({
     where:  { id: providerId },
-    select: { kycStatus: true },
+    select: { identityStatus: true, skillStatus: true },
   })
 
   if (!provider) {
@@ -22,10 +22,10 @@ export const uploadKycDocuments = async (
   }
 
   // Can only upload when PENDING_DOCUMENTS or REJECTED
-  if (!['PENDING_DOCUMENTS', 'REJECTED'].includes(provider.kycStatus)) {
+  if (!['PENDING_DOCUMENTS', 'REJECTED'].includes(provider.identityStatus)) {
     throw {
       code:    'INVALID_KYC_STATE',
-      message: `Cannot upload documents in status: ${provider.kycStatus}`,
+      message: `Cannot upload documents in status: ${provider.identityStatus}`,
       status:  400,
     }
   }
@@ -84,7 +84,7 @@ export const uploadKycDocuments = async (
     // Move status to UNDER_REVIEW
     await tx.provider.update({
       where: { id: providerId },
-      data:  { kycStatus: 'UNDER_REVIEW', rejectionReason: null },
+      data:  { identityStatus: 'UNDER_REVIEW', identityRejectionReason: null },
     })
   })
 
@@ -107,8 +107,10 @@ export const getKycStatus = async (providerId: string) => {
   const provider = await prisma.provider.findUnique({
     where:  { id: providerId },
     select: {
-      kycStatus:      true,
-      rejectionReason: true,
+      identityStatus:          true,
+      skillStatus:             true,
+      identityRejectionReason: true,
+      skillRejectionReason:    true,
     },
   })
 
@@ -135,8 +137,10 @@ export const getKycStatus = async (providerId: string) => {
   })
 
   return {
-    kycStatus:       provider.kycStatus,
-    rejectionReason: provider.rejectionReason,
+    identityStatus:          provider.identityStatus,
+    skillStatus:             provider.skillStatus,
+    identityRejectionReason: provider.identityRejectionReason,
+    skillRejectionReason:    provider.skillRejectionReason,
     documents,
     aiDecision,
   }
@@ -163,8 +167,8 @@ export const approveKyc = async (providerId: string, adminId: string) => {
     await tx.provider.update({
       where: { id: providerId },
       data:  {
-        kycStatus:      'VERIFIED',
-        rejectionReason: null,
+        identityStatus:          'VERIFIED',
+        identityRejectionReason: null,
       },
     })
 
@@ -193,8 +197,8 @@ export const rejectKyc = async (
     await tx.provider.update({
       where: { id: providerId },
       data:  {
-        kycStatus:      'REJECTED',
-        rejectionReason: reason,
+        identityStatus:          'REJECTED',
+        identityRejectionReason: reason,
       },
     })
 

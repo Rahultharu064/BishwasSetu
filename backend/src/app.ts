@@ -11,6 +11,7 @@ import serviceRoutes from "./routes/serviceRoute"
 import bookingRoutes from "./routes/bookingRoute"
 import adminRoutes from "./routes/adminRoute"
 import reviewRoutes from "./routes/reviewRoute"
+import kycRoutes from "./routes/kycRoute"
 
 dotenv.config();
 
@@ -50,13 +51,10 @@ app.use(
 
 
 
-app.use("/api/categories", categoryRoutes);
-app.use("/api/auth", authRoutes)
-app.use("/api/providers", providerRoutes)
-app.use("/api/services", serviceRoutes)
-app.use("/api/bookings", bookingRoutes)
-app.use("/api/admin", adminRoutes)
-app.use("/api/reviews", reviewRoutes)
+const v1 = '/api/v1'
+app.use(`${v1}/auth`, authRoutes)
+app.use(`${v1}/providers`, providerRoutes)
+app.use(`${v1}/kyc`,       kycRoutes)
 
 
 // Global error handler

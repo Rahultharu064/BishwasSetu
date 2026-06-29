@@ -1,7 +1,8 @@
 import { Router } from 'express'
-import {getPublicProfile} from '../controllers/providerController'
+import * as ProviderController from '../controllers/providerController'
 import { protect, restrictTo }  from '../middlewares/authMiddleware'
 import { validate }             from '../middlewares/validateMiddleware'
+import { profilePhotoUpload }   from '../middlewares/uploadMiddleware'
 import {
   CompleteProfileSchema,
   UpdateProviderSchema,
@@ -10,8 +11,8 @@ import {
 const router = Router()
 
 // ── Public routes ──────────────────────────────
-router.get('/',    searchProviders)
-router.get('/:id', getPublicProfile)
+router.get('/',    ProviderController.searchProviders)
+router.get('/:id', ProviderController.getPublicProfile)
 
 // ── Provider-only routes ───────────────────────
 router.use(protect, restrictTo('PROVIDER'))

@@ -1,7 +1,7 @@
 import { prisma } from '../config/db'
-import { resolveExperienceBadge } from '../utils/badge'
-import { uploadToCloudinary } from '../utils/cloudinary'
-import type { CompleteProfileInput, UpdateProviderInput } from '../validators/providervalidator'
+import { uploadToCloudinary, getSignedUrl } from '../utils/cloudinary'
+
+import { CompleteProfileInput, UpdateProviderInput } from '../validators/providervalidator'
 
 // ── GET /providers/me ─────────────────────────────────────────
 
@@ -36,7 +36,8 @@ export const completeProfile = async (
     experienceYears, skills, categoryIds, availability,
   } = input
 
-  const badge = resolveExperienceBadge(experienceYears)
+  // Milestone badge computed later — on booking completion, not at profile creation
+  // yearsExperience stored as plain text, never rendered as a badge on its own
 
   // Verify categories exist
   const validCategories = await prisma.category.findMany({
@@ -57,10 +58,11 @@ export const completeProfile = async (
         legalName,
         bio,
         serviceArea,
-        experienceYears,
-        experienceBadge: badge,
-        // Move status to PENDING_DOCUMENTS if INCOMPLETE
-        kycStatus: 'PENDING_DOCUMENTS',
+        yearsExperience: experienceYears,
+        // Move identityStatus to PENDING_DOCUMENTS if INCOMPLETE
+        identityStatus: 'PENDING_DOCUMENTS',
+        // If years/skills filled → mark as self-declared on skill track
+        skillStatus: 'SELF_DECLARED',
       },
     })
 
@@ -86,10 +88,11 @@ export const completeProfile = async (
   })
 
   return {
-    providerId:      provider.id,
-    kycStatus:       provider.kycStatus,
-    experienceBadge: provider.experienceBadge,
-    message:         'Profile saved. Please upload KYC documents.',
+    providerId:     provider.id,
+    identityStatus: provider.identityStatus,
+    skillStatus:    provider.skillStatus,
+    milestoneBadge: provider.milestoneBadge,
+    message:        'Profile saved. Please upload identity documents (KYC). Skill evidence is optional.',
   }
 }
 
@@ -104,8 +107,9 @@ export const updateProfile = async (
   const updateData: Record<string, unknown> = { ...rest }
 
   if (experienceYears !== undefined) {
-    updateData.experienceYears  = experienceYears
-    updateData.experienceBadge  = resolveExperienceBadge(experienceYears)
+    updateData.yearsExperience = experienceYears
+    // Milestone badge is NOT updated here — it recomputes on booking completion only
+    // yearsExperience is plain text only, never rendered as a badge
   }
 
   await prisma.$transaction(async (tx) => {
@@ -149,8 +153,11 @@ export const getDashboard = async (providerId: string) => {
         id:              true,
         legalName:       true,
         trustScore:      true,
-        kycStatus:       true,
-        experienceBadge: true,
+        identityStatus:  true,
+          skillStatus:     true,
+          milestoneBadge:  true,
+          completedBookings: true,
+        yearsExperience: true,
         profilePhoto:    true,
         badges:          { where: { status: 'ACTIVE' }, select: { badgeType: true } },
       },
@@ -234,7 +241,7 @@ export const getDashboard = async (providerId: string) => {
 
 export const getPublicProfile = async (providerId: string) => {
   const provider = await prisma.provider.findUnique({
-    where: { id: providerId, kycStatus: 'VERIFIED' },
+    where: { id: providerId, identityStatus: 'VERIFIED' },
     include: {
       user:       { select: { name: true } },
       skills:     true,
@@ -258,7 +265,7 @@ export const getPublicProfile = async (providerId: string) => {
   const lastEvent = await prisma.trustScoreEvent.findFirst({
     where:   { providerId },
     orderBy: { createdAt: 'desc' },
-    select:  { inputs: true, aiFlags: true, last_computed: true },
+    select:  { inputs: true, aiFlags: true },
   })
 
   return { provider, trustBreakdown: lastEvent?.inputs ?? null }
@@ -279,7 +286,7 @@ export const searchProviders = async (params: {
   const skip = (page - 1) * limit
 
   const where: Record<string, unknown> = {
-    kycStatus:  'VERIFIED',
+    identityStatus: 'VERIFIED',
     trustScore: { gte: trustMin },
     deletedAt:  null,
   }
