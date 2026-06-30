@@ -1,294 +1,225 @@
-import type { Request, Response } from "express";
-import prismaClient from "../config/db";
+import { Request, Response, NextFunction } from 'express'
+import * as AdminService     from '../services/adminService'
+import * as ComplaintService from '../services/complaintService'
+import { sendSuccess, sendError } from '../utils/response'
 
-export const getAllUsers = async (req: Request, res: Response) => {
-    try {
-        const users = await prismaClient.user.findMany({
-            select: {
-                id: true,
-                email: true,
-                name: true,
-                role: true,
-                isActive: true,
-                createdAt: true
-            },
-            orderBy: { createdAt: "desc" }
-        });
+export const getDashboard = async (
+  req: Request, res: Response, next: NextFunction
+): Promise<void> => {
+  try {
+    const data = await AdminService.getDashboardSummary()
+    sendSuccess(res, data)
+  } catch (err: any) {
+    err.code ? sendError(res, err.message, err.code, err.status) : next(err)
+  }
+}
 
-        // Map the data to match the frontend interface
-        const formattedUsers = users.map(user => ({
-            id: user.id.toString(),
-            name: user.name || (user.email ? user.email.split('@')[0] : 'User'), // Fallback to email prefix if no name
-            email: user.email,
-            role: user.role.toLowerCase() as 'customer' | 'provider' | 'admin',
-            status: user.isActive ? 'active' : 'inactive', // Map isActive to status
-            createdAt: user.createdAt.toISOString().split('T')[0], // Format as YYYY-MM-DD
-            lastLogin: undefined // Not available in current schema
-        }));
+export const getRevenue = async (
+  req: Request, res: Response, next: NextFunction
+): Promise<void> => {
+  try {
+    const data = await AdminService.getRevenueAnalytics({
+      from: req.query.from as string || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+      to:   req.query.to   as string || new Date().toISOString(),
+    })
+    sendSuccess(res, data)
+  } catch (err: any) {
+    err.code ? sendError(res, err.message, err.code, err.status) : next(err)
+  }
+}
 
-        res.json(formattedUsers);
-    } catch (error) {
-        console.error("Error fetching users:", error);
-        res.status(500).json({ message: "Internal server error" });
-    }
-};
+export const getUsers = async (
+  req: Request, res: Response, next: NextFunction
+): Promise<void> => {
+  try {
+    const data = await AdminService.getUsers({
+      role:   req.query.role   as string,
+      search: req.query.search as string,
+      page:   Number(req.query.page  ?? 1),
+      limit:  Number(req.query.limit ?? 20),
+    })
+    sendSuccess(res, data)
+  } catch (err: any) {
+    err.code ? sendError(res, err.message, err.code, err.status) : next(err)
+  }
+}
 
-export const getAllProviders = async (req: Request, res: Response) => {
-    try {
-        const providers = await prismaClient.provider.findMany({
-            include: {
-                user: {
-                    select: {
-                        name: true,
-                        email: true,
-                        phone: true
-                    }
-                }
-            },
-            orderBy: { createdAt: "desc" }
-        });
+export const toggleUserStatus = async (
+  req: Request, res: Response, next: NextFunction
+): Promise<void> => {
+  try {
+    const data = await AdminService.toggleUserStatus(
+      req.params.id,
+      req.body.isActive
+    )
+    sendSuccess(res, data, `User ${req.body.isActive ? 'activated' : 'deactivated'}`)
+  } catch (err: any) {
+    err.code ? sendError(res, err.message, err.code, err.status) : next(err)
+  }
+}
 
-        res.json(providers);
-    } catch (error) {
-        console.error("Error fetching providers:", error);
-        res.status(500).json({ message: "Internal server error" });
-    }
-};
+export const getProviders = async (
+  req: Request, res: Response, next: NextFunction
+): Promise<void> => {
+  try {
+    const data = await AdminService.getProviders({
+      identityStatus: req.query.identityStatus as string,
+      search:    req.query.search    as string,
+      page:      Number(req.query.page  ?? 1),
+      limit:     Number(req.query.limit ?? 20),
+    })
+    sendSuccess(res, data)
+  } catch (err: any) {
+    err.code ? sendError(res, err.message, err.code, err.status) : next(err)
+  }
+}
 
-// Get providers by verification status
-export const getProvidersByStatus = async (req: Request, res: Response) => {
-    try {
-        const { status } = req.query;
+export const getKycQueue = async (
+  req: Request, res: Response, next: NextFunction
+): Promise<void> => {
+  try {
+    const data = await AdminService.getKycQueue({
+      page:  Number(req.query.page  ?? 1),
+      limit: Number(req.query.limit ?? 10),
+    })
+    sendSuccess(res, data)
+  } catch (err: any) {
+    err.code ? sendError(res, err.message, err.code, err.status) : next(err)
+  }
+}
 
-        if (!status) {
-            return res.status(400).json({ message: "Status parameter is required" });
-        }
+export const approveKyc = async (
+  req: Request, res: Response, next: NextFunction
+): Promise<void> => {
+  try {
+    const data = await AdminService.approveKyc(req.params.id, req.user!.id)
+    sendSuccess(res, data, 'KYC approved and provider notified')
+  } catch (err: any) {
+    err.code ? sendError(res, err.message, err.code, err.status) : next(err)
+  }
+}
 
-        const validStatuses = ["INCOMPLETE", "DOCUMENTS_PENDING", "UNDER_REVIEW", "VERIFIED", "REJECTED"];
-        if (!validStatuses.includes(status as string)) {
-            return res.status(400).json({ message: "Invalid status parameter" });
-        }
+export const rejectKyc = async (
+  req: Request, res: Response, next: NextFunction
+): Promise<void> => {
+  try {
+    const data = await AdminService.rejectKyc(
+      req.params.id,
+      req.body.reason,
+      req.user!.id
+    )
+    sendSuccess(res, data, 'KYC rejected and provider notified')
+  } catch (err: any) {
+    err.code ? sendError(res, err.message, err.code, err.status) : next(err)
+  }
+}
 
-        const providers = await prismaClient.provider.findMany({
-            where: {
-                identityStatus: status as any
-            },
-            include: {
-                user: {
-                    select: {
-                        name: true,
-                        email: true,
-                        phone: true,
-                    }
-                },
-                documents: true,
-                categories: {
-                    include: {
-                        category: {
-                            select: {
-                                name: true
-                            }
-                        }
-                    }
-                }
-            },
-            orderBy: { createdAt: "desc" }
-        });
+export const getComplaints = async (
+  req: Request, res: Response, next: NextFunction
+): Promise<void> => {
+  try {
+    const data = await ComplaintService.getAdminComplaints({
+      status:   req.query.status   as string,
+      severity: req.query.severity as string,
+      page:     Number(req.query.page  ?? 1),
+      limit:    Number(req.query.limit ?? 20),
+    })
+    sendSuccess(res, data)
+  } catch (err: any) {
+    err.code ? sendError(res, err.message, err.code, err.status) : next(err)
+  }
+}
 
-        res.json(providers);
-    } catch (error) {
-        console.error("Error fetching providers by status:", error);
-        res.status(500).json({ message: "Internal server error" });
-    }
-};
+export const resolveComplaint = async (
+  req: Request, res: Response, next: NextFunction
+): Promise<void> => {
+  try {
+    const data = await ComplaintService.resolveComplaint(
+      req.params.id,
+      req.user!.id,
+      req.body
+    )
+    sendSuccess(res, data, data.message)
+  } catch (err: any) {
+    err.code ? sendError(res, err.message, err.code, err.status) : next(err)
+  }
+}
 
-// Accept provider application
-export const acceptProvider = async (req: Request, res: Response) => {
-    try {
-        const { providerId } = req.params;
+export const getTrustAnomalies = async (
+  req: Request, res: Response, next: NextFunction
+): Promise<void> => {
+  try {
+    const data = await AdminService.getTrustAnomalies()
+    sendSuccess(res, data)
+  } catch (err: any) {
+    err.code ? sendError(res, err.message, err.code, err.status) : next(err)
+  }
+}
 
-        if (!providerId) {
-            return res.status(400).json({ message: "Provider ID is required" });
-        }
+export const getFraudFlags = async (
+  req: Request, res: Response, next: NextFunction
+): Promise<void> => {
+  try {
+    const data = await AdminService.getFraudFlags({
+      page:  Number(req.query.page  ?? 1),
+      limit: Number(req.query.limit ?? 20),
+    })
+    sendSuccess(res, data)
+  } catch (err: any) {
+    err.code ? sendError(res, err.message, err.code, err.status) : next(err)
+  }
+}
 
-        const providerIdNum = providerId; // Already a string UUID
-        if (!providerIdNum) {
-            return res.status(400).json({ message: "Invalid provider ID" });
-        }
+export const resolveFraudFlag = async (
+  req: Request, res: Response, next: NextFunction
+): Promise<void> => {
+  try {
+    const data = await AdminService.resolveFraudFlag(req.params.id, req.user!.id)
+    sendSuccess(res, data, 'Flag resolved')
+  } catch (err: any) {
+    err.code ? sendError(res, err.message, err.code, err.status) : next(err)
+  }
+}
 
-        // Find the provider
-        const provider = await prismaClient.provider.findUnique({
-            where: { id: providerIdNum },
-            include: {
-                user: {
-                    select: {
-                        name: true,
-                        email: true
-                    }
-                }
-            }
-        });
+// ── Skill Evidence Review Queue (v2.3) ─────────────────────────
 
-        if (!provider) {
-            return res.status(404).json({ message: "Provider not found" });
-        }
+export const getSkillEvidenceQueue = async (
+  req: Request, res: Response, next: NextFunction
+): Promise<void> => {
+  try {
+    const data = await AdminService.getSkillEvidenceQueue({
+      status: req.query.status as string ?? 'PENDING',
+      page:   Number(req.query.page  ?? 1),
+      limit:  Number(req.query.limit ?? 20),
+    })
+    sendSuccess(res, data)
+  } catch (err: any) {
+    err.code ? sendError(res, err.message, err.code, err.status) : next(err)
+  }
+}
 
-        if (provider.identityStatus !== "UNDER_REVIEW") {
-            return res.status(400).json({
-                message: `Provider is already ${provider.identityStatus.toLowerCase()}`
-            });
-        }
+export const approveSkillEvidence = async (
+  req: Request, res: Response, next: NextFunction
+): Promise<void> => {
+  try {
+    const data = await AdminService.approveSkillEvidence(req.params.id, req.user!.id)
+    sendSuccess(res, data, 'Skill evidence approved (Tier 1) — provider notified')
+  } catch (err: any) {
+    err.code ? sendError(res, err.message, err.code, err.status) : next(err)
+  }
+}
 
-        // Update provider status to VERIFIED
-        const updatedProvider = await prismaClient.provider.update({
-            where: { id: providerIdNum },
-            data: {
-                identityStatus: "VERIFIED",
-                updatedAt: new Date()
-            },
-            include: {
-                user: {
-                    select: {
-                        name: true,
-                        email: true,
-                        phone: true
-                    }
-                },
-                categories: {
-                    include: {
-                        category: {
-                            select: {
-                                name: true
-                            }
-                        }
-                    }
-                }
-            }
-        });
-
-        res.json({
-            message: "Provider application accepted successfully",
-            provider: updatedProvider
-        });
-    } catch (error) {
-        console.error("Error accepting provider:", error);
-        res.status(500).json({ message: "Internal server error" });
-    }
-};
-
-// Reject provider application
-export const rejectProvider = async (req: Request, res: Response) => {
-    try {
-        const { providerId } = req.params;
-        const { reason } = req.body; // Optional rejection reason
-
-        if (!providerId) {
-            return res.status(400).json({ message: "Provider ID is required" });
-        }
-
-        const providerIdNum = providerId; // UUID string
-        if (!providerIdNum) {
-            return res.status(400).json({ message: "Invalid provider ID" });
-        }
-
-        // Find the provider
-        const provider = await prismaClient.provider.findUnique({
-            where: { id: providerIdNum },
-            include: {
-                user: {
-                    select: {
-                        name: true,
-                        email: true
-                    }
-                }
-            }
-        });
-
-        if (!provider) {
-            return res.status(404).json({ message: "Provider not found" });
-        }
-
-        if (provider.identityStatus !== "UNDER_REVIEW") {
-            return res.status(400).json({
-                message: `Provider is already ${provider.identityStatus.toLowerCase()}`
-            });
-        }
-
-        // Update provider status to REJECTED
-        const updatedProvider = await prismaClient.provider.update({
-            where: { id: providerIdNum },
-            data: {
-                identityStatus: "REJECTED",
-                updatedAt: new Date()
-            },
-            include: {
-                user: {
-                    select: {
-                        name: true,
-                        email: true,
-                        phone: true
-                    }
-                },
-                categories: {
-                    include: {
-                        category: {
-                            select: {
-                                name: true
-                            }
-                        }
-                    }
-                }
-            }
-        });
-
-        res.json({
-            message: "Provider application rejected successfully",
-            provider: updatedProvider,
-            rejectionReason: reason || null
-        });
-    } catch (error) {
-        console.error("Error rejecting provider:", error);
-        res.status(500).json({ message: "Internal server error" });
-    }
-};
-
-// Get pending providers (UNDER_REVIEW status)
-export const getPendingProviders = async (req: Request, res: Response) => {
-    try {
-        const providers = await prismaClient.provider.findMany({
-            where: {
-                identityStatus: "UNDER_REVIEW"
-            },
-            include: {
-                user: {
-                    select: {
-                        name: true,
-                        email: true,
-                        phone: true,
-                    }
-                },
-                documents: true,
-                categories: {
-                    include: {
-                        category: {
-                            select: {
-                                name: true,
-                                description: true
-                            }
-                        }
-                    }
-                }
-            },
-            orderBy: { createdAt: "desc" }
-        });
-
-        res.json({
-            message: "Pending providers retrieved successfully",
-            count: providers.length,
-            providers
-        });
-    } catch (error) {
-        console.error("Error fetching pending providers:", error);
-        res.status(500).json({ message: "Internal server error" });
-    }
-};
+export const rejectSkillEvidence = async (
+  req: Request, res: Response, next: NextFunction
+): Promise<void> => {
+  try {
+    const data = await AdminService.rejectSkillEvidence(
+      req.params.id,
+      req.body.reason,
+      req.user!.id
+    )
+    sendSuccess(res, data, 'Skill evidence rejected')
+  } catch (err: any) {
+    err.code ? sendError(res, err.message, err.code, err.status) : next(err)
+  }
+}

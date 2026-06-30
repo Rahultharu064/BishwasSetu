@@ -6,6 +6,12 @@ import type {
   UpdateBookingStatusInput,
 } from '../validators/bookingValidator'
 import { BookingStatus } from '@prisma/client'
+import {
+  notifyBookingRequested,
+  notifyBookingAccepted,
+  notifyBookingRejected,
+  notifyBookingCompleted,
+} from '../services/notificationsService'
 
 // ─────────────────────────────────────────────
 // STATE MACHINE
@@ -173,12 +179,19 @@ export const createBooking = async (
       status:        'REQUESTED',
     },
     include: {
-      provider: { select: { legalName: true } },
+      provider: { select: { legalName: true, user: { select: { id: true } } } },
       category: { select: { name: true } },
+      customer: { select: { name: true } },
     },
   })
 
-  // TODO: notify provider of new booking request (Step 10)
+  await notifyBookingRequested(
+    booking.provider.user.id,
+    booking.customer.name,
+    booking.category.name,
+    booking.scheduledAt.toLocaleDateString('en-NP')
+  ).catch(() => {})
+
 
   return {
     booking,
@@ -207,7 +220,8 @@ export const updateBookingStatus = async (
   const booking = await prisma.booking.findUnique({
     where:   { id: bookingId },
     include: {
-      provider: { select: { id: true, trustScore: true } },
+      provider: { select: { id: true, trustScore: true, legalName: true } },
+      category: { select: { name: true } },
     },
   })
 
@@ -285,8 +299,11 @@ export const updateBookingStatus = async (
       data:  { completedBookings: { increment: 1 } },
     })
 
-    // TODO: trigger payout to provider (priceNpr - commission) via Khalti/eSewa (Step 10)
-    // TODO: notify both parties (Step 10)
+    // notify customer
+    await notifyBookingCompleted(
+      booking.customerId,
+      booking.category.name
+    ).catch(() => {})
 
     return {
       booking: await prisma.booking.findUnique({ where: { id: bookingId } }),
@@ -311,7 +328,20 @@ export const updateBookingStatus = async (
     await checkRejectionRate(booking.providerId)
   }
 
-  // TODO: notify relevant party of status change (Step 10)
+  if (newStatus === 'ACCEPTED') {
+    await notifyBookingAccepted(
+      booking.customerId,
+      booking.provider.legalName,
+      booking.category.name,
+      booking.scheduledAt.toLocaleDateString('en-NP')
+    ).catch(() => {})
+  } else if (newStatus === 'REJECTED') {
+    await notifyBookingRejected(
+      booking.customerId,
+      booking.provider.legalName,
+      booking.category.name
+    ).catch(() => {})
+  }
 
   return { booking: updated, message: `Booking ${newStatus.toLowerCase()}` }
 }
@@ -478,3 +508,4 @@ export const getProviderBookings = async (
     pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
   }
 }
+
