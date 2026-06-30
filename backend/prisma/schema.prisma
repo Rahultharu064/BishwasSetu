@@ -231,20 +231,6 @@ model ProviderSkill {
   @@map("provider_skills")
 }
 
-model Category {
-  id          String             @id @default(uuid()) @db.Char(36)
-  name        String             @unique @db.VarChar(100)
-  nameNp      String             @db.VarChar(100)  // Nepali name
-  icon        String?            @db.VarChar(100)
-  description String?            @db.Text
-  isActive    Boolean            @default(true)
-  createdAt   DateTime           @default(now())
-
-  providers   ProviderCategory[]
-  bookings    Booking[]
-
-  @@map("categories")
-}
 
 model ProviderCategory {
   id         String   @id @default(uuid()) @db.Char(36)
@@ -610,4 +596,91 @@ model AssistantSession {
 
   @@index([sessionId])
   @@map("assistant_sessions")
+}
+
+
+
+// ─────────────────────────────────────────────
+// EXISTING — update Category model to add relation
+// ─────────────────────────────────────────────
+
+model Category {
+  id           String            @id @default(uuid()) @db.Char(36)
+  name         String            @unique @db.VarChar(100)
+  nameNp       String            @db.VarChar(100)
+  icon         String?           @db.VarChar(100)
+  description  String?           @db.Text
+  descriptionNp String?          @db.Text
+  slug         String            @unique @db.VarChar(100)
+  isActive     Boolean           @default(true)
+  sortOrder    Int               @default(0)
+  createdAt    DateTime          @default(now())
+
+  // Relations
+  subCategories SubCategory[]
+  providers     ProviderCategory[]
+  bookings      Booking[]
+
+  @@map("categories")
+}
+
+// ─────────────────────────────────────────────
+// NEW — Level 2: Sub-category
+// e.g. Plumbing → Pipe Work, Bathroom Fitting, Water Tank
+// ─────────────────────────────────────────────
+
+model SubCategory {
+  id            String    @id @default(uuid()) @db.Char(36)
+  categoryId    String    @db.Char(36)
+  name          String    @db.VarChar(100)
+  nameNp        String    @db.VarChar(100)
+  description   String?   @db.Text
+  descriptionNp String?   @db.Text
+  slug          String    @db.VarChar(100)
+  isActive      Boolean   @default(true)
+  sortOrder     Int       @default(0)
+  createdAt     DateTime  @default(now())
+
+  category      Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  services      Service[]
+
+  @@unique([categoryId, slug])
+  @@index([categoryId])
+  @@map("sub_categories")
+}
+
+// ─────────────────────────────────────────────
+// NEW — Level 3: Specific Service with pricing
+// e.g. Pipe Work → Fix leaking pipe (NPR 500–1500)
+// ─────────────────────────────────────────────
+
+model Service {
+  id              String      @id @default(uuid()) @db.Char(36)
+  subCategoryId   String      @db.Char(36)
+  name            String      @db.VarChar(200)
+  nameNp          String      @db.VarChar(200)
+  description     String?     @db.Text
+  descriptionNp   String?     @db.Text
+  slug            String      @db.VarChar(100)
+
+  // Pricing
+  pricingType     String      @db.VarChar(20)   // 'fixed'|'range'|'quote'
+  priceMin        Int?                           // NPR — null if 'quote'
+  priceMax        Int?                           // NPR — null if 'fixed'
+  priceFixed      Int?                           // NPR — used when pricingType='fixed'
+  priceUnit       String?     @db.VarChar(30)   // 'per visit'|'per hour'|'per sq ft'
+
+  // Meta
+  estimatedMinutes Int?                          // avg completion time
+  includedTasks   Json?                          // string[] of what's included
+  excludedTasks   Json?                          // string[] of what's NOT included
+  isActive        Boolean     @default(true)
+  sortOrder       Int         @default(0)
+  createdAt       DateTime    @default(now())
+
+  subCategory     SubCategory @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
+
+  @@unique([subCategoryId, slug])
+  @@index([subCategoryId])
+  @@map("services")
 }

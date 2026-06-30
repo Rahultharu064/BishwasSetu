@@ -23,6 +23,9 @@ import kycRoutes      from './routes/kycRoute'
 import bookingRoutes  from './routes/bookingRoute'
 import reviewRoutes   from './routes/reviewRoute'
 import adminRoutes    from './routes/adminRoute'
+import serviceRoutes from './routes/serviceRoute'
+import creditRoutes from './routes/creditRoute'
+
 
 // ─────────────────────────────────────────────────────────────
 // APP INIT
@@ -81,6 +84,7 @@ app.use(`${v1}/kyc`,       kycRoutes)
 app.use(`${v1}/bookings`,  bookingRoutes)
 app.use(`${v1}/reviews`,   reviewRoutes)
 app.use(`${v1}/admin`,     adminRoutes)
+app.use(`${v1}/services`, serviceRoutes)
 
 // ── Trust score — inline router (no separate route file needed) ──
 const trustRouter = Router()

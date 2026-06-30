@@ -4,11 +4,11 @@ import prismaClient from "../config/db";
 
 // ------------------- Create Category -------------------
 export const createCategory = async (
-  req: Request<{}, {}, { name: string; icon?: string; description?: string }>,
+  req: Request<{}, {}, { name: string; nameNp?: string; slug?: string; icon?: string; description?: string }>,
   res: Response<{ message: string; category?: any }>
 ) => {
   try {
-    const { name, icon, description } = req.body;
+    const { name, nameNp, slug, icon, description } = req.body;
 
     const existing = await prismaClient.category.findUnique({
       where: { name },
@@ -20,10 +20,12 @@ export const createCategory = async (
 
     const category = await prismaClient.category.create({
 data: {
-    name,
-    icon: icon ?? null,
-    description: description ?? null,
-  }
+      name,
+      nameNp: nameNp || name,
+      slug: slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      icon: icon ?? null,
+      description: description ?? null,
+    }
     });
 
     return res.status(201).json({
@@ -63,8 +65,7 @@ export const searchCategory = async (
     const categories: any[] = await prismaClient.category.findMany({
       where: {
         name: {
-          contains: searchQuery,
-          mode: "insensitive",
+          contains: searchQuery
         },
       },
       orderBy: { createdAt: "desc" },
@@ -156,29 +157,23 @@ export const getCategoriesWithStats = async (
   >
 ) => {
   try {
-    const categories: (any & { service: any[] })[] =
-      await prismaClient.category.findMany({
-        include: {
-          service: {
-            where: { provider: { verificationStatus: "VERIFIED" } },
-            include: { provider: true },
-          },
-        },
-        orderBy: { createdAt: "desc" },
-      });
+    const categories = await prismaClient.category.findMany({
+      include: {
+        _count: {
+          select: { subCategories: true, providers: true }
+        }
+      },
+      orderBy: { createdAt: "desc" },
+    });
 
     const categoriesWithStats = categories.map((category) => {
-      const uniqueProviders = new Set(
-        category.service.map((service: any) => service.providerId)
-      );
-
       return {
         id: category.id,
         name: category.name,
         icon: category.icon,
         description: category.description,
-        serviceCount: category.service.length,
-        providerCount: uniqueProviders.size,
+        serviceCount: category._count.subCategories,
+        providerCount: category._count.providers,
         rating: 4.7, // placeholder
       };
     });

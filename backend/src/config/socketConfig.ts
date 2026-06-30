@@ -3,7 +3,7 @@ import { Server as HTTPServer } from 'http';
 import jwt from 'jsonwebtoken';
 import type { Socket } from 'socket.io';
 import * as cookie from 'cookie';
-import { JWT_SECRET } from './jwt.ts';
+import { JWT_SECRET } from './jwt';
 
 interface AuthenticatedSocket extends Socket {
     userId?: number;

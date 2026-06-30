@@ -9,7 +9,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
                 email: true,
                 name: true,
                 role: true,
-                isVerified: true,
+                isActive: true,
                 createdAt: true
             },
             orderBy: { createdAt: "desc" }
@@ -18,10 +18,10 @@ export const getAllUsers = async (req: Request, res: Response) => {
         // Map the data to match the frontend interface
         const formattedUsers = users.map(user => ({
             id: user.id.toString(),
-            name: user.name || user.email.split('@')[0], // Fallback to email prefix if no name
+            name: user.name || (user.email ? user.email.split('@')[0] : 'User'), // Fallback to email prefix if no name
             email: user.email,
             role: user.role.toLowerCase() as 'customer' | 'provider' | 'admin',
-            status: user.isVerified ? 'active' : 'inactive', // Map isVerified to status
+            status: user.isActive ? 'active' : 'inactive', // Map isActive to status
             createdAt: user.createdAt.toISOString().split('T')[0], // Format as YYYY-MM-DD
             lastLogin: undefined // Not available in current schema
         }));
@@ -71,7 +71,7 @@ export const getProvidersByStatus = async (req: Request, res: Response) => {
 
         const providers = await prismaClient.provider.findMany({
             where: {
-                verificationStatus: status as any
+                identityStatus: status as any
             },
             include: {
                 user: {
@@ -79,15 +79,16 @@ export const getProvidersByStatus = async (req: Request, res: Response) => {
                         name: true,
                         email: true,
                         phone: true,
-                        address: true,
-                        district: true,
-                        municipality: true
                     }
                 },
-                kycDocuments: true,
-                category: {
-                    select: {
-                        name: true
+                documents: true,
+                categories: {
+                    include: {
+                        category: {
+                            select: {
+                                name: true
+                            }
+                        }
                     }
                 }
             },
@@ -110,8 +111,8 @@ export const acceptProvider = async (req: Request, res: Response) => {
             return res.status(400).json({ message: "Provider ID is required" });
         }
 
-        const providerIdNum = parseInt(providerId);
-        if (isNaN(providerIdNum)) {
+        const providerIdNum = providerId; // Already a string UUID
+        if (!providerIdNum) {
             return res.status(400).json({ message: "Invalid provider ID" });
         }
 
@@ -132,9 +133,9 @@ export const acceptProvider = async (req: Request, res: Response) => {
             return res.status(404).json({ message: "Provider not found" });
         }
 
-        if (provider.verificationStatus !== "UNDER_REVIEW") {
+        if (provider.identityStatus !== "UNDER_REVIEW") {
             return res.status(400).json({
-                message: `Provider is already ${provider.verificationStatus.toLowerCase()}`
+                message: `Provider is already ${provider.identityStatus.toLowerCase()}`
             });
         }
 
@@ -142,7 +143,7 @@ export const acceptProvider = async (req: Request, res: Response) => {
         const updatedProvider = await prismaClient.provider.update({
             where: { id: providerIdNum },
             data: {
-                verificationStatus: "VERIFIED",
+                identityStatus: "VERIFIED",
                 updatedAt: new Date()
             },
             include: {
@@ -153,9 +154,13 @@ export const acceptProvider = async (req: Request, res: Response) => {
                         phone: true
                     }
                 },
-                category: {
-                    select: {
-                        name: true
+                categories: {
+                    include: {
+                        category: {
+                            select: {
+                                name: true
+                            }
+                        }
                     }
                 }
             }
@@ -181,8 +186,8 @@ export const rejectProvider = async (req: Request, res: Response) => {
             return res.status(400).json({ message: "Provider ID is required" });
         }
 
-        const providerIdNum = parseInt(providerId);
-        if (isNaN(providerIdNum)) {
+        const providerIdNum = providerId; // UUID string
+        if (!providerIdNum) {
             return res.status(400).json({ message: "Invalid provider ID" });
         }
 
@@ -203,9 +208,9 @@ export const rejectProvider = async (req: Request, res: Response) => {
             return res.status(404).json({ message: "Provider not found" });
         }
 
-        if (provider.verificationStatus !== "UNDER_REVIEW") {
+        if (provider.identityStatus !== "UNDER_REVIEW") {
             return res.status(400).json({
-                message: `Provider is already ${provider.verificationStatus.toLowerCase()}`
+                message: `Provider is already ${provider.identityStatus.toLowerCase()}`
             });
         }
 
@@ -213,7 +218,7 @@ export const rejectProvider = async (req: Request, res: Response) => {
         const updatedProvider = await prismaClient.provider.update({
             where: { id: providerIdNum },
             data: {
-                verificationStatus: "REJECTED",
+                identityStatus: "REJECTED",
                 updatedAt: new Date()
             },
             include: {
@@ -224,9 +229,13 @@ export const rejectProvider = async (req: Request, res: Response) => {
                         phone: true
                     }
                 },
-                category: {
-                    select: {
-                        name: true
+                categories: {
+                    include: {
+                        category: {
+                            select: {
+                                name: true
+                            }
+                        }
                     }
                 }
             }
@@ -248,7 +257,7 @@ export const getPendingProviders = async (req: Request, res: Response) => {
     try {
         const providers = await prismaClient.provider.findMany({
             where: {
-                verificationStatus: "UNDER_REVIEW"
+                identityStatus: "UNDER_REVIEW"
             },
             include: {
                 user: {
@@ -256,16 +265,17 @@ export const getPendingProviders = async (req: Request, res: Response) => {
                         name: true,
                         email: true,
                         phone: true,
-                        address: true,
-                        district: true,
-                        municipality: true
                     }
                 },
-                kycDocuments: true,
-                category: {
-                    select: {
-                        name: true,
-                        description: true
+                documents: true,
+                categories: {
+                    include: {
+                        category: {
+                            select: {
+                                name: true,
+                                description: true
+                            }
+                        }
                     }
                 }
             },

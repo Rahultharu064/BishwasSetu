@@ -10,25 +10,25 @@ interface TokenPayload {
 // ── Access Token ─────────────────────────────
 
 export const signAccessToken = (payload: TokenPayload): string => {
-  return jwt.sign(payload, process.env.JWT_ACCESS_SECRET!, {
-    expiresIn: process.env.JWT_ACCESS_EXPIRES as string, // '15m'
+  return jwt.sign(payload, process.env.JWT_ACCESS_SECRET as string, {
+    expiresIn: process.env.JWT_ACCESS_EXPIRES as any, // '15m'
   })
 }
 
 export const verifyAccessToken = (token: string): TokenPayload => {
-  return jwt.verify(token, process.env.JWT_ACCESS_SECRET!) as TokenPayload
+  return jwt.verify(token, process.env.JWT_ACCESS_SECRET as string) as TokenPayload
 }
 
 // ── Refresh Token ─────────────────────────────
 
 export const signRefreshToken = (payload: TokenPayload): string => {
-  return jwt.sign(payload, process.env.JWT_REFRESH_SECRET!, {
-    expiresIn: process.env.JWT_REFRESH_EXPIRES as string, // '7d'
+  return jwt.sign(payload, process.env.JWT_REFRESH_SECRET as string, {
+    expiresIn: process.env.JWT_REFRESH_EXPIRES as any, // '7d'
   })
 }
 
 export const verifyRefreshToken = (token: string): TokenPayload => {
-  return jwt.verify(token, process.env.JWT_REFRESH_SECRET!) as TokenPayload
+  return jwt.verify(token, process.env.JWT_REFRESH_SECRET as string) as TokenPayload
 }
 
 // ── Persist refresh token to DB ───────────────

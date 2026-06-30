@@ -1,16 +1,33 @@
-import { Router } from "express";
-import { authMiddleware, authorize } from "../middlewares/authMiddleware";
-import * as ReviewController from "../controllers/reviewController";
+import { Router } from 'express'
+import * as ReviewController from '../controllers/reviewController'
+import { protect, restrictTo } from '../middlewares/authMiddleware'
+import { validate }            from '../middlewares/validateMiddleware'
+import { CreateReviewSchema, ProviderReplySchema } from '../validators/reviewValidator'
 
-const router = Router();
+const router = Router()
 
-// Submit review (Customer only)
-router.post("/", authMiddleware, authorize(["CUSTOMER"]), ReviewController.createReview);
+// Public
+router.get(
+  '/provider/:providerId',
+  ReviewController.getProviderReviews
+)
 
-// Get reviews for provider (Public)
-router.get("/provider/:id", ReviewController.getProviderReviews);
+// Customer — submit review
+router.post(
+  '/',
+  protect,
+  restrictTo('CUSTOMER'),
+  validate(CreateReviewSchema),
+  ReviewController.createReview
+)
 
-// Reply to review (Provider only)
-router.post("/:id/reply", authMiddleware, authorize(["PROVIDER"]), ReviewController.replyToReview);
+// Provider — reply to review
+router.post(
+  '/:id/reply',
+  protect,
+  restrictTo('PROVIDER'),
+  validate(ProviderReplySchema),
+  ReviewController.addProviderReply
+)
 
-export default router;
+export default router

@@ -12,7 +12,7 @@ const handleValidationError = (err: unknown, res: Response, next: NextFunction):
         code:    'VALIDATION_ERROR',
         message: 'Invalid request data',
         status:  422,
-        fields:  err.errors.map((e) => ({
+        fields:  (err as any).errors.map((e: any) => ({
           field:   e.path.join('.'),
           message: e.message,
         })),

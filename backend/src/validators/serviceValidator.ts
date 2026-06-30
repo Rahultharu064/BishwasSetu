@@ -1,51 +1,49 @@
-import Joi from "joi";
+import { z } from 'zod'
 
-export const createServiceSchema = Joi.object({
-  providerId: Joi.number().integer().min(1).optional().messages({
-    'number.base': 'Provider ID must be a number',
-    'number.min': 'Provider ID must be a positive number'
-  }),
-  categoryId: Joi.string().uuid().required().messages({
-    'string.guid': 'Category ID must be a valid UUID',
-    'any.required': 'Category ID is required'
-  }),
-  title: Joi.string().min(3).max(100).required().messages({
-    'string.min': 'Title must be at least 3 characters long',
-    'string.max': 'Title cannot exceed 100 characters',
-    'any.required': 'Title is required'
-  }),
-  description: Joi.string().min(10).max(500).required().messages({
-    'string.min': 'Description must be at least 10 characters long',
-    'string.max': 'Description cannot exceed 500 characters',
-    'any.required': 'Description is required'
-  }),
-  icon: Joi.string().max(50).optional().messages({
-    'string.max': 'Icon cannot exceed 50 characters'
-  })
-});
+const PricingTypeEnum = z.enum(['fixed', 'range', 'quote'])
 
-export const updateServiceSchema = Joi.object({
-  categoryId: Joi.string().uuid().optional().messages({
-    'string.guid': 'Category ID must be a valid UUID'
-  }),
-  title: Joi.string().min(3).max(100).optional().messages({
-    'string.min': 'Title must be at least 3 characters long',
-    'string.max': 'Title cannot exceed 100 characters'
-  }),
-  description: Joi.string().min(10).max(500).optional().messages({
-    'string.min': 'Description must be at least 10 characters long',
-    'string.max': 'Description cannot exceed 500 characters'
-  })
-}).min(1).messages({
-  'object.min': 'At least one field must be provided for update'
-});
+export const CreateCategorySchema = z.object({
+  name:          z.string().min(2).max(100).trim(),
+  nameNp:        z.string().min(2).max(100).trim(),
+  icon:          z.string().max(100).optional(),
+  description:   z.string().max(1000).optional(),
+  descriptionNp: z.string().max(1000).optional(),
+  slug:          z.string().min(2).max(100).toLowerCase().trim(),
+  sortOrder:     z.coerce.number().default(0),
+})
 
-export const searchServiceSchema = Joi.object({
-  search: Joi.string().allow('').optional(),
-  category: Joi.string().allow('').optional(),
-  minPrice: Joi.number().min(0).optional(),
-  maxPrice: Joi.number().min(0).optional(),
-  sortBy: Joi.string().valid('createdAt', 'price_asc', 'price_desc', 'title').optional(),
-  page: Joi.number().integer().min(1).optional(),
-  limit: Joi.number().integer().min(1).max(100).optional()
-});
+export const CreateSubCategorySchema = z.object({
+  categoryId:    z.string().uuid(),
+  name:          z.string().min(2).max(100).trim(),
+  nameNp:        z.string().min(2).max(100).trim(),
+  description:   z.string().max(1000).optional(),
+  descriptionNp: z.string().max(1000).optional(),
+  slug:          z.string().min(2).max(100).toLowerCase().trim(),
+  sortOrder:     z.coerce.number().default(0),
+})
+
+export const CreateServiceSchema = z.object({
+  subCategoryId:    z.string().uuid(),
+  name:             z.string().min(2).max(200).trim(),
+  nameNp:           z.string().min(2).max(200).trim(),
+  description:      z.string().max(2000).optional(),
+  descriptionNp:    z.string().max(2000).optional(),
+  slug:             z.string().min(2).max(100).toLowerCase().trim(),
+  pricingType:      PricingTypeEnum,
+  priceMin:         z.coerce.number().min(0).optional(),
+  priceMax:         z.coerce.number().min(0).optional(),
+  priceFixed:       z.coerce.number().min(0).optional(),
+  priceUnit:        z.string().max(30).optional(),
+  estimatedMinutes: z.coerce.number().min(0).optional(),
+  includedTasks:    z.array(z.string()).optional(),
+  excludedTasks:    z.array(z.string()).optional(),
+  sortOrder:        z.coerce.number().default(0),
+}).refine((d) => {
+  if (d.pricingType === 'fixed'  && !d.priceFixed)            return false
+  if (d.pricingType === 'range'  && (!d.priceMin || !d.priceMax)) return false
+  return true
+}, { message: 'Provide priceFixed for fixed pricing, or priceMin+priceMax for range' })
+
+export type CreateCategoryInput    = z.infer<typeof CreateCategorySchema>
+export type CreateSubCategoryInput = z.infer<typeof CreateSubCategorySchema>
+export type CreateServiceInput     = z.infer<typeof CreateServiceSchema>

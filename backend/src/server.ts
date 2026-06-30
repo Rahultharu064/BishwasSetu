@@ -3,7 +3,8 @@ import app from "./app";
 import { prisma } from "./config/db";
 import { initializeSocket } from "./config/socketConfig";
 import { setSocketIO } from "./config/socketHandlers";
-import './jobs/trustJob'   // ← uncomment this line
+import './jobs/trustJob'
+import './jobs/moderationJob'
 
 // Schedule daily decay at 2 AM
 import cron from 'node-cron'

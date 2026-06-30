@@ -11,7 +11,7 @@ export const requireVerifiedProvider = async (req: Request, res: Response, next:
       where: { userId: req.user.id }
     });
 
-    if (!provider || provider.verificationStatus !== "VERIFIED") {
+    if (!provider || provider.identityStatus !== "VERIFIED") {
       return res.status(403).json({
         message: "Provider must be VERIFIED to perform this action"
       });

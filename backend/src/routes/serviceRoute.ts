@@ -1,58 +1,88 @@
-import express from "express";
-import { authMiddleware, authorize } from "../middlewares/authMiddleware";
-import { validate } from "../middlewares/validateMiddleware";
+import { Router } from 'express'
+import * as ServiceController from '../controllers/serviceController'
+import { protect, restrictTo } from '../middlewares/authMiddleware'
+import { validate }            from '../middlewares/validateMiddleware'
 import {
-    createService,
-    getServicesByProvider,
-    updateService,
-    deleteService,
-    getServicesByCategory,
-    getAllServices,
-    getServicesWithFilters,
-    getServiceStats,
-    getServiceById
-} from "../controllers/serviceController";
-import { createServiceSchema, updateServiceSchema, searchServiceSchema } from "../validators/serviceValidator";
+  CreateCategorySchema,
+  CreateSubCategorySchema,
+  CreateServiceSchema,
+} from '../validators/serviceValidator'
 
-const router = express.Router();
+const router = Router()
 
-// Protected routes - allow PROVIDER and ADMIN roles
-router.post(
-    "/",
-    authMiddleware,
-    authorize(["PROVIDER", "ADMIN"]),
-    validate(createServiceSchema),
-    createService
-);
+// ── Public routes ─────────────────────────────────────────────
 
+// Search across all levels
+router.get('/search', ServiceController.searchServices)
+
+// Level 1 — Categories
+router.get('/',              ServiceController.getAllCategories)
+router.get('/:slug',         ServiceController.getCategoryBySlug)
+router.get('/:slug/providers', ServiceController.getProvidersByCategory)
+router.get('/:slug/sub',     ServiceController.getSubCategories)
+
+// Level 2 — Sub-categories
+router.get('/:categorySlug/sub/:subSlug',  ServiceController.getSubCategoryBySlug)
+
+// Level 3 — Specific services
 router.get(
-    "/provider",
-    authMiddleware,
-    authorize(["PROVIDER"]),
-    getServicesByProvider
-);
+  '/:categorySlug/sub/:subSlug/services',
+  ServiceController.getServices
+)
+router.get(
+  '/:categorySlug/sub/:subSlug/:serviceSlug',
+  ServiceController.getServiceBySlug
+)
 
+// ── Admin routes ───────────────────────────────────────────────
+
+// Categories
+router.post(
+  '/',
+  protect, restrictTo('ADMIN'),
+  validate(CreateCategorySchema),
+  ServiceController.createCategory
+)
 router.put(
-    "/:id",
-    authMiddleware,
-    authorize(["PROVIDER"]),
-    validate(updateServiceSchema),
-    updateService
-);
+  '/:id',
+  protect, restrictTo('ADMIN'),
+  ServiceController.updateCategory
+)
+router.patch(
+  '/:id/toggle',
+  protect, restrictTo('ADMIN'),
+  ServiceController.toggleCategory
+)
 
-router.delete(
-    "/:id",
-    authMiddleware,
-    authorize(["PROVIDER", "ADMIN"]),
-    deleteService
-);
+// Sub-categories
+router.post(
+  '/sub',
+  protect, restrictTo('ADMIN'),
+  validate(CreateSubCategorySchema),
+  ServiceController.createSubCategory
+)
+router.put(
+  '/sub/:id',
+  protect, restrictTo('ADMIN'),
+  ServiceController.updateSubCategory
+)
 
-// Public routes
-router.get("/search", validate(searchServiceSchema, 'query'), getServicesWithFilters);
-router.get("/stats", getServiceStats);
+// Services
+router.post(
+  '/service',
+  protect, restrictTo('ADMIN'),
+  validate(CreateServiceSchema),
+  ServiceController.createService
+)
+router.put(
+  '/service/:id',
+  protect, restrictTo('ADMIN'),
+  ServiceController.updateService
+)
+router.patch(
+  '/service/:id/toggle',
+  protect, restrictTo('ADMIN'),
+  ServiceController.toggleService
+)
 
-router.get("/category/:categoryId", getServicesByCategory);
-router.get("/:id", getServiceById);
-router.get("/", getAllServices);
-
-export default router;
+export default router
