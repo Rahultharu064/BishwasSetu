@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 30
+    },
+    "auditLog": "C:\\Users\\Dell\\Desktop\\BishwasSetu\\backend\\logs\\.5ddcbcea9dc1b0dce690d6d27fcc67f184683f28-audit.json",
+    "files": [
+        {
+            "date": 1782838676521,
+            "name": "C:\\Users\\Dell\\Desktop\\BishwasSetu\\backend\\logs\\app-2026-06-30.log",
+            "hash": "6eb1ecb2377e4fb7c8a7824cb957ffbe89a92531159a0805bad0c96afee8d832"
+        }
+    ],
+    "hashType": "sha256"
+}

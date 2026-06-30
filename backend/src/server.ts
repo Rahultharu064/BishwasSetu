@@ -7,9 +7,9 @@ import { trustQueue, kycQueue, moderationQueue } from './jobs/queue'
 import cron         from 'node-cron'
 
 // Import workers
-import './jobs/kyc.job'
-import './jobs/trust.job'
-import './jobs/moderation.job'
+import './jobs/kycJob'
+import './jobs/trustJob'
+import './jobs/moderationJob'
 
 const PORT = Number(process.env.PORT ?? 4000)
 
@@ -20,8 +20,15 @@ async function bootstrap() {
     await prisma.$connect()
     logger.info('Database connected')
 
-    await redis.connect()
-    logger.info('Redis connected')
+    // Connect to Redis only if available
+    if (redis) {
+      try {
+        await redis.connect()
+        logger.info('Redis connected')
+      } catch (redisError) {
+        logger.warn('Redis connection failed, proceeding without Redis', { error: redisError })
+      }
+    }
 
     // Daily trust decay — 2 AM Nepal time (UTC+5:45 → 20:15 UTC previous day)
     cron.schedule('15 20 * * *', async () => {
@@ -55,7 +62,10 @@ async function shutdown(code = 0) {
       ])
 
       await prisma.$disconnect()
-      await redis.quit()
+      
+      if (redis) {
+        await redis.quit()
+      }
 
       logger.info('Graceful shutdown complete')
       process.exit(code)

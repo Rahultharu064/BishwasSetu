@@ -1,33 +1,41 @@
 import { moderationQueue }      from './queue'
 import { processReviewScreening } from '../services/reviewService'
+import type { Job } from 'bull'
 
-moderationQueue.process('screen-review', 5, async (job) => {
-  const data = job.data as {
-    reviewId:           string
-    text:               string
-    customerId:         string
-    providerId:         string
-    bookingId:          string
-    submittedAt:        string
-    bookingCompletedAt: string | undefined
-  }
+// Check if this is a real Bull queue (not a mock)
+const isRealQueue = typeof moderationQueue.process === 'function' && moderationQueue.name !== undefined
 
-  console.log(`🔍 Screening review: ${data.reviewId}`)
+if (isRealQueue) {
+  moderationQueue.process('screen-review', 5, async (job: Job) => {
+    const data = job.data as {
+      reviewId:           string
+      text:               string
+      customerId:         string
+      providerId:         string
+      bookingId:          string
+      submittedAt:        string
+      bookingCompletedAt: string | undefined
+    }
 
-  const result = await processReviewScreening(data)
+    console.log(`🔍 Screening review: ${data.reviewId}`)
 
-  await job.progress(100)
-  return result
-})
+    const result = await processReviewScreening(data)
 
-moderationQueue.on('completed', (job, result) => {
-  console.log(
-    `✅ Review ${job.data.reviewId} screened — visible: ${result.isVisible}`
-  )
-})
+    await job.progress(100)
+    return result
+  })
 
-moderationQueue.on('failed', (job, err) => {
-  console.error(`❌ Review screening failed for ${job.data.reviewId}:`, err.message)
-})
+  moderationQueue.on('completed', (job: Job, result: any) => {
+    console.log(
+      ` Review ${job.data.reviewId} screened — visible: ${result.isVisible}`
+    )
+  })
 
-console.log('🚀 Moderation worker started')
+  moderationQueue.on('failed', (job: Job, err: Error) => {
+    console.error(`❌ Review screening failed for ${job.data.reviewId}:`, err.message)
+  })
+
+  console.log('🚀 Moderation worker started')
+} else {
+  console.log('ℹ️ Moderation worker disabled (Redis not available)')
+}

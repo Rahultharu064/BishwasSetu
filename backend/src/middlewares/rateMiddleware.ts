@@ -9,18 +9,34 @@ const createLimiter = (
   max:           number,
   keyPrefix:     string,
   message:       string
-) =>
-  rateLimit({
+) => {
+  const options: any = {
     windowMs:         windowMinutes * 60 * 1000,
     max,
     standardHeaders:  true,
     legacyHeaders:    false,
     message:          { success: false, error: { code: 'RATE_LIMITED', message, status: 429 } },
-    store: new RedisStore({
-      sendCommand: (...args: string[]) => (redis as any).call(...args),
-      prefix:      `rl:${keyPrefix}:`,
-    }),
-  })
+  }
+
+  // Use Redis store only if Redis is available
+  if (redis) {
+    try {
+      options.store = new RedisStore({
+        sendCommand: (...args: string[]) => (redis as any).call(...args),
+        prefix:      `rl:${keyPrefix}:`,
+      })
+    } catch (err) {
+      console.warn(`⚠️ Failed to initialize Redis store for ${keyPrefix}, using in-memory store instead:`, err)
+    }
+  }
+  
+  // If we don't have a store (Redis failed or not available), use default in-memory
+  if (!options.store) {
+    console.log(`ℹ️ Using in-memory rate limit store for ${keyPrefix}`)
+  }
+
+  return rateLimit(options)
+}
 
 // ── Route-specific limiters ───────────────────────────────────
 
