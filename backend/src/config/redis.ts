@@ -1,6 +1,6 @@
 import Redis from 'ioredis'
 
-export const redis = new Redis(process.env.REDIS_URI! || 6379, {
+export const redis = new Redis(process.env.REDIS_URI || 'redis://localhost:6379', {
   maxRetriesPerRequest: 3,
   lazyConnect: true,
 })

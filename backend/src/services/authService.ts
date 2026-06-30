@@ -85,7 +85,7 @@ export const verifyUserOtp = async (userId: string, code: string) => {
       id:       true,
       name:     true,
       role:     true,
-      provider: { select: { id: true, kycStatus: true } },
+      provider: { select: { id: true, identityStatus: true } },
     },
   })
 
@@ -111,7 +111,7 @@ export const verifyUserOtp = async (userId: string, code: string) => {
       name:       user.name,
       role:       user.role,
       providerId: user.provider?.id,
-      kycStatus:  user.provider?.kycStatus,
+      kycStatus:  user.provider?.identityStatus,
     },
   }
 }
@@ -135,7 +135,7 @@ export const loginUser = async (input: LoginInput) => {
       name:         true,
       role:         true,
       passwordHash: true,
-      provider:     { select: { id: true, kycStatus: true } },
+      provider:     { select: { id: true, identityStatus: true } },
     },
   })
 

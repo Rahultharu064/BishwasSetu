@@ -97,10 +97,10 @@ export const requireVerifiedProvider = async (
 
     const provider = await prisma.provider.findUnique({
       where:  { id: req.user.providerId },
-      select: { kycStatus: true },
+      select: { identityStatus: true },
     })
 
-    if (provider?.kycStatus !== 'VERIFIED') {
+    if (provider?.identityStatus !== 'VERIFIED') {
       res.status(403).json({
         success: false,
         message: 'KYC verification required',

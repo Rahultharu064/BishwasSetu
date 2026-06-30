@@ -239,7 +239,7 @@ export const recomputeAndSave = async (
         prevScore,
         trigger,
         inputs:    breakdown as object,
-        aiFlags:   aiFlags ?? null,
+        aiFlags:   aiFlags ? (aiFlags as Prisma.InputJsonValue) : Prisma.DbNull,
         modelVer:  'bishwassetu-trust-v1',
       },
     }),

@@ -22,7 +22,7 @@ cloudinary.config({
 console.log("cloudinary configured successfully")
 
 export const cloudinaryStorage=createCloudinaryStorage({
-    cloudinary:cloudinary,
+    cloudinary:cloudinary as any,
     params:async(_req:Request, file:Express.Multer.File)=>{
         //sanitize filename remove the extension
         const sanitizedName= file.originalname.split('.')[0]

@@ -14,6 +14,5 @@ export const KbArticleSchema = z.object({
   content:  z.string().min(10).max(10000).trim(),
   lang:     z.enum(['ne', 'en']).default('ne'),
 })
-
 export type ChatInput      = z.infer<typeof ChatSchema>
 export type KbArticleInput = z.infer<typeof KbArticleSchema>
