@@ -159,11 +159,30 @@ export const activateBoost = async (
   providerId: string,
   input:      ActivateBoostInput
 ) => {
-  const { placementType, durationSlots } = input
+  const { placementType, durationSlots, bookingId } = input
+  const costPerSlot = BOOST_COSTS[placementType] ?? 5
+  const totalCost   = durationSlots * costPerSlot
 
-  // Cost = slots × credits per slot
-  const costPerSlot   = BOOST_COSTS[placementType] ?? 5
-  const totalCost     = durationSlots * costPerSlot
+  // PRD §6.3: direct_message requires an ACCEPTED booking
+  if (placementType === 'direct_message') {
+    if (!bookingId) {
+      throw { code: 'MISSING_BOOKING_ID', message: 'Booking ID required for direct message', status: 400 }
+    }
+    const booking = await prisma.booking.findFirst({
+      where: {
+        id: bookingId,
+        providerId,
+        status: { in: ['ACCEPTED', 'IN_PROGRESS', 'COMPLETED'] },
+      },
+    })
+    if (!booking) {
+      throw {
+        code:    'INVALID_BOOKING',
+        message: 'Direct messaging is only allowed after accepting a booking (Anti-Disintermediation)',
+        status:  403,
+      }
+    }
+  }
 
   // Check wallet balance
   const wallet = await prisma.creditWallet.findUnique({

@@ -10,6 +10,9 @@ export type NotificationEvent =
   | 'BOOKING_CANCELLED'
   | 'KYC_APPROVED'
   | 'KYC_REJECTED'
+  | 'KYC_REQUEST_INFO'
+  | 'KYC_BLACKLISTED'
+  | 'SYSTEM_ALERT'
   | 'REVIEW_RECEIVED'
   | 'COMPLAINT_FILED'
   | 'COMPLAINT_RESOLVED'
@@ -64,6 +67,20 @@ const templates: Record<
     title: 'KYC not approved',
     body:  `Your KYC was not approved. Reason: ${m.reason}. Please re-upload your documents.`,
     sms:   `BishwasSetu: Your KYC was not approved. Reason: ${m.reason}. Please login to re-upload.`,
+  }),
+  KYC_REQUEST_INFO: (m) => ({
+    title: 'More info needed for KYC',
+    body:  `We need more information to process your KYC. Reason: ${m.reason}. Please review your documents.`,
+    sms:   `BishwasSetu: We need more info for your KYC. Reason: ${m.reason}. Login to update documents.`,
+  }),
+  KYC_BLACKLISTED: (_m) => ({
+    title: 'Account Suspended',
+    body:  `Your account has been suspended due to policy violations.`,
+    sms:   `BishwasSetu: Your account has been permanently suspended for violating our terms of service.`,
+  }),
+  SYSTEM_ALERT: (m) => ({
+    title: m.title ?? 'System Alert',
+    body:  m.message,
   }),
   REVIEW_RECEIVED: (m) => ({
     title: 'New review received',
@@ -168,6 +185,12 @@ export const notifyKycApproved = (userId: string) =>
 
 export const notifyKycRejected = (userId: string, reason: string) =>
   notify({ event: 'KYC_REJECTED', userId, meta: { reason } })
+
+export const notifyKycRequestInfo = (userId: string, reason: string) =>
+  notify({ event: 'KYC_REQUEST_INFO', userId, meta: { reason } })
+
+export const notifyKycBlacklisted = (userId: string) =>
+  notify({ event: 'KYC_BLACKLISTED', userId })
 
 export const notifyReviewReceived = (
   providerId:   string,

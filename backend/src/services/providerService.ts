@@ -154,10 +154,11 @@ export const getDashboard = async (providerId: string) => {
         legalName:       true,
         trustScore:      true,
         identityStatus:  true,
-          skillStatus:     true,
-          milestoneBadge:  true,
-          completedBookings: true,
-        yearsExperience: true,
+        skillStatus:     true,
+        milestoneBadge:  true,
+        completedBookings: true,
+        createdAt:       true, // Used for experience badge
+        yearsExperience: true, // Still kept for reference
         profilePhoto:    true,
         badges:          { where: { status: 'ACTIVE' }, select: { badgeType: true } },
       },
@@ -234,6 +235,7 @@ export const getDashboard = async (providerId: string) => {
     recentBookings,
     creditBalance: wallet?.balance ?? 0,
     trustTrend:    trustTrend.reverse(),   // oldest → newest
+    experienceBadge: provider.createdAt ? require('../utils/badge').resolveExperienceBadge(provider.createdAt) : 'NAVIN',
   }
 }
 
@@ -268,7 +270,32 @@ export const getPublicProfile = async (providerId: string) => {
     select:  { inputs: true, aiFlags: true },
   })
 
-  return { provider, trustBreakdown: lastEvent?.inputs ?? null }
+  // Neighborhood Social Proof (PRD §5.4)
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+  const neighborhoodStats = await prisma.booking.groupBy({
+    by: ['neighborhood'],
+    where: {
+      providerId,
+      status: 'COMPLETED',
+      neighborhood: { not: null },
+      completedAt: { gte: thirtyDaysAgo }
+    },
+    _count: { id: true },
+    orderBy: { _count: { id: 'desc' } },
+    take: 3,
+  })
+
+  return {
+    provider: {
+      ...provider,
+      experienceBadge: require('../utils/badge').resolveExperienceBadge(provider.createdAt),
+    },
+    trustBreakdown: lastEvent?.inputs ?? null,
+    neighborhoodStats: neighborhoodStats.map(s => ({
+      neighborhood: s.neighborhood,
+      homesHelped: s._count.id
+    }))
+  }
 }
 
 // ── GET /providers (search + AI rank) ────────────────────────

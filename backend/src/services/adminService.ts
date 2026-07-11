@@ -290,7 +290,11 @@ export const approveKyc = async (providerId: string, adminId: string) => {
 
   await prisma.provider.update({
     where: { id: providerId },
-    data:  { identityStatus: 'VERIFIED', identityRejectionReason: null },
+    data:  { 
+      identityStatus: 'VERIFIED', 
+      identityRejectionReason: null,
+      kycTier: 'TIER_3_VERIFIED', // Full identity verified gets Tier 3
+    },
   })
 
   await prisma.kycAiDecision.updateMany({
@@ -338,6 +342,88 @@ export const rejectKyc = async (
   await notifyKycRejected(provider.userId, reason)
 
   return { message: 'KYC rejected', providerId }
+}
+
+// ── KYC REQUEST INFO (with notification) ───────────────────────
+
+export const requestInfoKyc = async (
+  providerId: string,
+  reason:     string,
+  adminId:    string
+) => {
+  if (!reason?.trim()) {
+    throw { code: 'REASON_REQUIRED', message: 'Request info reason is required', status: 400 }
+  }
+
+  const provider = await prisma.provider.findUnique({
+    where:  { id: providerId },
+    select: { userId: true },
+  })
+
+  if (!provider) {
+    throw { code: 'PROVIDER_NOT_FOUND', message: 'Provider not found', status: 404 }
+  }
+
+  await prisma.provider.update({
+    where: { id: providerId },
+    data:  { 
+      identityStatus: 'PENDING_DOCUMENTS', 
+      identityRejectionReason: reason 
+    },
+  })
+
+  await prisma.kycAiDecision.updateMany({
+    where: { providerId },
+    data:  { adminOverride: 'REJECT' },
+  })
+
+  // Requires a new notification type in notificationsService
+  const { notifyKycRequestInfo } = await import('../services/notificationsService')
+  await notifyKycRequestInfo(provider.userId, reason)
+
+  return { message: 'KYC request info sent', providerId }
+}
+
+// ── KYC BLACKLIST ───────────────────────────────────────────────
+
+export const blacklistKyc = async (
+  providerId: string,
+  adminId:    string
+) => {
+  const provider = await prisma.provider.findUnique({
+    where:  { id: providerId },
+    select: { userId: true },
+  })
+
+  if (!provider) {
+    throw { code: 'PROVIDER_NOT_FOUND', message: 'Provider not found', status: 404 }
+  }
+
+  // Soft-ban by setting identityStatus to REJECTED or a specific banned flag
+  // Based on PRD, "Phone + ID permanently blocked". We'll use REJECTED + a special rejection reason.
+  // Given we don't have a BLACKLISTED enum value, we use REJECTED + 'BLACKLISTED' reason.
+  await prisma.provider.update({
+    where: { id: providerId },
+    data:  { 
+      identityStatus: 'REJECTED', 
+      identityRejectionReason: 'BLACKLISTED',
+      isAvailable: false,
+    },
+  })
+
+  // Disable the underlying user account to prevent login
+  await prisma.user.update({
+    where: { id: provider.userId },
+    data: { isActive: false },
+  })
+
+  // Wait to see if we should add BLACKLISTED to the enum? Since we can't easily modify prisma enum without another migration,
+  // Let's use REJECTED + isActive=false as a strong ban.
+
+  const { notifyKycBlacklisted } = await import('../services/notificationsService')
+  await notifyKycBlacklisted(provider.userId)
+
+  return { message: 'Provider blacklisted', providerId }
 }
 
 // ── SKILL EVIDENCE REVIEW QUEUE (v2.3) ───────────────────────
@@ -388,7 +474,7 @@ export const approveSkillEvidence = async (
 ) => {
   const evidence = await prisma.skillEvidence.findUnique({
     where:  { id: evidenceId },
-    select: { providerId: true, reviewStatus: true },
+    select: { providerId: true, reviewStatus: true, type: true },
   })
 
   if (!evidence) {
@@ -399,23 +485,32 @@ export const approveSkillEvidence = async (
     throw { code: 'ALREADY_REVIEWED', message: 'Evidence already reviewed', status: 400 }
   }
 
-  // Set Tier 1 — human-reviewed, not obviously fake
-  // Tier 2 (issuerVerified) only set via Phase 3 institutional lookup
+  // Set Tier 1 (if currently lower) or Tier 2 if it's a CTEVT certificate
+  // Tier 2 is granted for certificates (PRD §3.1)
+  const isCertificate = evidence.type === 'certificate'
+  const newTier = isCertificate ? 'TIER_2_SKILLED' : 'TIER_1_BASIC'
+
   await prisma.$transaction(async (tx) => {
     await tx.skillEvidence.update({
       where: { id: evidenceId },
       data: {
         reviewStatus:     'APPROVED',
-        authenticityTier: 'TIER_1',   // never Tier 2 via this path
+        authenticityTier: isCertificate ? 'TIER_2' : 'TIER_1',
         reviewedBy:       adminId,
         reviewedAt:       new Date(),
       },
     })
 
-    // Update provider skillStatus to VERIFIED
+    // Update provider skillStatus to VERIFIED and promote KYC tier if needed
+    // Assuming they are Tier 1 by default, promote to Tier 2 if certificate is approved
+    const provider = await tx.provider.findUnique({ where: { id: evidence.providerId } })
+    
     await tx.provider.update({
       where: { id: evidence.providerId },
-      data:  { skillStatus: 'VERIFIED' },
+      data:  { 
+        skillStatus: 'VERIFIED',
+        ...(provider?.kycTier === 'TIER_1_BASIC' && isCertificate && { kycTier: 'TIER_2_SKILLED' }),
+      },
     })
   })
 
@@ -427,7 +522,7 @@ export const approveSkillEvidence = async (
     { attempts: 3 }
   )
 
-  return { message: 'Skill evidence approved (Tier 1)', evidenceId }
+  return { message: `Skill evidence approved (${newTier})`, evidenceId }
 }
 
 export const rejectSkillEvidence = async (

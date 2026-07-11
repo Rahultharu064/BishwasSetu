@@ -141,6 +141,15 @@ export const createBooking = async (
     throw { code: 'INVALID_CATEGORY', message: 'Category not found', status: 404 }
   }
 
+  // PRD §3.1: Tier 1 Basic providers can only accept jobs < NPR 1000
+  if (provider.kycTier === 'TIER_1_BASIC' && priceNpr >= 1000) {
+    throw {
+      code:    'TIER_LIMIT_EXCEEDED',
+      message: 'This provider is Tier 1 Basic and cannot accept bookings over NPR 1,000.',
+      status:  403,
+    }
+  }
+
   // 3. Prevent customer booking same provider twice in same time window
   const conflictingBooking = await prisma.booking.findFirst({
     where: {
@@ -345,12 +354,31 @@ export const updateBookingStatus = async (
   }
 
   if (newStatus === 'ACCEPTED') {
+    // Notify customer
     await notifyBookingAccepted(
       booking.customerId,
       booking.provider.legalName,
       booking.category.name,
       booking.scheduledAt.toLocaleDateString('en-NP')
     ).catch(() => {})
+      
+    // PRD §5.3: Emergency Dispatch — Fast Responder Badge
+    if (booking.isEmergency) {
+      const elapsedMs = Date.now() - booking.createdAt.getTime()
+      if (elapsedMs <= 5 * 60 * 1000) {
+        // Less than 5 minutes elapsed, award FAST_RESPONDER
+        // Ignore unique constraint errors in case they already have the badge
+        await prisma.providerBadge.create({
+          data: {
+            providerId: booking.providerId,
+            badgeType: 'FAST_RESPONDER',
+            status: 'ACTIVE',
+            amountNpr: 0,
+          },
+        }).catch(() => {})
+        console.log(`🚀 FAST_RESPONDER badge awarded to provider ${booking.providerId}`)
+      }
+    }
   } else if (newStatus === 'REJECTED') {
     await notifyBookingRejected(
       booking.customerId,

@@ -30,24 +30,31 @@ export const uploadKycDocuments = async (
     }
   }
 
-  if (!files.governmentId?.[0] || !files.selfie?.[0]) {
+  const hasIdAndSelfie = !!(files.governmentId?.[0] && files.selfie?.[0])
+  const hasCertificate = !!files.certificate?.[0]
+
+  if (!hasIdAndSelfie && !hasCertificate) {
     throw {
       code:    'MISSING_REQUIRED_DOCUMENTS',
-      message: 'Government ID and selfie are required',
+      message: 'You must provide either a Government ID with a selfie, or a professional certificate.',
       status:  400,
     }
   }
 
-  const uploads: Array<{ type: string; buffer: Buffer; mimetype: string }> = [
-    { type: 'government_id', buffer: files.governmentId[0].buffer, mimetype: files.governmentId[0].mimetype },
-    { type: 'selfie',        buffer: files.selfie[0].buffer,       mimetype: files.selfie[0].mimetype },
-  ]
+  const uploads: Array<{ type: string; buffer: Buffer; mimetype: string }> = []
 
-  if (files.certificate?.[0]) {
+  if (hasIdAndSelfie) {
+    uploads.push(
+      { type: 'government_id', buffer: files.governmentId![0].buffer, mimetype: files.governmentId![0].mimetype },
+      { type: 'selfie',        buffer: files.selfie![0].buffer,       mimetype: files.selfie![0].mimetype }
+    )
+  }
+
+  if (hasCertificate) {
     uploads.push({
       type:     'certificate',
-      buffer:   files.certificate[0].buffer,
-      mimetype: files.certificate[0].mimetype,
+      buffer:   files.certificate![0].buffer,
+      mimetype: files.certificate![0].mimetype,
     })
   }
 

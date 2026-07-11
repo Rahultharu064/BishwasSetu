@@ -1,8 +1,10 @@
 // src/utils/badge.ts
 
 export const resolveExperienceBadge = (
-  years: number
+  createdAt: Date
 ): 'NAVIN' | 'ANUBHAVI' | 'PRABIN' => {
+  const years = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24 * 365.25)
+  
   if (years < 1)  return 'NAVIN'
   if (years <= 2) return 'ANUBHAVI'
   return 'PRABIN'

@@ -84,6 +84,7 @@ enum BadgeType {
   SKILL_VERIFIED
   BACKGROUND_CHECKED
   INSURED
+  FAST_RESPONDER
 }
 
 enum BadgeStatus {

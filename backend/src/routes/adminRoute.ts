@@ -24,6 +24,8 @@ router.get('/providers',           AdminController.getProviders)
 router.get('/kyc',                 AdminController.getKycQueue)
 router.put('/kyc/:id/approve',     AdminController.approveKyc)
 router.put('/kyc/:id/reject',      AdminController.rejectKyc)
+router.put('/kyc/:id/request-info', AdminController.requestInfoKyc)
+router.put('/kyc/:id/blacklist',   AdminController.blacklistKyc)
 
 // ── Skill Evidence Queue (v2.3) ───────────────────────────────
 // Separate from identity KYC — always human-reviewed, no auto-approve path

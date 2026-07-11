@@ -114,6 +114,35 @@ export const rejectKyc = async (
   }
 }
 
+export const requestInfoKyc = async (
+  req: Request, res: Response, next: NextFunction
+): Promise<void> => {
+  try {
+    const data = await AdminService.requestInfoKyc(
+      req.params.id,
+      req.body.reason,
+      req.user!.id
+    )
+    sendSuccess(res, data, 'KYC info requested and provider notified')
+  } catch (err: any) {
+    err.code ? sendError(res, err.message, err.code, err.status) : next(err)
+  }
+}
+
+export const blacklistKyc = async (
+  req: Request, res: Response, next: NextFunction
+): Promise<void> => {
+  try {
+    const data = await AdminService.blacklistKyc(
+      req.params.id,
+      req.user!.id
+    )
+    sendSuccess(res, data, 'Provider blacklisted successfully')
+  } catch (err: any) {
+    err.code ? sendError(res, err.message, err.code, err.status) : next(err)
+  }
+}
+
 export const getComplaints = async (
   req: Request, res: Response, next: NextFunction
 ): Promise<void> => {
