@@ -101,12 +101,15 @@ export const createBooking = async (
   customerId: string,
   input:      CreateBookingInput
 ) => {
-  const { providerId, categoryId, description, scheduledAt, priceNpr, paymentMethod } = input
+  const {
+    providerId, categoryId, description, scheduledAt,
+    priceNpr, paymentMethod, isEmergency, neighborhood,
+  } = input
 
   // 1. Verify provider exists and is VERIFIED
   const provider = await prisma.provider.findUnique({
     where:  { id: providerId },
-    select: { identityStatus: true, trustScore: true, isAvailable: true },
+    select: { identityStatus: true, trustScore: true, isAvailable: true, kycTier: true },
   })
 
   if (!provider) {
@@ -162,8 +165,8 @@ export const createBooking = async (
   // 4. Risk-adaptive flags
   const riskFlags = await getRiskAdaptiveFlags(providerId)
 
-  // 5. Calculate commission
-  const { commission } = calculateCommission(priceNpr)
+  // 5. Calculate commission — Emergency Dispatch earns 12% flat (PRD §5.3)
+  const { commission } = calculateCommission(priceNpr, isEmergency)
 
   // 6. Create booking
   const booking = await prisma.booking.create({
@@ -177,6 +180,11 @@ export const createBooking = async (
       commission,
       paymentMethod,
       status:        'REQUESTED',
+      // Anti-Disintermediation + Emergency Dispatch fields (PRD §5.1, 5.3, 5.4)
+      isEmergency:   isEmergency  ?? false,
+      neighborhood:  neighborhood ?? null,
+      hasGuarantee:  true,          // On-platform bookings always carry 7-day guarantee
+      escrowStatus:  'NONE',        // Moves to HELD once customer initiates payment
     },
     include: {
       provider: { select: { legalName: true, user: { select: { id: true } } } },
@@ -195,6 +203,9 @@ export const createBooking = async (
 
   return {
     booking,
+    ...(isEmergency && {
+      emergencyNotice: 'Fast Responder badge awarded if provider accepts within 5 minutes.',
+    }),
     riskFlags: riskFlags.isNewProvider ? {
       isNewProvider:         true,
       requiresManualConfirm: riskFlags.requiresManualConfirm,
@@ -277,12 +288,17 @@ export const updateBookingStatus = async (
   let commissionResult = null
 
   if (newStatus === 'COMPLETED') {
-    commissionResult = calculateCommission(booking.priceNpr ?? 0)
+    commissionResult = calculateCommission(booking.priceNpr ?? 0, booking.isEmergency)
 
     await prisma.$transaction(async (tx) => {
       await tx.booking.update({
         where: { id: bookingId },
-        data:  { ...updateData, commission: commissionResult!.commission },
+        data:  {
+          ...updateData,
+          commission:   commissionResult!.commission,
+          // Release escrow funds to provider when job is marked complete (PRD §5.1)
+          escrowStatus: booking.escrowStatus === 'HELD' ? 'RELEASED' : booking.escrowStatus,
+        },
       })
     })
 

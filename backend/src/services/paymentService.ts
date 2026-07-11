@@ -225,7 +225,36 @@ const processPaymentOrder = async (
     return { success: true, message: `${creditPurchase.pack.credits} credits added`, type: 'credit_purchase' }
   }
 
-  // Future: handle badge purchases, booking deposits, etc.
+  // Booking escrow payment — set escrowStatus = HELD (PRD §5.1)
+  const booking = await prisma.booking.findFirst({
+    where: {
+      OR: [
+        { id: orderId },
+        { id: transactionId ?? '' },
+      ],
+      escrowStatus: 'NONE',
+      status: { in: ['ACCEPTED', 'IN_PROGRESS'] },
+    },
+  })
+
+  if (booking) {
+    await prisma.booking.update({
+      where: { id: booking.id },
+      data: {
+        escrowStatus: 'HELD',
+        paymentMethod: method as any,
+      },
+    })
+
+    console.log(
+      `🔒 Escrow HELD for booking ${booking.id} via ${method}. ` +
+      `Amount: NPR ${booking.priceNpr} — funds held until job completion.`
+    )
+
+    return { success: true, message: 'Payment received. Funds held in escrow until job completion.', type: 'booking_escrow' }
+  }
+
+  // Future: handle badge purchases
   console.warn(`⚠️  No matching order found for orderId: ${orderId}`)
   return { success: false, message: 'Order not found' }
 }
@@ -302,5 +331,110 @@ export const initiateCreditPurchase = async (params: {
     esewaParams: { ...esewaParams, signature },
     orderId:     purchase.id,
     method:      'ESEWA',
+  }
+}
+
+// ─────────────────────────────────────────────
+// BOOKING ESCROW PAYMENT  (PRD §5.1)
+// Customer pays AFTER provider accepts booking
+// Funds held in escrow until customer taps 'Job Complete'
+// ─────────────────────────────────────────────
+
+export const initiateBookingPayment = async (params: {
+  bookingId:     string
+  customerId:    string
+  paymentMethod: 'KHALTI' | 'ESEWA'
+  returnUrl:     string
+}) => {
+  const { bookingId, customerId, paymentMethod, returnUrl } = params
+
+  // 1. Fetch booking and verify it belongs to the customer and is in ACCEPTED state
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    select: {
+      id:           true,
+      customerId:   true,
+      status:       true,
+      escrowStatus: true,
+      priceNpr:     true,
+      isEmergency:  true,
+      category:     { select: { name: true } },
+    },
+  })
+
+  if (!booking) {
+    throw { code: 'BOOKING_NOT_FOUND', message: 'Booking not found', status: 404 }
+  }
+
+  if (booking.customerId !== customerId) {
+    throw { code: 'FORBIDDEN', message: 'Not your booking', status: 403 }
+  }
+
+  if (booking.status !== 'ACCEPTED') {
+    throw {
+      code:    'INVALID_BOOKING_STATE',
+      message: 'Payment can only be initiated after the provider has accepted the booking',
+      status:  400,
+    }
+  }
+
+  if (booking.escrowStatus === 'HELD' || booking.escrowStatus === 'RELEASED') {
+    throw {
+      code:    'ALREADY_PAID',
+      message: 'Payment has already been made for this booking',
+      status:  409,
+    }
+  }
+
+  const amount    = booking.priceNpr ?? 0
+  const orderName = `GharSewa — ${booking.category.name}${ booking.isEmergency ? ' (Emergency)' : '' }`
+
+  // 2. Initiate via Khalti
+  if (paymentMethod === 'KHALTI') {
+    const { paymentUrl, pidx } = await initiateKhaltiPayment({
+      amount,
+      orderId:   bookingId,
+      orderName,
+      returnUrl,
+    })
+
+    // Store pidx reference on the booking for verification
+    await prisma.booking.update({
+      where: { id: bookingId },
+      data:  { paymentMethod: 'KHALTI' },
+    })
+
+    return { paymentUrl, bookingId, method: 'KHALTI', pidx }
+  }
+
+  // 3. Initiate via eSewa
+  const esewaParams = {
+    amount:                  amount,
+    tax_amount:              0,
+    total_amount:            amount,
+    transaction_uuid:        bookingId,
+    product_code:            process.env.ESEWA_PRODUCT_CODE,
+    product_service_charge:  0,
+    product_delivery_charge: 0,
+    success_url:             returnUrl,
+    failure_url:             `${process.env.CLIENT_URL}/bookings/${bookingId}/payment-failed`,
+    signed_field_names:      'total_amount,transaction_uuid,product_code',
+  }
+
+  const message   = `total_amount=${amount},transaction_uuid=${bookingId},product_code=${esewaParams.product_code}`
+  const hmac      = crypto.createHmac('sha256', process.env.ESEWA_SECRET_KEY!)
+  hmac.update(message)
+  const signature = hmac.digest('base64')
+
+  await prisma.booking.update({
+    where: { id: bookingId },
+    data:  { paymentMethod: 'ESEWA' },
+  })
+
+  return {
+    esewaUrl:    'https://uat.esewa.com.np/api/epay/main/v2/form',
+    esewaParams: { ...esewaParams, signature },
+    bookingId,
+    method: 'ESEWA',
   }
 }

@@ -1,8 +1,13 @@
 import { Router } from 'express'
 import * as BookingController from '../controllers/bookingController'
+import * as PaymentController from '../controllers/paymentController'
 import { authMiddleware, protect, restrictTo, requireVerifiedProvider } from '../middlewares/authMiddleware'
 import { validate } from '../middlewares/validateMiddleware'
-import { CreateBookingSchema, UpdateBookingStatusSchema } from '../validators/bookingValidator'
+import {
+  CreateBookingSchema,
+  UpdateBookingStatusSchema,
+  InitiateBookingPaymentSchema,
+} from '../validators/bookingValidator'
 
 const router = Router()
 
@@ -39,6 +44,14 @@ router.put(
   restrictTo('CUSTOMER', 'PROVIDER'),
   validate(UpdateBookingStatusSchema),
   BookingController.updateBookingStatus
+)
+
+// ── Escrow payment: customer pays after provider accepts (PRD §5.1) ──
+router.post(
+  '/:id/pay',
+  restrictTo('CUSTOMER'),
+  validate(InitiateBookingPaymentSchema),
+  PaymentController.initiateBookingPayment
 )
 
 export default router

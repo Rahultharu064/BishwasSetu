@@ -10,6 +10,10 @@ export const CreateBookingSchema = z.object({
     }),
   priceNpr:      z.coerce.number().min(100).max(500000),
   paymentMethod: z.enum(['KHALTI', 'ESEWA', 'CASH']).default('CASH'),
+  // Emergency Dispatch Mode (PRD §5.3) — bypasses scheduling friction
+  isEmergency:   z.boolean().optional().default(false),
+  // Hyper-Local Neighbourhood Tag (PRD §5.4) — e.g. 'Maharajgunj'
+  neighborhood:  z.string().max(100).trim().optional(),
 })
 
 export const UpdateBookingStatusSchema = z.object({
@@ -26,5 +30,12 @@ export const UpdateBookingStatusSchema = z.object({
   { message: 'Reason is required when rejecting or cancelling', path: ['cancelReason'] }
 )
 
-export type CreateBookingInput        = z.infer<typeof CreateBookingSchema>
-export type UpdateBookingStatusInput  = z.infer<typeof UpdateBookingStatusSchema>
+// Booking escrow payment initiation (PRD §5.1)
+export const InitiateBookingPaymentSchema = z.object({
+  paymentMethod: z.enum(['KHALTI', 'ESEWA']),
+  returnUrl:     z.string().url({ message: 'Must be a valid return URL' }),
+})
+
+export type CreateBookingInput              = z.infer<typeof CreateBookingSchema>
+export type UpdateBookingStatusInput        = z.infer<typeof UpdateBookingStatusSchema>
+export type InitiateBookingPaymentInput     = z.infer<typeof InitiateBookingPaymentSchema>

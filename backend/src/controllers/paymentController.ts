@@ -74,3 +74,22 @@ export const esewaFailure = async (
 ): Promise<void> => {
   res.redirect(`${process.env.CLIENT_URL}/credits/failed?reason=payment_cancelled`)
 }
+
+// ── Booking escrow payment initiation (PRD §5.1) ─────────────
+// Customer calls this AFTER provider accepts the booking
+
+export const initiateBookingPayment = async (
+  req: Request, res: Response, next: NextFunction
+): Promise<void> => {
+  try {
+    const data = await PaymentService.initiateBookingPayment({
+      bookingId:     req.params.id,
+      customerId:    req.user!.id,
+      paymentMethod: req.body.paymentMethod,
+      returnUrl:     req.body.returnUrl,
+    })
+    sendSuccess(res, data, 'Booking payment initiated')
+  } catch (err: any) {
+    err.code ? sendError(res, err.message, err.code, err.status) : next(err)
+  }
+}
