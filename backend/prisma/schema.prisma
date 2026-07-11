@@ -18,6 +18,19 @@ enum Role {
   ADMIN
 }
 
+enum KycTier {
+  TIER_1_BASIC
+  TIER_2_SKILLED
+  TIER_3_VERIFIED
+}
+
+enum EscrowStatus {
+  NONE
+  HELD
+  RELEASED
+  REFUNDED
+}
+
 // Identity verification track — booking-access gate
 enum IdentityStatus {
   INCOMPLETE
@@ -29,20 +42,19 @@ enum IdentityStatus {
 
 // Skill verification track — additive trust signal, never a booking gate
 enum SkillStatus {
-  UNVERIFIED      // no evidence submitted
-  SELF_DECLARED   // years/skills stated, no supporting evidence
-  PENDING_REVIEW  // evidence submitted, awaiting admin review
-  VERIFIED        // evidence reviewed and approved (Tier 1 by default)
+  UNVERIFIED // no evidence submitted
+  SELF_DECLARED // years/skills stated, no supporting evidence
+  PENDING_REVIEW // evidence submitted, awaiting admin review
+  VERIFIED // evidence reviewed and approved (Tier 1 by default)
 }
 
 // Platform-verified milestone badge — based on real booking history, not self-reporting
 enum MilestoneBadge {
-  NEW             // < 5 completed bookings
-  ESTABLISHED     // 5–49 completed bookings
-  TRUSTED_PRO     // 50–199 completed + trust score > 70
+  NEW // < 5 completed bookings
+  ESTABLISHED // 5–49 completed bookings
+  TRUSTED_PRO // 50–199 completed + trust score > 70
   MASTER_PROVIDER // 200+ completed + trust score > 80
 }
-
 
 enum BookingStatus {
   REQUESTED
@@ -103,25 +115,25 @@ enum PaymentStatus {
 // ─────────────────────────────────────────────
 
 model User {
-  id            String    @id @default(uuid()) @db.Char(36)
-  name          String    @db.VarChar(100)
-  email         String?   @unique @db.VarChar(255)
-  phone         String?   @unique @db.VarChar(20)
-  passwordHash  String?   @db.VarChar(255)
-  role          Role      @default(CUSTOMER)
-  isActive      Boolean   @default(true)
-  deletedAt     DateTime? // soft delete
+  id           String    @id @default(uuid()) @db.Char(36)
+  name         String    @db.VarChar(100)
+  email        String?   @unique @db.VarChar(255)
+  phone        String?   @unique @db.VarChar(20)
+  passwordHash String?   @db.VarChar(255)
+  role         Role      @default(CUSTOMER)
+  isActive     Boolean   @default(true)
+  deletedAt    DateTime? // soft delete
 
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
   otps          Otp[]
   refreshTokens RefreshToken[]
   provider      Provider?
-  bookings      Booking[]       @relation("CustomerBookings")
+  bookings      Booking[]          @relation("CustomerBookings")
   reviews       Review[]
-  complaints    Complaint[]     @relation("CustomerComplaints")
+  complaints    Complaint[]        @relation("CustomerComplaints")
   sessions      AssistantSession[]
 
   @@map("users")
@@ -139,7 +151,7 @@ model Otp {
   used      Boolean  @default(false)
   createdAt DateTime @default(now())
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("otps")
@@ -156,7 +168,7 @@ model RefreshToken {
   expiresAt DateTime
   createdAt DateTime @default(now())
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("refresh_tokens")
@@ -167,46 +179,47 @@ model RefreshToken {
 // ─────────────────────────────────────────────
 
 model Provider {
-  id                String         @id @default(uuid()) @db.Char(36)
-  userId            String         @unique @db.Char(36)
-  legalName         String         @db.VarChar(100)
-  profilePhoto      String?        @db.VarChar(500)  // Cloudinary URL
-  bio               String?        @db.Text
-  serviceArea       String?        @db.VarChar(100)  // district/zone
-  yearsExperience   Int?           // self-reported, plain text only — never badged alone
-  identityStatus    String         @default("INCOMPLETE") @db.VarChar(20)
+  id                      String    @id @default(uuid()) @db.Char(36)
+  userId                  String    @unique @db.Char(36)
+  legalName               String    @db.VarChar(100)
+  profilePhoto            String?   @db.VarChar(500) // Cloudinary URL
+  bio                     String?   @db.Text
+  serviceArea             String?   @db.VarChar(100) // district/zone
+  yearsExperience         Int? // self-reported, plain text only — never badged alone
+  identityStatus          String    @default("INCOMPLETE") @db.VarChar(20)
   // INCOMPLETE | PENDING_DOCUMENTS | UNDER_REVIEW | VERIFIED | REJECTED
-  skillStatus       String         @default("UNVERIFIED") @db.VarChar(20)
+  skillStatus             String    @default("UNVERIFIED") @db.VarChar(20)
   // UNVERIFIED | SELF_DECLARED | PENDING_REVIEW | VERIFIED
-  milestoneBadge    String         @default("NEW") @db.VarChar(20)
+  milestoneBadge          String    @default("NEW") @db.VarChar(20)
   // NEW | ESTABLISHED | TRUSTED_PRO | MASTER_PROVIDER
-  completedBookings Int            @default(0)       // used for milestone recompute
-  trustScore        Float          @default(0) @db.Float
-  isAvailable       Boolean        @default(true)
-  embedding         Json?          // service description embedding vector
-  identityRejectionReason String?  @db.Text
-  skillRejectionReason    String?  @db.Text
-  deletedAt         DateTime?
+  kycTier                 KycTier   @default(TIER_1_BASIC)
+  completedBookings       Int       @default(0) // used for milestone recompute
+  trustScore              Float     @default(0) @db.Float
+  isAvailable             Boolean   @default(true)
+  embedding               Json? // service description embedding vector
+  identityRejectionReason String?   @db.Text
+  skillRejectionReason    String?   @db.Text
+  deletedAt               DateTime?
 
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  user              User           @relation(fields: [userId], references: [id])
-  skills            ProviderSkill[]
-  categories        ProviderCategory[]
-  documents         KycDocument[]
-  skillEvidence     SkillEvidence[]
-  availability      ProviderAvailability[]
-  bookings          Booking[]      @relation("ProviderBookings")
-  reviews           Review[]
-  complaints        Complaint[]    @relation("ProviderComplaints")
-  trustEvents       TrustScoreEvent[]
-  kycDecisions      KycAiDecision[]
-  badges            ProviderBadge[]
-  wallet            CreditWallet?
-  purchases         CreditPurchase[]
-  deductions        CreditDeduction[]
+  user          User                   @relation(fields: [userId], references: [id])
+  skills        ProviderSkill[]
+  categories    ProviderCategory[]
+  documents     KycDocument[]
+  skillEvidence SkillEvidence[]
+  availability  ProviderAvailability[]
+  bookings      Booking[]              @relation("ProviderBookings")
+  reviews       Review[]
+  complaints    Complaint[]            @relation("ProviderComplaints")
+  trustEvents   TrustScoreEvent[]
+  kycDecisions  KycAiDecision[]
+  badges        ProviderBadge[]
+  wallet        CreditWallet?
+  purchases     CreditPurchase[]
+  deductions    CreditDeduction[]
 
   @@index([identityStatus])
   @@index([skillStatus])
@@ -215,30 +228,28 @@ model Provider {
   @@map("providers")
 }
 
-
 // ─────────────────────────────────────────────
 // PROVIDER SKILLS & CATEGORIES
 // ─────────────────────────────────────────────
 
 model ProviderSkill {
-  id         String   @id @default(uuid()) @db.Char(36)
-  providerId String   @db.Char(36)
-  skill      String   @db.VarChar(100)
+  id         String @id @default(uuid()) @db.Char(36)
+  providerId String @db.Char(36)
+  skill      String @db.VarChar(100)
 
-  provider   Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
 
   @@index([providerId])
   @@map("provider_skills")
 }
 
-
 model ProviderCategory {
-  id         String   @id @default(uuid()) @db.Char(36)
-  providerId String   @db.Char(36)
-  categoryId String   @db.Char(36)
+  id         String @id @default(uuid()) @db.Char(36)
+  providerId String @db.Char(36)
+  categoryId String @db.Char(36)
 
-  provider   Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
-  category   Category @relation(fields: [categoryId], references: [id])
+  provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id])
 
   @@unique([providerId, categoryId])
   @@map("provider_categories")
@@ -249,13 +260,13 @@ model ProviderCategory {
 // ─────────────────────────────────────────────
 
 model ProviderAvailability {
-  id         String   @id @default(uuid()) @db.Char(36)
-  providerId String   @db.Char(36)
-  dayOfWeek  Int      // 0 = Sunday, 6 = Saturday
-  startTime  String   @db.VarChar(5)   // "08:00"
-  endTime    String   @db.VarChar(5)   // "18:00"
+  id         String @id @default(uuid()) @db.Char(36)
+  providerId String @db.Char(36)
+  dayOfWeek  Int // 0 = Sunday, 6 = Saturday
+  startTime  String @db.VarChar(5) // "08:00"
+  endTime    String @db.VarChar(5) // "18:00"
 
-  provider   Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
 
   @@index([providerId])
   @@map("provider_availability")
@@ -268,12 +279,12 @@ model ProviderAvailability {
 model KycDocument {
   id           String   @id @default(uuid()) @db.Char(36)
   providerId   String   @db.Char(36)
-  type         String   @db.VarChar(30)   // 'government_id'|'selfie'
-  cloudinaryId String   @db.VarChar(200)  // Cloudinary public_id (restricted folder)
-  url          String   @db.VarChar(500)  // signed delivery URL (refreshed on access)
+  type         String   @db.VarChar(30) // 'government_id'|'selfie'
+  cloudinaryId String   @db.VarChar(200) // Cloudinary public_id (restricted folder)
+  url          String   @db.VarChar(500) // signed delivery URL (refreshed on access)
   uploadedAt   DateTime @default(now())
 
-  provider     Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
 
   @@index([providerId])
   @@map("kyc_documents")
@@ -286,11 +297,11 @@ model KycDocument {
 model SkillEvidence {
   id               String    @id @default(uuid()) @db.Char(36)
   providerId       String    @db.Char(36)
-  type             String    @db.VarChar(20)    // 'certificate'|'work_photo'|'reference'
-  cloudinaryId     String    @db.VarChar(200)   // Cloudinary public_id (restricted folder)
-  fileUrl          String    @db.VarChar(500)   // signed delivery URL
-  certNumber       String?   @db.VarChar(100)   // extracted via OCR — for Phase 3 issuer lookup
-  issuerName       String?   @db.VarChar(200)   // extracted via OCR
+  type             String    @db.VarChar(20) // 'certificate'|'work_photo'|'reference'
+  cloudinaryId     String    @db.VarChar(200) // Cloudinary public_id (restricted folder)
+  fileUrl          String    @db.VarChar(500) // signed delivery URL
+  certNumber       String?   @db.VarChar(100) // extracted via OCR — for Phase 3 issuer lookup
+  issuerName       String?   @db.VarChar(200) // extracted via OCR
   aiPrecheck       Json?
   // { documentType, ocrResult?, duplicateFlag?, stockPhotoFlag?, aiGeneratedFlag? }
   reviewStatus     String    @default("PENDING") @db.VarChar(20)
@@ -299,21 +310,20 @@ model SkillEvidence {
   // NONE | TIER_1 | TIER_2
   // TIER_1: AI pre-check + human visual review (not obviously fake — cannot prove genuine issuance)
   // TIER_2: certificate number confirmed against issuing institution's records (Phase 3 only)
-  issuerVerified   Boolean   @default(false)    // true only via Phase 3 CTEVT/institutional lookup
+  issuerVerified   Boolean   @default(false) // true only via Phase 3 CTEVT/institutional lookup
   issuerVerifiedAt DateTime?
   rejectReason     String?   @db.VarChar(500)
-  reviewedBy       String?   @db.Char(36)       // admin user ID
-  isPaidBadge      Boolean   @default(false)    // true = submitted via paid Skill Verified badge (7.4)
+  reviewedBy       String?   @db.Char(36) // admin user ID
+  isPaidBadge      Boolean   @default(false) // true = submitted via paid Skill Verified badge (7.4)
   createdAt        DateTime  @default(now())
   reviewedAt       DateTime?
 
-  provider         Provider  @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
 
   @@index([providerId])
   @@index([reviewStatus])
   @@map("skill_evidence")
 }
-
 
 // ─────────────────────────────────────────────
 // KYC AI DECISION LOG
@@ -324,14 +334,14 @@ model KycAiDecision {
   providerId    String   @db.Char(36)
   ocrResult     Json
   faceScore     Float?   @db.Float
-  forgeryRisk   String   @db.VarChar(10)   // 'low'|'medium'|'high'
+  forgeryRisk   String   @db.VarChar(10) // 'low'|'medium'|'high'
   confidence    Float    @db.Float
-  decision      String   @db.VarChar(20)   // 'AUTO_APPROVE'|'HUMAN_QUEUE'
-  adminOverride String?  @db.VarChar(10)   // 'APPROVE'|'REJECT'
+  decision      String   @db.VarChar(20) // 'AUTO_APPROVE'|'HUMAN_QUEUE'
+  adminOverride String?  @db.VarChar(10) // 'APPROVE'|'REJECT'
   modelVer      String   @db.VarChar(50)
   createdAt     DateTime @default(now())
 
-  provider      Provider @relation(fields: [providerId], references: [id])
+  provider Provider @relation(fields: [providerId], references: [id])
 
   @@index([providerId])
   @@map("kyc_ai_decisions")
@@ -342,27 +352,31 @@ model KycAiDecision {
 // ─────────────────────────────────────────────
 
 model Booking {
-  id           String        @id @default(uuid()) @db.Char(36)
-  customerId   String        @db.Char(36)
-  providerId   String        @db.Char(36)
-  categoryId   String        @db.Char(36)
-  status       BookingStatus @default(REQUESTED)
-  description  String?       @db.Text
-  scheduledAt  DateTime
-  completedAt  DateTime?
-  priceNpr     Int?
-  commission   Int?          // platform commission in NPR
+  id            String        @id @default(uuid()) @db.Char(36)
+  customerId    String        @db.Char(36)
+  providerId    String        @db.Char(36)
+  categoryId    String        @db.Char(36)
+  status        BookingStatus @default(REQUESTED)
+  escrowStatus  EscrowStatus  @default(NONE)
+  isEmergency   Boolean       @default(false)
+  hasGuarantee  Boolean       @default(true)
+  neighborhood  String?       @db.VarChar(100)
+  description   String?       @db.Text
+  scheduledAt   DateTime
+  completedAt   DateTime?
+  priceNpr      Int?
+  commission    Int? // platform commission in NPR
   paymentMethod PaymentMethod @default(CASH)
-  isBoosted    Boolean       @default(false)   // was booking from a boost slot?
-  cancelReason String?       @db.VarChar(500)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  isBoosted     Boolean       @default(false) // was booking from a boost slot?
+  cancelReason  String?       @db.VarChar(500)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
-  customer     User          @relation("CustomerBookings", fields: [customerId], references: [id])
-  provider     Provider      @relation("ProviderBookings", fields: [providerId], references: [id])
-  category     Category      @relation(fields: [categoryId], references: [id])
-  review       Review?
-  complaint    Complaint?
+  customer  User       @relation("CustomerBookings", fields: [customerId], references: [id])
+  provider  Provider   @relation("ProviderBookings", fields: [providerId], references: [id])
+  category  Category   @relation(fields: [categoryId], references: [id])
+  review    Review?
+  complaint Complaint?
 
   @@index([customerId])
   @@index([providerId])
@@ -375,22 +389,22 @@ model Booking {
 // ─────────────────────────────────────────────
 
 model Review {
-  id              String   @id @default(uuid()) @db.Char(36)
-  bookingId       String   @unique @db.Char(36)
-  customerId      String   @db.Char(36)
-  providerId      String   @db.Char(36)
-  rating          Int      // 1–5
-  comment         String?  @db.VarChar(500)
-  isAuthentic     Boolean? // null = pending AI check, true = passed, false = flagged
-  authenticityScore Float? @db.Float
-  providerReply   String?  @db.VarChar(500)
-  isVisible       Boolean  @default(false) // hidden until AI screening passes
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                String   @id @default(uuid()) @db.Char(36)
+  bookingId         String   @unique @db.Char(36)
+  customerId        String   @db.Char(36)
+  providerId        String   @db.Char(36)
+  rating            Int // 1–5
+  comment           String?  @db.VarChar(500)
+  isAuthentic       Boolean? // null = pending AI check, true = passed, false = flagged
+  authenticityScore Float?   @db.Float
+  providerReply     String?  @db.VarChar(500)
+  isVisible         Boolean  @default(false) // hidden until AI screening passes
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
-  booking         Booking  @relation(fields: [bookingId], references: [id])
-  customer        User     @relation(fields: [customerId], references: [id])
-  provider        Provider @relation(fields: [providerId], references: [id])
+  booking  Booking  @relation(fields: [bookingId], references: [id])
+  customer User     @relation(fields: [customerId], references: [id])
+  provider Provider @relation(fields: [providerId], references: [id])
 
   @@index([providerId])
   @@index([isVisible])
@@ -402,23 +416,23 @@ model Review {
 // ─────────────────────────────────────────────
 
 model Complaint {
-  id           String          @id @default(uuid()) @db.Char(36)
-  bookingId    String          @unique @db.Char(36)
-  customerId   String          @db.Char(36)
-  providerId   String          @db.Char(36)
-  type         ComplaintType
-  status       ComplaintStatus @default(OPEN)
-  description  String          @db.Text
-  aiCategory   String?         @db.VarChar(50)   // AI triage classification
-  resolution   String?         @db.Text
-  resolvedBy   String?         @db.Char(36)      // admin user ID
-  resolvedAt   DateTime?
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
+  id          String          @id @default(uuid()) @db.Char(36)
+  bookingId   String          @unique @db.Char(36)
+  customerId  String          @db.Char(36)
+  providerId  String          @db.Char(36)
+  type        ComplaintType
+  status      ComplaintStatus @default(OPEN)
+  description String          @db.Text
+  aiCategory  String?         @db.VarChar(50) // AI triage classification
+  resolution  String?         @db.Text
+  resolvedBy  String?         @db.Char(36) // admin user ID
+  resolvedAt  DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 
-  booking      Booking         @relation(fields: [bookingId], references: [id])
-  customer     User            @relation("CustomerComplaints", fields: [customerId], references: [id])
-  provider     Provider        @relation("ProviderComplaints", fields: [providerId], references: [id])
+  booking  Booking  @relation(fields: [bookingId], references: [id])
+  customer User     @relation("CustomerComplaints", fields: [customerId], references: [id])
+  provider Provider @relation("ProviderComplaints", fields: [providerId], references: [id])
 
   @@index([status])
   @@index([providerId])
@@ -434,32 +448,16 @@ model TrustScoreEvent {
   providerId String   @db.Char(36)
   score      Float    @db.Float
   prevScore  Float    @db.Float
-  trigger    String   @db.VarChar(20)  // 'review'|'complaint'|'vouch'|'decay'|'booking'
+  trigger    String   @db.VarChar(20) // 'review'|'complaint'|'vouch'|'decay'|'booking'
   inputs     Json
   aiFlags    Json?
   modelVer   String?  @db.VarChar(50)
   createdAt  DateTime @default(now())
 
-  provider   Provider @relation(fields: [providerId], references: [id])
+  provider Provider @relation(fields: [providerId], references: [id])
 
   @@index([providerId])
   @@map("trust_score_events")
-}
-
-// ─────────────────────────────────────────────
-// VOUCH
-// ─────────────────────────────────────────────
-
-model Vouch {
-  id          String   @id @default(uuid()) @db.Char(36)
-  voucherId   String   @db.Char(36)   // provider giving the vouch
-  voucheeId   String   @db.Char(36)   // provider receiving the vouch
-  weight      Float    @db.Float      // voucherTrustScore / 100
-  createdAt   DateTime @default(now())
-
-  @@unique([voucherId, voucheeId])
-  @@index([voucheeId])
-  @@map("vouches")
 }
 
 // ─────────────────────────────────────────────
@@ -467,12 +465,12 @@ model Vouch {
 // ─────────────────────────────────────────────
 
 model CreditPack {
-  id        String           @id @default(uuid()) @db.Char(36)
-  name      String           @db.VarChar(20)   // 'starter'|'active'|'pro'
-  credits   Int
-  priceNpr  Int
-  features  Json
-  isActive  Boolean          @default(true)
+  id       String  @id @default(uuid()) @db.Char(36)
+  name     String  @db.VarChar(20) // 'starter'|'active'|'pro'
+  credits  Int
+  priceNpr Int
+  features Json
+  isActive Boolean @default(true)
 
   purchases CreditPurchase[]
 
@@ -490,8 +488,8 @@ model CreditPurchase {
   status        PaymentStatus @default(PENDING)
   createdAt     DateTime      @default(now())
 
-  provider      Provider      @relation(fields: [providerId], references: [id])
-  pack          CreditPack    @relation(fields: [packId], references: [id])
+  provider Provider   @relation(fields: [providerId], references: [id])
+  pack     CreditPack @relation(fields: [packId], references: [id])
 
   @@index([providerId])
   @@map("credit_purchases")
@@ -505,7 +503,7 @@ model CreditWallet {
   totalSpent  Int      @default(0)
   updatedAt   DateTime @updatedAt
 
-  provider    Provider @relation(fields: [providerId], references: [id])
+  provider Provider @relation(fields: [providerId], references: [id])
 
   @@map("credit_wallets")
 }
@@ -518,7 +516,7 @@ model CreditDeduction {
   bookingId  String?      @db.Char(36)
   createdAt  DateTime     @default(now())
 
-  provider   Provider     @relation(fields: [providerId], references: [id])
+  provider Provider @relation(fields: [providerId], references: [id])
 
   @@index([providerId])
   @@map("credit_deductions")
@@ -538,7 +536,7 @@ model ProviderBadge {
   amountNpr   Int
   purchasedAt DateTime    @default(now())
 
-  provider    Provider    @relation(fields: [providerId], references: [id])
+  provider Provider @relation(fields: [providerId], references: [id])
 
   @@index([providerId])
   @@map("provider_badges")
@@ -550,9 +548,9 @@ model ProviderBadge {
 
 model ModerationLog {
   id         String   @id @default(uuid()) @db.Char(36)
-  entityType String   @db.VarChar(20)   // 'review'|'complaint'|'profile'
+  entityType String   @db.VarChar(20) // 'review'|'complaint'|'profile'
   entityId   String   @db.Char(36)
-  result     String   @db.VarChar(10)   // 'PASSED'|'FLAGGED'
+  result     String   @db.VarChar(10) // 'PASSED'|'FLAGGED'
   category   String?  @db.VarChar(50)
   confidence Float    @db.Float
   createdAt  DateTime @default(now())
@@ -569,10 +567,10 @@ model ModerationLog {
 // See: prisma/migrations/add_fulltext_index.sql
 model KbArticle {
   id        String   @id @default(uuid()) @db.Char(36)
-  category  String   @db.VarChar(50)   // 'policy'|'faq'|'provider_info'|'booking_guide'|'credits'
+  category  String   @db.VarChar(50) // 'policy'|'faq'|'provider_info'|'booking_guide'|'credits'
   title     String   @db.VarChar(500)
   content   String   @db.Text
-  lang      String   @default("ne") @db.VarChar(5)   // 'ne'|'en'
+  lang      String   @default("ne") @db.VarChar(5) // 'ne'|'en'
   updatedAt DateTime @updatedAt
 
   @@map("kb_articles")
@@ -586,35 +584,33 @@ model AssistantSession {
   id          String   @id @default(uuid()) @db.Char(36)
   userId      String?  @db.Char(36)
   sessionId   String   @unique @db.VarChar(100)
-  contextType String?  @db.VarChar(20)   // 'booking'|'provider'|'complaint'|'general'
+  contextType String?  @db.VarChar(20) // 'booking'|'provider'|'complaint'|'general'
   contextId   String?  @db.Char(36)
   messages    Json
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  user        User?    @relation(fields: [userId], references: [id])
+  user User? @relation(fields: [userId], references: [id])
 
   @@index([sessionId])
   @@map("assistant_sessions")
 }
-
-
 
 // ─────────────────────────────────────────────
 // EXISTING — update Category model to add relation
 // ─────────────────────────────────────────────
 
 model Category {
-  id           String            @id @default(uuid()) @db.Char(36)
-  name         String            @unique @db.VarChar(100)
-  nameNp       String            @db.VarChar(100)
-  icon         String?           @db.VarChar(100)
-  description  String?           @db.Text
-  descriptionNp String?          @db.Text
-  slug         String            @unique @db.VarChar(100)
-  isActive     Boolean           @default(true)
-  sortOrder    Int               @default(0)
-  createdAt    DateTime          @default(now())
+  id            String   @id @default(uuid()) @db.Char(36)
+  name          String   @unique @db.VarChar(100)
+  nameNp        String   @db.VarChar(100)
+  icon          String?  @db.VarChar(100)
+  description   String?  @db.Text
+  descriptionNp String?  @db.Text
+  slug          String   @unique @db.VarChar(100)
+  isActive      Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
 
   // Relations
   subCategories SubCategory[]
@@ -630,19 +626,19 @@ model Category {
 // ─────────────────────────────────────────────
 
 model SubCategory {
-  id            String    @id @default(uuid()) @db.Char(36)
-  categoryId    String    @db.Char(36)
-  name          String    @db.VarChar(100)
-  nameNp        String    @db.VarChar(100)
-  description   String?   @db.Text
-  descriptionNp String?   @db.Text
-  slug          String    @db.VarChar(100)
-  isActive      Boolean   @default(true)
-  sortOrder     Int       @default(0)
-  createdAt     DateTime  @default(now())
+  id            String   @id @default(uuid()) @db.Char(36)
+  categoryId    String   @db.Char(36)
+  name          String   @db.VarChar(100)
+  nameNp        String   @db.VarChar(100)
+  description   String?  @db.Text
+  descriptionNp String?  @db.Text
+  slug          String   @db.VarChar(100)
+  isActive      Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
 
-  category      Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  services      Service[]
+  category Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  services Service[]
 
   @@unique([categoryId, slug])
   @@index([categoryId])
@@ -655,30 +651,30 @@ model SubCategory {
 // ─────────────────────────────────────────────
 
 model Service {
-  id              String      @id @default(uuid()) @db.Char(36)
-  subCategoryId   String      @db.Char(36)
-  name            String      @db.VarChar(200)
-  nameNp          String      @db.VarChar(200)
-  description     String?     @db.Text
-  descriptionNp   String?     @db.Text
-  slug            String      @db.VarChar(100)
+  id            String  @id @default(uuid()) @db.Char(36)
+  subCategoryId String  @db.Char(36)
+  name          String  @db.VarChar(200)
+  nameNp        String  @db.VarChar(200)
+  description   String? @db.Text
+  descriptionNp String? @db.Text
+  slug          String  @db.VarChar(100)
 
   // Pricing
-  pricingType     String      @db.VarChar(20)   // 'fixed'|'range'|'quote'
-  priceMin        Int?                           // NPR — null if 'quote'
-  priceMax        Int?                           // NPR — null if 'fixed'
-  priceFixed      Int?                           // NPR — used when pricingType='fixed'
-  priceUnit       String?     @db.VarChar(30)   // 'per visit'|'per hour'|'per sq ft'
+  pricingType String  @db.VarChar(20) // 'fixed'|'range'|'quote'
+  priceMin    Int? // NPR — null if 'quote'
+  priceMax    Int? // NPR — null if 'fixed'
+  priceFixed  Int? // NPR — used when pricingType='fixed'
+  priceUnit   String? @db.VarChar(30) // 'per visit'|'per hour'|'per sq ft'
 
   // Meta
-  estimatedMinutes Int?                          // avg completion time
-  includedTasks   Json?                          // string[] of what's included
-  excludedTasks   Json?                          // string[] of what's NOT included
-  isActive        Boolean     @default(true)
-  sortOrder       Int         @default(0)
-  createdAt       DateTime    @default(now())
+  estimatedMinutes Int? // avg completion time
+  includedTasks    Json? // string[] of what's included
+  excludedTasks    Json? // string[] of what's NOT included
+  isActive         Boolean  @default(true)
+  sortOrder        Int      @default(0)
+  createdAt        DateTime @default(now())
 
-  subCategory     SubCategory @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
+  subCategory SubCategory @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
 
   @@unique([subCategoryId, slug])
   @@index([subCategoryId])

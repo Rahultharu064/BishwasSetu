@@ -8,7 +8,7 @@ const WEIGHTS = {
   TIMELINESS:          0.20,
   COMPLAINT_PENALTY:  -0.20,
   VERIFICATION:        0.10,
-  VOUCHES:             0.10,
+  PROOF_OF_WORK:       0.10,
 }
 
 const DECAY_RATE_PER_MONTH  = 2      // points per month after 60 days idle
@@ -21,7 +21,7 @@ export interface TrustBreakdown {
   timelinessRate:     number
   complaintRatio:     number
   verificationScore:  number
-  vouchScore:         number
+  proofOfWorkScore:   number
   decayPenalty:       number
   rejectionPenalty:   number
   rawScore:           number
@@ -126,15 +126,17 @@ export const computeTrustScore = async (
   if (provider?.profilePhoto)                     verificationScore += 0.05
   verificationScore = Math.min(verificationScore, 1.0)
 
-  // 5. Community vouch score
-  const vouches = await prisma.vouch.findMany({
-    where: { voucheeId: providerId },
-    select: { weight: true },
+  // 5. Proof-of-work score (replaces community vouches)
+  const workPhotos = await prisma.skillEvidence.count({
+    where: {
+      providerId,
+      type: 'work_photo',
+      reviewStatus: 'APPROVED'
+    },
   })
 
-  const vouchScore = vouches.length > 0
-    ? Math.min(vouches.reduce((sum, v) => sum + v.weight, 0) / 5, 1)
-    : 0   // capped at 5 full-trust vouches = 100%
+  // capped at 5 photos for 100% of this sub-score
+  const proofOfWorkScore = Math.min(workPhotos / 5, 1)
 
   // 6. Decay penalty
   const lastBooking = await prisma.booking.findFirst({
@@ -185,7 +187,7 @@ export const computeTrustScore = async (
     timelinessRate * WEIGHTS.TIMELINESS         * 100 +
     complaintRatio * WEIGHTS.COMPLAINT_PENALTY  * 100 +
     verificationScore * WEIGHTS.VERIFICATION   * 100 +
-    vouchScore    * WEIGHTS.VOUCHES             * 100
+    proofOfWorkScore * WEIGHTS.PROOF_OF_WORK   * 100
   )
 
   const finalScore = Math.max(
@@ -199,7 +201,7 @@ export const computeTrustScore = async (
     timelinessRate:    Math.round(timelinessRate * 100),
     complaintRatio:    Math.round(complaintRatio * 100),
     verificationScore: Math.round(verificationScore * 100),
-    vouchScore:        Math.round(vouchScore * 100),
+    proofOfWorkScore:  Math.round(proofOfWorkScore * 100),
     decayPenalty,
     rejectionPenalty,
     rawScore:          Math.round(rawScore),
