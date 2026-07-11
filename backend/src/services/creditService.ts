@@ -205,6 +205,9 @@ export const activateBoost = async (
   // Key: boost:{providerId}:{placementType}
   // Value: { slotsRemaining, costPerSlot }
   const { redis } = await import('../config/redis')
+  if (!redis) {
+    throw { code: 'REDIS_UNAVAILABLE', message: 'Boost service unavailable (Redis not connected)', status: 503 }
+  }
 
   const boostKey = `boost:${providerId}:${placementType}`
   const existing = await redis.get(boostKey)
@@ -239,6 +242,8 @@ export const deductCredits = async (params: {
   const { providerId, reason, bookingId, placementType } = params
 
   const { redis } = await import('../config/redis')
+  if (!redis) return   // Redis not available — skip boost deduction
+
   const boostKey  = `boost:${providerId}:${placementType}`
   const boostData = await redis.get(boostKey)
 
@@ -340,10 +345,12 @@ export const getBoostAnalytics = async (providerId: string) => {
   const boostTypes = ['priority_ranking', 'homepage_featured', 'direct_message']
   const activeBoosts: Record<string, number> = {}
 
-  for (const type of boostTypes) {
-    const data = await redis.get(`boost:${providerId}:${type}`)
-    if (data) {
-      activeBoosts[type] = JSON.parse(data).slotsRemaining
+  if (redis) {
+    for (const type of boostTypes) {
+      const data = await redis.get(`boost:${providerId}:${type}`)
+      if (data) {
+        activeBoosts[type] = JSON.parse(data).slotsRemaining
+      }
     }
   }
 

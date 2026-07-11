@@ -102,28 +102,22 @@ export const computeTrustScore = async (
     ? Math.min(upheldComplaints / totalBookings, 1)
     : 0
 
-  // 4. Verification score
+  // 4. Verification score — based on KYC tier (PRD §4.1)
+  // Tier 3 = full 10%; Tier 2 = 6%; Tier 1 = 2%
   const provider = await prisma.provider.findUnique({
     where:  { id: providerId },
     select: {
-      identityStatus: true,   // identity KYC — booking-access gate
-      skillStatus:    true,   // skill evidence — additive trust signal
-      badges:         { where: { status: 'ACTIVE' }, select: { badgeType: true } },
-      skills:         { select: { skill: true } },
-      bio:            true,
-      profilePhoto:   true,
+      kycTier:     true,
+      badges:      { where: { status: 'ACTIVE' }, select: { badgeType: true } },
+      bio:         true,
+      profilePhoto: true,
     },
   })
 
   let verificationScore = 0
-  // Identity verification — base requirement (50%)
-  if (provider?.identityStatus === 'VERIFIED')  verificationScore += 0.50
-  // Skill verification — additional credibility layer (20%)
-  if (provider?.skillStatus === 'VERIFIED')      verificationScore += 0.20
-  // Profile completeness signals
-  if ((provider?.badges.length ?? 0) > 0)        verificationScore += 0.15
-  if (provider?.bio)                              verificationScore += 0.10
-  if (provider?.profilePhoto)                     verificationScore += 0.05
+  if      (provider?.kycTier === 'TIER_3_VERIFIED') verificationScore = 1.0
+  else if (provider?.kycTier === 'TIER_2_SKILLED')  verificationScore = 0.6
+  else if (provider?.kycTier === 'TIER_1_BASIC')    verificationScore = 0.2
   verificationScore = Math.min(verificationScore, 1.0)
 
   // 5. Proof-of-work score (replaces community vouches)

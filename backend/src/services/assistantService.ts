@@ -33,6 +33,7 @@ interface SessionData {
 // ── Load session from Redis ────────────────────────────────────
 
 const loadSession = async (sessionId: string): Promise<SessionData> => {
+  if (!redis) return { messages: [], contextType: 'general', lang: 'en' }
   const raw = await redis.get(`assistant:session:${sessionId}`)
   if (raw) {
     await redis.expire(`assistant:session:${sessionId}`, SESSION_TTL)
@@ -47,6 +48,7 @@ const saveSession = async (
   sessionId: string,
   data:      SessionData
 ): Promise<void> => {
+  if (!redis) return
   // Keep only last MAX_HISTORY messages to avoid token overflow
   data.messages = data.messages.slice(-MAX_HISTORY)
   await redis.set(

@@ -331,7 +331,11 @@ export const searchProviders = async (params: {
       where,
       skip,
       take: limit,
-      orderBy: { trustScore: 'desc' },   // base: trust score
+      // Primary: trust score. Secondary: totalRevenue (Verified Revenue Points, PRD §5.2)
+      orderBy: [
+        { trustScore:    'desc' },
+        { totalRevenue:  'desc' },
+      ],
       include: {
         user:       { select: { name: true } },
         skills:     true,

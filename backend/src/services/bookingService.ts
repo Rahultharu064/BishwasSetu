@@ -319,9 +319,13 @@ export const updateBookingStatus = async (
     )
 
     // Increment completedBookings counter (milestone badge recomputes inside trust job)
+    // Also accumulate totalRevenue for on-platform Verified Revenue Points (PRD §5.2)
     await prisma.provider.update({
       where: { id: booking.providerId },
-      data:  { completedBookings: { increment: 1 } },
+      data:  {
+        completedBookings: { increment: 1 },
+        totalRevenue:      { increment: booking.priceNpr ?? 0 },
+      },
     })
 
     // notify customer

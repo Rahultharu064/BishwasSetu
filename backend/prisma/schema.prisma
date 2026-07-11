@@ -196,6 +196,7 @@ model Provider {
   kycTier                 KycTier   @default(TIER_1_BASIC)
   completedBookings       Int       @default(0) // used for milestone recompute
   trustScore              Float     @default(0) @db.Float
+  totalRevenue            Int       @default(0) // cumulative on-platform revenue (Verified Revenue Points, PRD §5.2)
   isAvailable             Boolean   @default(true)
   embedding               Json? // service description embedding vector
   identityRejectionReason String?   @db.Text
