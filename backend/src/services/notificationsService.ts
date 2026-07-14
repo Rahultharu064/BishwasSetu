@@ -21,6 +21,23 @@ export type NotificationEvent =
   | 'SKILL_EVIDENCE_APPROVED'
   | 'SKILL_EVIDENCE_REJECTED'
   | 'MILESTONE_BADGE_EARNED'
+  // ── §5.1 Escrow-Based Milestone Payments ──
+  | 'ESCROW_FUNDED'
+  | 'ESCROW_RELEASED'
+  | 'ESCROW_REFUNDED'
+  | 'ESCROW_DISPUTED'
+  // ── §5.2 Service Guarantee Credits ──
+  | 'GUARANTEE_ACTIVATED'
+  | 'GUARANTEE_CLAIM_FILED'
+  | 'GUARANTEE_CLAIM_RESOLVED'
+  | 'REVENUE_POINTS_AWARDED'
+  // ── §5.3 Emergency Dispatch Mode ──
+  | 'EMERGENCY_OFFER'
+  | 'EMERGENCY_ACCEPTED'
+  | 'EMERGENCY_EXPIRED'
+  | 'FAST_RESPONDER_BADGE'
+  // ── §5.4 Hyper-Local Neighborhood Tags ──
+  | 'NEIGHBORHOOD_TAG_EARNED'
 
 interface NotifyParams {
   event:      NotificationEvent
@@ -118,6 +135,80 @@ const templates: Record<
     title: `Milestone reached! ${m.badge} 🏆`,
     body:  `Congratulations — you have reached the ${m.badge} milestone. Keep it up!`,
     sms:   `BishwasSetu: You have reached the ${m.badge} milestone! Login to see your updated profile.`,
+  }),
+
+  // ── §5.1 Escrow-Based Milestone Payments ──────────────────────
+
+  ESCROW_FUNDED: (m) => ({
+    title: 'Payment secured in escrow',
+    body:  `NPR ${m.amount} for ${m.service} is held safely in escrow. It will be released when the job is complete.`,
+    sms:   `BishwasSetu: NPR ${m.amount} secured in escrow for ${m.service}. Funds release on job completion.`,
+  }),
+  ESCROW_RELEASED: (m) => ({
+    title: 'Payment released! 💰',
+    body:  `NPR ${m.amount} has been released to your account for booking ${m.bookingId}.`,
+    sms:   `BishwasSetu: NPR ${m.amount} released for booking ${m.bookingId}. Thank you for staying on-platform!`,
+  }),
+  ESCROW_REFUNDED: (m) => ({
+    title: 'Refund processed',
+    body:  `NPR ${m.amount} for ${m.service} has been refunded to your ${m.gateway} account.`,
+    sms:   `BishwasSetu: NPR ${m.amount} refunded to your ${m.gateway} account for ${m.service}.`,
+  }),
+  ESCROW_DISPUTED: (m) => ({
+    title: 'Payment under dispute',
+    body:  `The escrow payment for booking ${m.bookingId} is under dispute. Our team will review within 48 hours.`,
+    sms:   `BishwasSetu: Escrow for booking ${m.bookingId} is under dispute. Our team will contact you within 48 hours.`,
+  }),
+
+  // ── §5.2 Service Guarantee Credits ────────────────────────────
+
+  GUARANTEE_ACTIVATED: (m) => ({
+    title: '7-day Service Guarantee active ✅',
+    body:  `Your ${m.service} job is covered by our workmanship guarantee until ${m.expiresAt}.`,
+  }),
+  GUARANTEE_CLAIM_FILED: (m) => ({
+    title: 'Guarantee claim filed',
+    body:  `A workmanship claim has been filed for your ${m.service} job. Please respond within 24 hours.`,
+    sms:   `BishwasSetu: A guarantee claim was filed for your ${m.service} job. Login to respond within 24 hours.`,
+  }),
+  GUARANTEE_CLAIM_RESOLVED: (m) => ({
+    title: 'Guarantee claim resolved',
+    body:  `Your claim has been resolved: ${m.resolution}`,
+    sms:   `BishwasSetu: Your guarantee claim has been resolved. ${m.resolution}`,
+  }),
+  REVENUE_POINTS_AWARDED: (m) => ({
+    title: 'Verified Revenue Points earned! ⭐',
+    body:  `You earned ${m.points} Verified Revenue Points. Total: ${m.total}. Higher points = better search ranking.`,
+  }),
+
+  // ── §5.3 Emergency Dispatch Mode ──────────────────────────────
+
+  EMERGENCY_OFFER: (m) => ({
+    title: 'Emergency job nearby! 🚨',
+    body:  `${m.category} needed ${m.distanceKm} km away. Accept within 5 minutes for a Fast Responder badge.`,
+    sms:   `BishwasSetu EMERGENCY: ${m.category} job ${m.distanceKm}km from you. Open the app to accept now.`,
+  }),
+  EMERGENCY_ACCEPTED: (m) => ({
+    title: 'Pro on the way!',
+    body:  `${m.providerName} accepted your emergency request and is ${m.distanceKm} km away. ETA: ${m.eta} min.`,
+    sms:   `BishwasSetu: ${m.providerName} is coming for your emergency ${m.category} job. ETA ${m.eta} min. Contact via the app.`,
+  }),
+  EMERGENCY_EXPIRED: (_m) => ({
+    title: 'No providers available',
+    body:  `We couldn't find an available pro right now. Try a standard booking or retry shortly.`,
+    sms:   `BishwasSetu: No pros available for your emergency request right now. Please try a standard booking.`,
+  }),
+  FAST_RESPONDER_BADGE: (_m) => ({
+    title: 'Fast Responder badge earned! ⚡',
+    body:  'You accepted an emergency job within 5 minutes. Your Fast Responder badge is now visible on your profile.',
+    sms:   'BishwasSetu: Fast Responder badge earned! It is now visible on your profile and boosts emergency rankings.',
+  }),
+
+  // ── §5.4 Hyper-Local Neighborhood Tags ────────────────────────
+
+  NEIGHBORHOOD_TAG_EARNED: (m) => ({
+    title: `New neighborhood tag: ${m.area} 📍`,
+    body:  `You've completed ${m.count} verified jobs in ${m.area}. This now appears on your profile for local customers.`,
   }),
 }
 
@@ -221,3 +312,84 @@ export const notifySkillEvidenceRejected = (userId: string, reason: string) =>
 
 export const notifyMilestoneBadgeEarned = (userId: string, badge: string) =>
   notify({ event: 'MILESTONE_BADGE_EARNED', userId, meta: { badge } })
+
+// ── §5.1 Escrow wrappers ──────────────────────────────────────
+
+export const notifyEscrowFunded = (
+  customerId: string,
+  amount:     string,   // NPR, formatted (e.g. "1,500.00")
+  service:    string
+) => notify({ event: 'ESCROW_FUNDED', userId: customerId, meta: { amount, service } })
+
+export const notifyEscrowReleased = (
+  providerUserId: string,
+  amount:         string,
+  bookingId:      string
+) => notify({ event: 'ESCROW_RELEASED', userId: providerUserId, meta: { amount, bookingId } })
+
+export const notifyEscrowRefunded = (
+  customerId: string,
+  amount:     string,
+  service:    string,
+  gateway:    string    // "Khalti" | "eSewa"
+) => notify({ event: 'ESCROW_REFUNDED', userId: customerId, meta: { amount, service, gateway } })
+
+export const notifyEscrowDisputed = (
+  userId:    string,    // notify both parties — call once per user
+  bookingId: string
+) => notify({ event: 'ESCROW_DISPUTED', userId, meta: { bookingId } })
+
+// ── §5.2 Guarantee wrappers ───────────────────────────────────
+
+export const notifyGuaranteeActivated = (
+  customerId: string,
+  service:    string,
+  expiresAt:  string
+) => notify({ event: 'GUARANTEE_ACTIVATED', userId: customerId, meta: { service, expiresAt } })
+
+export const notifyGuaranteeClaimFiled = (
+  providerUserId: string,
+  service:        string
+) => notify({ event: 'GUARANTEE_CLAIM_FILED', userId: providerUserId, meta: { service } })
+
+export const notifyGuaranteeClaimResolved = (
+  customerId: string,
+  resolution: string
+) => notify({ event: 'GUARANTEE_CLAIM_RESOLVED', userId: customerId, meta: { resolution } })
+
+export const notifyRevenuePointsAwarded = (
+  providerUserId: string,
+  points:         string,
+  total:          string
+) => notify({ event: 'REVENUE_POINTS_AWARDED', userId: providerUserId, meta: { points, total } })
+
+// ── §5.3 Emergency wrappers ───────────────────────────────────
+
+export const notifyEmergencyOffer = (
+  providerUserId: string,
+  category:       string,
+  distanceKm:     string,
+  requestId:      string
+) => notify({ event: 'EMERGENCY_OFFER', userId: providerUserId, meta: { category, distanceKm, requestId } })
+
+export const notifyEmergencyAccepted = (
+  customerId:   string,
+  providerName: string,
+  category:     string,
+  distanceKm:   string,
+  eta:          string
+) => notify({ event: 'EMERGENCY_ACCEPTED', userId: customerId, meta: { providerName, category, distanceKm, eta } })
+
+export const notifyEmergencyExpired = (customerId: string) =>
+  notify({ event: 'EMERGENCY_EXPIRED', userId: customerId })
+
+export const notifyFastResponderBadge = (providerUserId: string) =>
+  notify({ event: 'FAST_RESPONDER_BADGE', userId: providerUserId })
+
+// ── §5.4 Neighborhood wrappers ────────────────────────────────
+
+export const notifyNeighborhoodTagEarned = (
+  providerUserId: string,
+  area:           string,
+  count:          string
+) => notify({ event: 'NEIGHBORHOOD_TAG_EARNED', userId: providerUserId, meta: { area, count } })

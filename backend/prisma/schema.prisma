@@ -682,3 +682,228 @@ model Service {
   @@index([subCategoryId])
   @@map("services")
 }
+// ============================================================
+// GharSewa Nepal — Section 5: Anti-Disintermediation Features
+// Merge these models/enums into your existing prisma/schema.prisma
+// Assumes existing models: User, Provider, Booking
+// After merging run: npx prisma migrate dev --name anti_disintermediation
+// ============================================================
+
+// ---------- 5.1 Escrow-Based Milestone Payments ----------
+
+enum EscrowStatus {
+  PENDING // customer initiated, awaiting gateway confirmation
+  HELD // funds captured, held by platform
+  RELEASED // customer tapped "Job Complete" — paid out to provider
+  REFUNDED // refunded to customer (dispute/cancellation)
+  DISPUTED // under admin review
+}
+
+enum PaymentGateway {
+  KHALTI
+  ESEWA
+}
+
+model EscrowPayment {
+  id             String         @id @default(cuid())
+  bookingId      String         @unique
+  customerId     String
+  providerId     String
+  gateway        PaymentGateway
+  status         EscrowStatus   @default(PENDING)
+  amountPaisa    Int // total amount in paisa (NPR * 100)
+  commissionPct  Decimal        @db.Decimal(5, 2) // 8.00 / 10.00 / 12.00
+  commissionPaisa Int           @default(0)
+  payoutPaisa    Int            @default(0) // amount released to provider
+  gatewayRef     String? // pidx (Khalti) / transaction_uuid (eSewa)
+  gatewayTxnId   String? // final transaction id from gateway
+  heldAt         DateTime?
+  releasedAt     DateTime?
+  refundedAt     DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  guarantee ServiceGuarantee?
+
+  @@index([customerId])
+  @@index([providerId, status])
+  @@index([gatewayRef])
+}
+
+// ---------- 5.2 Service Guarantee Credits ----------
+
+enum GuaranteeStatus {
+  ACTIVE
+  CLAIMED
+  RESOLVED
+  EXPIRED
+}
+
+model ServiceGuarantee {
+  id           String          @id @default(cuid())
+  escrowId     String          @unique
+  bookingId    String          @unique
+  customerId   String
+  providerId   String
+  status       GuaranteeStatus @default(ACTIVE)
+  expiresAt    DateTime // releasedAt + 7 days
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  escrow EscrowPayment    @relation(fields: [escrowId], references: [id])
+  claims GuaranteeClaim[]
+
+  @@index([providerId, status])
+  @@index([status, expiresAt])
+}
+
+model GuaranteeClaim {
+  id          String   @id @default(cuid())
+  guaranteeId String
+  customerId  String
+  description String   @db.Text
+  photoUrls   Json? // array of Cloudinary URLs
+  resolution  String?  @db.Text
+  resolvedAt  DateTime?
+  createdAt   DateTime @default(now())
+
+  guarantee ServiceGuarantee @relation(fields: [guaranteeId], references: [id])
+
+  @@index([guaranteeId])
+}
+
+// Verified Revenue Points — boost search ranking for on-platform revenue
+model RevenuePointLedger {
+  id          String   @id @default(cuid())
+  providerId  String
+  bookingId   String
+  points      Int // 1 point per NPR 100 of on-platform revenue
+  reason      String // ESCROW_RELEASE | EMERGENCY_COMPLETE | ADJUSTMENT
+  createdAt   DateTime @default(now())
+
+  @@index([providerId, createdAt])
+}
+
+// Off-platform leakage signals detected by the leakage job
+enum LeakageFlagStatus {
+  OPEN
+  REVIEWED
+  DISMISSED
+  ACTIONED
+}
+
+model LeakageFlag {
+  id         String            @id @default(cuid())
+  providerId String
+  customerId String?
+  bookingId  String?
+  signal     String // e.g. PHONE_IN_CHAT | CANCEL_AFTER_CONTACT | COMPLAINT_PATTERN
+  details    Json?
+  status     LeakageFlagStatus @default(OPEN)
+  createdAt  DateTime          @default(now())
+  reviewedAt DateTime?
+
+  @@index([providerId, status])
+}
+
+// ---------- 5.3 Emergency Dispatch Mode ----------
+
+enum EmergencyStatus {
+  SEARCHING // matching nearest providers
+  DISPATCHED // offers sent to candidates
+  ACCEPTED // a provider accepted
+  IN_PROGRESS
+  COMPLETED
+  EXPIRED // no provider accepted in time
+  CANCELLED
+}
+
+model EmergencyRequest {
+  id            String          @id @default(cuid())
+  customerId    String
+  category      String // plumber | electrician | cleaner | ...
+  description   String?         @db.Text
+  latitude      Decimal         @db.Decimal(10, 7)
+  longitude     Decimal         @db.Decimal(10, 7)
+  addressLabel  String?
+  status        EmergencyStatus @default(SEARCHING)
+  commissionPct Decimal         @default(12.00) @db.Decimal(5, 2)
+  acceptedById  String? // providerId that accepted
+  acceptedAt    DateTime?
+  completedAt   DateTime?
+  expiresAt     DateTime // dispatch window deadline
+  bookingId     String?         @unique // booking created after acceptance
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  offers EmergencyOffer[]
+
+  @@index([customerId])
+  @@index([status, expiresAt])
+}
+
+enum OfferStatus {
+  SENT
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+model EmergencyOffer {
+  id          String      @id @default(cuid())
+  requestId   String
+  providerId  String
+  distanceKm  Decimal     @db.Decimal(6, 2)
+  status      OfferStatus @default(SENT)
+  sentAt      DateTime    @default(now())
+  respondedAt DateTime?
+
+  request EmergencyRequest @relation(fields: [requestId], references: [id])
+
+  @@unique([requestId, providerId])
+  @@index([providerId, status])
+}
+
+// Fast Responder badge tracking (accept within 5 minutes)
+model ProviderBadge {
+  id         String   @id @default(cuid())
+  providerId String
+  badge      String // FAST_RESPONDER | SKILLED | TRUST | INSURED
+  awardedAt  DateTime @default(now())
+  expiresAt  DateTime? // Fast Responder re-evaluated monthly
+
+  @@unique([providerId, badge])
+  @@index([badge])
+}
+
+// ---------- 5.4 Hyper-Local Neighborhood Tags ----------
+
+// Geofenced areas (e.g. Maharajgunj) — seeded by ops team
+model NeighborhoodArea {
+  id        String  @id @default(cuid())
+  name      String  @unique // "Maharajgunj"
+  city      String // "Kathmandu"
+  latitude  Decimal @db.Decimal(10, 7) // centroid
+  longitude Decimal @db.Decimal(10, 7)
+  radiusKm  Decimal @default(1.50) @db.Decimal(5, 2)
+
+  completions NeighborhoodCompletion[]
+
+  @@index([city])
+}
+
+// One row per GPS-verified job completion inside a geofence
+model NeighborhoodCompletion {
+  id          String   @id @default(cuid())
+  areaId      String
+  providerId  String
+  bookingId   String   @unique
+  latitude    Decimal  @db.Decimal(10, 7)
+  longitude   Decimal  @db.Decimal(10, 7)
+  completedAt DateTime @default(now())
+
+  area NeighborhoodArea @relation(fields: [areaId], references: [id])
+
+  @@index([providerId, completedAt])
+  @@index([areaId, completedAt])
+}

@@ -1,38 +1,26 @@
-// Commission tiers (from PRD Section 6.1)
-// NPR 0–1000     → 8%
-// NPR 1001–5000  → 10%
-// NPR 5001+      → 12%
-// Emergency Dispatch (PRD §5.3) → 12% flat (speed + convenience premium)
+/**
+ * Commission tiers per PRD §6.1, plus the flat 12% emergency tier (§5.3).
+ * All money is handled in paisa (NPR * 100) to avoid float errors.
+ */
 
-export interface CommissionResult {
-  rate:          number   // decimal e.g. 0.10
-  ratePercent:   number   // e.g. 10
-  commission:    number   // NPR amount platform keeps
-  providerPayout: number  // NPR amount provider receives
-  isEmergencyRate: boolean
+export const EMERGENCY_COMMISSION_PCT = 12;
+
+export function commissionPctForAmount(amountPaisa: number): number {
+  const npr = amountPaisa / 100;
+  if (npr <= 1000) return 8;
+  if (npr <= 5000) return 10;
+  return 12;
 }
 
-export const calculateCommission = (
-  priceNpr:    number,
-  isEmergency: boolean = false
-): CommissionResult => {
-  let rate: number
+export function computeSplit(
+  amountPaisa: number,
+  commissionPct: number
+): { commissionPaisa: number; payoutPaisa: number } {
+  const commissionPaisa = Math.round((amountPaisa * commissionPct) / 100);
+  return { commissionPaisa, payoutPaisa: amountPaisa - commissionPaisa };
+}
 
-  if (isEmergency) {
-    // Emergency Dispatch carries a flat 12% — justified by speed & convenience
-    rate = 0.12
-  } else if (priceNpr <= 1000)      rate = 0.08
-  else if (priceNpr <= 5000) rate = 0.10
-  else                        rate = 0.12
-
-  const commission     = Math.round(priceNpr * rate)
-  const providerPayout = priceNpr - commission
-
-  return {
-    rate,
-    ratePercent:     rate * 100,
-    commission,
-    providerPayout,
-    isEmergencyRate: isEmergency,
-  }
+/** Verified Revenue Points: 1 point per NPR 100 of on-platform payout */
+export function revenuePointsFor(payoutPaisa: number): number {
+  return Math.floor(payoutPaisa / 10000);
 }
