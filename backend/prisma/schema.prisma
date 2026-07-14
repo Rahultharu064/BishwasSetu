@@ -24,11 +24,14 @@ enum KycTier {
   TIER_3_VERIFIED
 }
 
+// Merged: used by both Booking.escrowStatus (default NONE) and EscrowPayment.status
 enum EscrowStatus {
-  NONE
-  HELD
-  RELEASED
-  REFUNDED
+  NONE // no escrow on this booking (e.g. cash)
+  PENDING // customer initiated, awaiting gateway confirmation
+  HELD // funds captured, held by platform
+  RELEASED // customer tapped "Job Complete" — paid out to provider
+  REFUNDED // refunded to customer (dispute/cancellation)
+  DISPUTED // under admin review
 }
 
 // Identity verification track — booking-access gate
@@ -690,14 +693,7 @@ model Service {
 // ============================================================
 
 // ---------- 5.1 Escrow-Based Milestone Payments ----------
-
-enum EscrowStatus {
-  PENDING // customer initiated, awaiting gateway confirmation
-  HELD // funds captured, held by platform
-  RELEASED // customer tapped "Job Complete" — paid out to provider
-  REFUNDED // refunded to customer (dispute/cancellation)
-  DISPUTED // under admin review
-}
+// (EscrowStatus is defined once at the top of this file — merged enum)
 
 enum PaymentGateway {
   KHALTI
@@ -865,15 +861,18 @@ model EmergencyOffer {
 }
 
 // Fast Responder badge tracking (accept within 5 minutes)
-model ProviderBadge {
-  id         String   @id @default(cuid())
+// Renamed from ProviderBadge — that name is already used by the paid-badge model above.
+// This model tracks performance-EARNED badges (free, awarded by the system).
+model EarnedBadge {
+  id         String    @id @default(cuid())
   providerId String
   badge      String // FAST_RESPONDER | SKILLED | TRUST | INSURED
-  awardedAt  DateTime @default(now())
+  awardedAt  DateTime  @default(now())
   expiresAt  DateTime? // Fast Responder re-evaluated monthly
 
   @@unique([providerId, badge])
   @@index([badge])
+  @@map("earned_badges")
 }
 
 // ---------- 5.4 Hyper-Local Neighborhood Tags ----------

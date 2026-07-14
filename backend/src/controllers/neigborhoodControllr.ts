@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import * as neighborhoodService from "../services/neighborhood.service";
+import * as neighborhoodService from "../services/neighborhoodService";
 
 export async function providerStats(
   req: Request,

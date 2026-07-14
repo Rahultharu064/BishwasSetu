@@ -160,7 +160,7 @@ export async function acceptEmergency(providerId: string, requestId: string) {
   // Fast Responder badge — accepted within 5 minutes of offer sent
   const responseMin = (now.getTime() - offer.sentAt.getTime()) / 60000;
   if (responseMin <= FAST_RESPONDER_MIN) {
-    await prisma.providerBadge.upsert({
+    await prisma.earnedBadge.upsert({
       where: {
         providerId_badge: { providerId, badge: "FAST_RESPONDER" },
       },
