@@ -4,6 +4,7 @@ import { prisma }   from './config/db'
 import { redis }    from './config/redis'
 import { logger }   from './utils/logger'
 import { trustQueue, kycQueue, moderationQueue } from './jobs/queue'
+import { purgeExpiredKycDocuments } from './jobs/kycRetentionJob'
 import cron         from 'node-cron'
 
 // Import workers
@@ -34,6 +35,19 @@ async function bootstrap() {
     cron.schedule('15 20 * * *', async () => {
       logger.info('Scheduling daily trust decay...')
       await trustQueue.add('decay-all', {})
+    })
+
+    // Daily KYC document retention purge — 3 AM Nepal time (21:15 UTC prev day).
+    // Destroys sensitive ID/selfie images past their retention window
+    // (data-minimization — see docs/DATA_RETENTION_AND_SECURITY.md). Runs on
+    // node-cron directly so it works with or without Redis.
+    cron.schedule('15 21 * * *', async () => {
+      try {
+        const { purged } = await purgeExpiredKycDocuments()
+        logger.info('KYC retention purge complete', { purged })
+      } catch (err) {
+        logger.error('KYC retention purge failed', { err })
+      }
     })
 
     server = app.listen(PORT, () => {
