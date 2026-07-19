@@ -13,6 +13,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { AdminApi, KycApi } from "@/lib/endpoints";
 import { useFetch } from "@/lib/use-fetch";
 import { useAuth } from "@/lib/auth-context";
+import { useToast } from "@/lib/toast-context";
 import { ApiError } from "@/lib/api";
 import { formatDateTime } from "@/lib/utils";
 import type { AdminKycQueueItem } from "@/lib/types";
@@ -62,6 +63,7 @@ export default function AdminKycQueuePage() {
 }
 
 function QueueRow({ item, onDecided }: { item: AdminKycQueueItem; onDecided: () => void }) {
+  const { toast } = useToast();
   const [showReject, setShowReject] = React.useState(false);
   const [reason, setReason] = React.useState("");
   const [busy, setBusy] = React.useState<"approve" | "reject" | null>(null);
@@ -87,9 +89,12 @@ function QueueRow({ item, onDecided }: { item: AdminKycQueueItem; onDecided: () 
     setBusy("approve");
     try {
       await AdminApi.approveKyc(item.id);
+      toast(`${item.legalName} approved`, "success");
       onDecided();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Could not approve.");
+      const message = err instanceof ApiError ? err.message : "Could not approve.";
+      setError(message);
+      toast(message, "error");
     } finally {
       setBusy(null);
     }
@@ -101,9 +106,12 @@ function QueueRow({ item, onDecided }: { item: AdminKycQueueItem; onDecided: () 
     setBusy("reject");
     try {
       await AdminApi.rejectKyc(item.id, reason.trim());
+      toast(`${item.legalName} rejected`, "info");
       onDecided();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Could not reject.");
+      const message = err instanceof ApiError ? err.message : "Could not reject.";
+      setError(message);
+      toast(message, "error");
     } finally {
       setBusy(null);
     }

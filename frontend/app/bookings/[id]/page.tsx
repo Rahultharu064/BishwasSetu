@@ -17,12 +17,14 @@ import { BookingApi } from "@/lib/endpoints";
 import { API_BASE_URL, ApiError } from "@/lib/api";
 import { useFetch } from "@/lib/use-fetch";
 import { useAuth } from "@/lib/auth-context";
+import { useToast } from "@/lib/toast-context";
 import { formatDateTime, formatNpr } from "@/lib/utils";
 import { submitEsewaForm } from "@/lib/esewa-submit";
 
 export default function BookingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { user, bootstrapping } = useAuth();
+  const { toast } = useToast();
   const router = useRouter();
 
   React.useEffect(() => {
@@ -52,15 +54,18 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
   const isProvider = user.role === "PROVIDER";
   const perspectiveName = isProvider ? booking.customer?.name : booking.provider?.legalName;
 
-  async function runAction(key: string, fn: () => Promise<unknown>) {
+  async function runAction(key: string, fn: () => Promise<unknown>, successMessage?: string) {
     setActionError(null);
     setActionLoading(key);
     try {
       await fn();
       refetch();
       setShowCancelForm(false);
+      if (successMessage) toast(successMessage, "success");
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : "That action couldn't be completed.");
+      const message = err instanceof ApiError ? err.message : "That action couldn't be completed.";
+      setActionError(message);
+      toast(message, "error");
     } finally {
       setActionLoading(null);
     }
@@ -139,7 +144,7 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
             className="w-full"
             size="lg"
             loading={actionLoading === "accept"}
-            onClick={() => runAction("accept", () => BookingApi.updateStatus(id, { status: "ACCEPTED" }))}
+            onClick={() => runAction("accept", () => BookingApi.updateStatus(id, { status: "ACCEPTED" }), "Booking accepted")}
           >
             Accept booking
           </Button>
@@ -155,8 +160,10 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
               loading={actionLoading === "reject"}
               onCancel={() => setShowCancelForm(false)}
               onSubmit={() =>
-                runAction("reject", () =>
-                  BookingApi.updateStatus(id, { status: "REJECTED", cancelReason: cancelReason })
+                runAction(
+                  "reject",
+                  () => BookingApi.updateStatus(id, { status: "REJECTED", cancelReason: cancelReason }),
+                  "Booking declined"
                 )
               }
             />
@@ -170,7 +177,7 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
             className="w-full"
             size="lg"
             loading={actionLoading === "in_progress"}
-            onClick={() => runAction("in_progress", () => BookingApi.updateStatus(id, { status: "IN_PROGRESS" }))}
+            onClick={() => runAction("in_progress", () => BookingApi.updateStatus(id, { status: "IN_PROGRESS" }), "Job marked in progress")}
           >
             Start job
           </Button>
@@ -178,7 +185,9 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
             variant="outline"
             className="w-full"
             loading={actionLoading === "complete"}
-            onClick={() => runAction("complete", () => BookingApi.updateStatus(id, { status: "COMPLETED" }))}
+            onClick={() =>
+              runAction("complete", () => BookingApi.updateStatus(id, { status: "COMPLETED" }), "Job marked complete")
+            }
           >
             Mark job complete
           </Button>
@@ -190,7 +199,9 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
           className="mt-6 w-full"
           size="lg"
           loading={actionLoading === "complete"}
-          onClick={() => runAction("complete", () => BookingApi.updateStatus(id, { status: "COMPLETED" }))}
+          onClick={() =>
+            runAction("complete", () => BookingApi.updateStatus(id, { status: "COMPLETED" }), "Job marked complete")
+          }
         >
           Mark job complete
         </Button>
@@ -211,8 +222,10 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
               loading={actionLoading === "cancel"}
               onCancel={() => setShowCancelForm(false)}
               onSubmit={() =>
-                runAction("cancel", () =>
-                  BookingApi.updateStatus(id, { status: "CANCELLED", cancelReason: cancelReason })
+                runAction(
+                  "cancel",
+                  () => BookingApi.updateStatus(id, { status: "CANCELLED", cancelReason: cancelReason }),
+                  "Booking cancelled"
                 )
               }
             />
@@ -249,7 +262,13 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
           className="mt-6 w-full"
           size="lg"
           loading={actionLoading === "complete"}
-          onClick={() => runAction("complete", () => BookingApi.updateStatus(id, { status: "COMPLETED" }))}
+          onClick={() =>
+            runAction(
+              "complete",
+              () => BookingApi.updateStatus(id, { status: "COMPLETED" }),
+              "Job confirmed complete — payment released"
+            )
+          }
         >
           Confirm job complete &amp; release payment
         </Button>

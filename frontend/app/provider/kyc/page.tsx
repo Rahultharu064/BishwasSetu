@@ -12,11 +12,13 @@ import { KycStatusBadge } from "@/components/shared/status-badge";
 import { KycApi } from "@/lib/endpoints";
 import { useFetch } from "@/lib/use-fetch";
 import { useAuth } from "@/lib/auth-context";
+import { useToast } from "@/lib/toast-context";
 import { ApiError } from "@/lib/api";
 
 export default function ProviderKycPage() {
   const router = useRouter();
   const { user, bootstrapping } = useAuth();
+  const { toast } = useToast();
 
   React.useEffect(() => {
     if (!bootstrapping && !user) router.replace("/login?next=/provider/kyc");
@@ -54,9 +56,12 @@ export default function ProviderKycPage() {
     try {
       await KycApi.upload(form);
       setSubmitted(true);
+      toast("Documents submitted for review", "success");
       refetch();
     } catch (err) {
-      setSubmitError(err instanceof ApiError ? err.message : "Could not upload your documents. Please try again.");
+      const message = err instanceof ApiError ? err.message : "Could not upload your documents. Please try again.";
+      setSubmitError(message);
+      toast(message, "error");
     } finally {
       setSubmitting(false);
     }

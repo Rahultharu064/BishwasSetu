@@ -7,9 +7,11 @@ import { Textarea } from "@/components/ui/input";
 import { ErrorBanner } from "@/components/shared/states";
 import { ReviewApi } from "@/lib/endpoints";
 import { ApiError } from "@/lib/api";
+import { useToast } from "@/lib/toast-context";
 import { cn } from "@/lib/utils";
 
 export function ReviewForm({ bookingId, onSubmitted }: { bookingId: string; onSubmitted: () => void }) {
+  const { toast } = useToast();
   const [rating, setRating] = React.useState(0);
   const [hoverRating, setHoverRating] = React.useState(0);
   const [comment, setComment] = React.useState("");
@@ -26,9 +28,12 @@ export function ReviewForm({ bookingId, onSubmitted }: { bookingId: string; onSu
     setSubmitting(true);
     try {
       await ReviewApi.create({ bookingId, rating, comment: comment.trim() || undefined });
+      toast("Review submitted — thank you!", "success");
       onSubmitted();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Could not submit your review.");
+      const message = err instanceof ApiError ? err.message : "Could not submit your review.";
+      setError(message);
+      toast(message, "error");
     } finally {
       setSubmitting(false);
     }
