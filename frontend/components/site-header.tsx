@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Bell, ChevronDown, MapPin } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -11,12 +12,12 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80">
       <div className="mx-auto flex h-16 max-w-5xl items-center justify-between gap-3 px-4">
-        <a href="#" className="flex items-center gap-2 font-bold text-foreground">
+        <Link href="/" className="flex items-center gap-2 font-bold text-foreground">
           <span className="flex size-8 items-center justify-center rounded-full bg-primary text-sm text-primary-foreground">
             घ
           </span>
           <span className="hidden text-[15px] sm:inline">GharSewa Nepal</span>
-        </a>
+        </Link>
 
         <button
           type="button"
