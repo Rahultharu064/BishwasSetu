@@ -1,6 +1,7 @@
 import { prisma } from '../config/db'
 import { uploadToCloudinary, getSignedUrl } from '../utils/cloudinary'
 import { kycQueue } from '../jobs/queue'
+import { features } from '../config/features'
 
 // ── Upload KYC documents ──────────────────────────────────────
 
@@ -95,7 +96,18 @@ export const uploadKycDocuments = async (
     })
   })
 
-  // Enqueue AI pipeline job (Step 4 will implement the worker)
+  // MVP: during the pilot, skip the paid AI pipeline entirely (no OCR /
+  // Rekognition / Groq-vision spend). Submissions wait in the admin queue for
+  // a human to approve/reject. Flip KYC_MANUAL_REVIEW=false to re-enable the
+  // AI pre-screening pipeline once volume justifies its per-signup cost.
+  if (features.kycManualReview) {
+    return {
+      status:  'UNDER_REVIEW',
+      message: 'Documents uploaded. Awaiting admin review.',
+    }
+  }
+
+  // Enqueue AI pipeline job
   await kycQueue.add(
     'process-kyc',
     { providerId },
