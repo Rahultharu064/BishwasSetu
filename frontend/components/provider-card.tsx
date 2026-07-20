@@ -10,7 +10,7 @@ import type { Provider } from "@/lib/data";
 
 export function ProviderCard({ provider }: { provider: Provider }) {
   return (
-    <Card className="flex w-64 shrink-0 flex-col gap-3 p-4 snap-start sm:w-full">
+    <Card className="flex w-64 shrink-0 flex-col gap-3 p-4 snap-start transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:w-full">
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 items-start gap-3">
           <div
