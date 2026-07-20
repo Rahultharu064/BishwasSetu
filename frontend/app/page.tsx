@@ -8,8 +8,6 @@ import { HeroSearch } from "@/components/hero-search";
 import { HowItWorks } from "@/components/how-it-works";
 import { ProviderCard } from "@/components/provider-card";
 import { ProviderCta } from "@/components/provider-cta";
-import { SiteFooter } from "@/components/site-footer";
-import { SiteHeader } from "@/components/site-header";
 import { StatsSection } from "@/components/stats-section";
 import { featuredProviders } from "@/lib/data";
 
@@ -43,8 +41,6 @@ function SectionHeading({
 export default function Home() {
   return (
     <div className="flex min-h-full flex-1 flex-col bg-background">
-      <SiteHeader />
-
       <main className="flex flex-1 flex-col gap-16 pb-24 sm:gap-20 sm:pb-16">
         <section className="border-b border-border bg-gradient-to-b from-accent/40 to-transparent">
           <div className="mx-auto grid max-w-6xl gap-10 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:gap-12 lg:px-8 lg:py-20">
@@ -107,7 +103,6 @@ export default function Home() {
         </section>
       </main>
 
-      <SiteFooter />
       <BottomNav />
     </div>
   );

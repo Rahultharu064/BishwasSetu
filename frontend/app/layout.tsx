@@ -1,6 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Mukta } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "@/lib/auth-context";
+import { ToastProvider } from "@/lib/toast-context";
+import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
 
 const mukta = Mukta({
   variable: "--font-mukta",
@@ -32,7 +36,13 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${mukta.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-background text-foreground">
-        {children}
+        <AuthProvider>
+          <ToastProvider>
+            <SiteHeader />
+            <main className="flex flex-1 flex-col">{children}</main>
+            <SiteFooter />
+          </ToastProvider>
+        </AuthProvider>
       </body>
     </html>
   );
