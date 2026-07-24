@@ -206,4 +206,124 @@ export const api = {
       body: { status },
       auth: true,
     }),
+
+  // Reviews
+  providerReviews: (providerId: string) =>
+    apiRequest<import("./types").Review[]>(`/reviews/provider/${providerId}`),
+  createReview: (body: { bookingId: string; rating: number; comment?: string }) =>
+    apiRequest<import("./types").Review>("/reviews", {
+      method: "POST",
+      body,
+      auth: true,
+    }),
+
+  // Complaints
+  createComplaint: (body: {
+    bookingId: string;
+    type: string;
+    description: string;
+  }) =>
+    apiRequest<{ id: string }>("/complaints", {
+      method: "POST",
+      body,
+      auth: true,
+    }),
+  myComplaints: () =>
+    apiRequest<unknown[]>("/complaints/me", { auth: true }),
+  complaintById: (id: string) =>
+    apiRequest<unknown>(`/complaints/${id}`, { auth: true }),
+
+  // Credits / boost (provider)
+  creditPacks: () => apiRequest<unknown>("/credits/packs", { auth: true }),
+  creditWallet: () => apiRequest<unknown>("/credits/wallet", { auth: true }),
+  creditHistory: () => apiRequest<unknown>("/credits/history", { auth: true }),
+  purchaseCredits: (body: { packId: string; paymentMethod: string }) =>
+    apiRequest<unknown>("/credits/purchase", { method: "POST", body, auth: true }),
+
+  // KYC (provider)
+  kycStatus: () => apiRequest<unknown>("/kyc/status", { auth: true }),
+  uploadKyc: (form: FormData) =>
+    apiRequest<unknown>("/kyc/upload", { method: "POST", body: form, auth: true }),
 };
+
+// ── Assistant SSE streaming (POST /assistant/chat) ────────────
+export interface ChatStreamHandlers {
+  onToken: (text: string) => void;
+  onDone: () => void;
+  onError: (message: string) => void;
+}
+
+export async function streamAssistantChat(
+  body: {
+    message: string;
+    sessionId: string;
+    contextType?: "booking" | "provider" | "complaint" | "credits" | "general";
+    contextId?: string;
+  },
+  handlers: ChatStreamHandlers,
+  signal?: AbortSignal
+): Promise<void> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Accept: "text/event-stream",
+  };
+  const token = getAccessToken();
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  let res: Response;
+  try {
+    res = await fetch(buildUrl("/assistant/chat"), {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ contextType: "general", ...body }),
+      credentials: "include",
+      signal,
+    });
+  } catch {
+    handlers.onError("Weak connection — please try again.");
+    return;
+  }
+
+  if (!res.ok || !res.body) {
+    handlers.onError("The assistant is unavailable right now.");
+    return;
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      // SSE frames are separated by a blank line
+      const frames = buffer.split("\n\n");
+      buffer = frames.pop() ?? "";
+      for (const frame of frames) {
+        const line = frame.split("\n").find((l) => l.startsWith("data:"));
+        if (!line) continue;
+        const payload = line.slice(5).trim();
+        if (!payload || payload === "[DONE]") continue;
+        try {
+          const evt = JSON.parse(payload) as {
+            type: string;
+            content?: string;
+            message?: string;
+          };
+          if (evt.type === "token" && evt.content) handlers.onToken(evt.content);
+          else if (evt.type === "done") handlers.onDone();
+          else if (evt.type === "error")
+            handlers.onError(evt.message ?? "Assistant error.");
+        } catch {
+          /* ignore malformed frame */
+        }
+      }
+    }
+    handlers.onDone();
+  } catch {
+    handlers.onError("Connection dropped mid-answer.");
+  }
+}

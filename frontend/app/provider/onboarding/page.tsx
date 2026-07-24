@@ -153,23 +153,26 @@ export default function OnboardingPage() {
                 <ChevronRight className="h-4 w-4 text-primary" /> {tier.unlocks}
               </p>
 
-              {current && (
-                <Button
-                  full
-                  className="mt-4"
-                  onClick={() => {
-                    setCompleted(tier.id);
-                    toast(
-                      tier.id === 3
-                        ? "Submitted for review — we'll SMS you on approval."
-                        : `Tier ${tier.id} submitted for review.`,
-                      "success"
-                    );
-                  }}
-                >
-                  <Camera className="h-4 w-4" /> Complete Tier {tier.id}
-                </Button>
-              )}
+              {current &&
+                (tier.id === 1 ? (
+                  <Button
+                    full
+                    className="mt-4"
+                    onClick={() => {
+                      setCompleted(tier.id);
+                      toast("Tier 1 complete — you can start accepting small jobs.", "success");
+                    }}
+                  >
+                    <Camera className="h-4 w-4" /> Complete Tier {tier.id}
+                  </Button>
+                ) : (
+                  // Tiers 2 & 3 require real document uploads
+                  <Link href="/provider/kyc" className="mt-4 block">
+                    <Button full>
+                      <Camera className="h-4 w-4" /> Upload documents
+                    </Button>
+                  </Link>
+                ))}
               {!done && !current && (
                 <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Clock className="h-3.5 w-3.5" /> Finish the previous tier first

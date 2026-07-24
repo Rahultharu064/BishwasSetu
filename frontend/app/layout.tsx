@@ -7,6 +7,7 @@ import { ToastProvider } from "@/context/toast-context";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { BottomNav } from "@/components/bottom-nav";
+import { AssistantWidget } from "@/components/assistant/assistant-widget";
 
 // Single font family — reduces payload on 3G (ux.md §2.2)
 const mukta = Mukta({
@@ -50,6 +51,7 @@ export default function RootLayout({
                 <SiteFooter />
               </div>
               <BottomNav />
+              <AssistantWidget />
             </AuthProvider>
           </LanguageProvider>
         </ToastProvider>
