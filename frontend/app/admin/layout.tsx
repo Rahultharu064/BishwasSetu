@@ -9,6 +9,8 @@ import {
   Users,
   MessageSquareWarning,
   LayoutDashboard,
+  BadgeCheck,
+  Flag,
 } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { cn } from "@/lib/utils";
@@ -16,8 +18,11 @@ import { cn } from "@/lib/utils";
 const NAV = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/kyc", label: "Verification Queue", icon: ClipboardCheck },
+  { href: "/admin/skill-evidence", label: "Skill Evidence", icon: BadgeCheck },
   { href: "/admin/providers", label: "Providers", icon: Users },
+  { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/complaints", label: "Complaints", icon: MessageSquareWarning },
+  { href: "/admin/fraud", label: "Trust & Fraud", icon: Flag },
 ];
 
 export default function AdminLayout({

@@ -283,6 +283,46 @@ export const api = {
       body,
       auth: true,
     }),
+
+  // Admin — user management
+  adminUsers: (query?: Record<string, string | number | undefined>) =>
+    apiRequest<unknown>("/admin/users", { query, auth: true }),
+  adminToggleUserStatus: (id: string, isActive: boolean) =>
+    apiRequest<unknown>(`/admin/users/${id}/status`, {
+      method: "PATCH",
+      body: { isActive },
+      auth: true,
+    }),
+
+  // Admin — skill evidence queue (v2.3, human-reviewed)
+  adminSkillEvidence: (query?: Record<string, string | number | undefined>) =>
+    apiRequest<unknown>("/admin/skill-evidence", { query, auth: true }),
+  adminApproveSkillEvidence: (id: string) =>
+    apiRequest<unknown>(`/admin/skill-evidence/${id}/approve`, {
+      method: "PUT",
+      auth: true,
+    }),
+  adminRejectSkillEvidence: (id: string, reason: string) =>
+    apiRequest<unknown>(`/admin/skill-evidence/${id}/reject`, {
+      method: "PUT",
+      body: { reason },
+      auth: true,
+    }),
+
+  // Admin — trust & fraud
+  adminTrustAnomalies: () =>
+    apiRequest<unknown>("/admin/trust/anomalies", { auth: true }),
+  adminFraudFlags: (query?: Record<string, string | number | undefined>) =>
+    apiRequest<unknown>("/admin/fraud/flags", { query, auth: true }),
+  adminResolveFraudFlag: (id: string) =>
+    apiRequest<unknown>(`/admin/fraud/flags/${id}/resolve`, {
+      method: "PATCH",
+      auth: true,
+    }),
+
+  // Admin — revenue analytics
+  adminRevenue: (query: { from: string; to: string }) =>
+    apiRequest<unknown>("/admin/analytics/revenue", { query, auth: true }),
 };
 
 // ── Assistant SSE streaming (POST /assistant/chat) ────────────

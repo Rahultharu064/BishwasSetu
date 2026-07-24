@@ -14,14 +14,25 @@ import {
 import { api } from "@/lib/api";
 import { useFetch } from "@/lib/use-fetch";
 import { npr } from "@/lib/format";
-import type { AdminDashboard } from "@/lib/admin-types";
+import type { AdminDashboard, RevenueAnalytics } from "@/lib/admin-types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/ui/states";
 import { Badge } from "@/components/ui/badge";
 
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
 export default function AdminDashboardPage() {
   const { data, loading, error, reload } = useFetch<AdminDashboard>(
     () => api.adminDashboard() as Promise<AdminDashboard>,
+    []
+  );
+
+  const revenue = useFetch<RevenueAnalytics>(
+    () =>
+      api.adminRevenue({
+        from: new Date(Date.now() - THIRTY_DAYS_MS).toISOString(),
+        to: new Date().toISOString(),
+      }) as Promise<RevenueAnalytics>,
     []
   );
 
@@ -120,6 +131,68 @@ export default function AdminDashboardPage() {
           </div>
         </>
       )}
+
+      {/* Revenue breakdown (last 30 days) */}
+      <div className="mt-8">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-lg font-bold tracking-tight">Revenue streams</h2>
+          <span className="text-xs text-muted-foreground">last 30 days</span>
+        </div>
+        {revenue.loading ? (
+          <Skeleton className="mt-3 h-28 rounded-xl" />
+        ) : revenue.error || !revenue.data ? (
+          <div className="mt-3">
+            <ErrorState
+              message={revenue.error ?? "Couldn't load revenue."}
+              onRetry={revenue.reload}
+            />
+          </div>
+        ) : (
+          <div className="mt-3 rounded-2xl border border-border bg-card p-5">
+            <p className="text-sm font-medium text-muted-foreground">
+              Total revenue
+            </p>
+            <p className="tabular mt-0.5 text-3xl font-bold text-primary">
+              {npr(revenue.data.totalRevenueNpr)}
+            </p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <RevenueStream
+                label="Commission"
+                value={npr(revenue.data.streams.commission.totalNpr)}
+                sub={`${revenue.data.streams.commission.bookingsCount} bookings`}
+              />
+              <RevenueStream
+                label="Credit packs"
+                value={npr(revenue.data.streams.credits.totalNpr)}
+                sub={`${revenue.data.streams.credits.purchasesCount} purchases`}
+              />
+              <RevenueStream
+                label="Boost badges"
+                value={npr(revenue.data.streams.badges.totalNpr)}
+                sub={`${revenue.data.streams.badges.badgesCount} badges`}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function RevenueStream({
+  label,
+  value,
+  sub,
+}: {
+  label: string;
+  value: string;
+  sub: string;
+}) {
+  return (
+    <div className="rounded-xl bg-secondary p-3">
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+      <p className="tabular mt-0.5 text-lg font-bold">{value}</p>
+      <p className="text-xs text-muted-foreground">{sub}</p>
     </div>
   );
 }
