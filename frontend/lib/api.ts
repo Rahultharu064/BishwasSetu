@@ -244,6 +244,34 @@ export const api = {
   kycStatus: () => apiRequest<unknown>("/kyc/status", { auth: true }),
   uploadKyc: (form: FormData) =>
     apiRequest<unknown>("/kyc/upload", { method: "POST", body: form, auth: true }),
+
+  // Admin
+  adminDashboard: () => apiRequest<unknown>("/admin/dashboard", { auth: true }),
+  adminKycQueue: (query?: Record<string, string | number | undefined>) =>
+    apiRequest<unknown>("/admin/kyc", { query, auth: true }),
+  adminKycDocuments: (providerId: string) =>
+    apiRequest<unknown[]>(`/kyc/admin/${providerId}/documents`, { auth: true }),
+  adminApproveKyc: (id: string) =>
+    apiRequest<unknown>(`/admin/kyc/${id}/approve`, { method: "PUT", auth: true }),
+  adminRejectKyc: (id: string, reason: string) =>
+    apiRequest<unknown>(`/admin/kyc/${id}/reject`, {
+      method: "PUT",
+      body: { reason },
+      auth: true,
+    }),
+  adminRequestInfoKyc: (id: string, reason: string) =>
+    apiRequest<unknown>(`/admin/kyc/${id}/request-info`, {
+      method: "PUT",
+      body: { reason },
+      auth: true,
+    }),
+  adminBlacklistKyc: (id: string) =>
+    apiRequest<unknown>(`/admin/kyc/${id}/blacklist`, {
+      method: "PUT",
+      auth: true,
+    }),
+  adminProviders: (query?: Record<string, string | number | undefined>) =>
+    apiRequest<unknown>("/admin/providers", { query, auth: true }),
 };
 
 // ── Assistant SSE streaming (POST /assistant/chat) ────────────

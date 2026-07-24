@@ -64,6 +64,16 @@ export default function AccountPage() {
         </Link>
       )}
 
+      {(user.role === "ADMIN" || user.role === "MODERATOR") && (
+        <Link href="/admin" className="mt-6 block">
+          <div className="flex items-center gap-3 rounded-xl bg-foreground p-4 text-background">
+            <ShieldCheck className="h-5 w-5" />
+            <span className="flex-1 font-semibold">Open admin console</span>
+            <ChevronRight className="h-5 w-5" />
+          </div>
+        </Link>
+      )}
+
       {/* Menu */}
       <div className="mt-6 divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
         {rows.map((r) => (
