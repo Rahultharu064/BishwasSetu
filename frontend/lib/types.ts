@@ -113,6 +113,37 @@ export interface Booking {
   provider?: Provider;
   category?: Category;
   service?: Service;
+  /** Present on provider-facing booking lists. */
+  customer?: { id: string; name: string } | null;
+  review?: { rating: number } | null;
+}
+
+export interface Pagination {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+/** GET /bookings/provider/me */
+export interface ProviderBookingsResponse {
+  bookings: Booking[];
+  pagination: Pagination;
+}
+
+// ── KYC status (GET /kyc/status) — reuses IdentityStatus/SkillStatus above ──
+export interface KycStatus {
+  identityStatus: IdentityStatus;
+  skillStatus: SkillStatus;
+  identityRejectionReason?: string | null;
+  skillRejectionReason?: string | null;
+  documents: { type: string; uploadedAt: string }[];
+  aiDecision?: {
+    confidence?: number | null;
+    forgeryRisk?: number | null;
+    decision?: string | null;
+    adminOverride?: boolean | null;
+  } | null;
 }
 
 export type ComplaintType =

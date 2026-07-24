@@ -200,12 +200,19 @@ export const api = {
     }),
   bookingById: (id: string) =>
     apiRequest<import("./types").Booking>(`/bookings/${id}`, { auth: true }),
-  updateBookingStatus: (id: string, status: string) =>
+  updateBookingStatus: (id: string, status: string, cancelReason?: string) =>
     apiRequest<import("./types").Booking>(`/bookings/${id}/status`, {
       method: "PUT",
-      body: { status },
+      body: cancelReason ? { status, cancelReason } : { status },
       auth: true,
     }),
+
+  // Bookings (provider) — GET /bookings/provider/me
+  providerBookings: (query?: Record<string, string | number | undefined>) =>
+    apiRequest<import("./types").ProviderBookingsResponse>(
+      "/bookings/provider/me",
+      { query, auth: true }
+    ),
 
   // Reviews
   providerReviews: (providerId: string) =>
@@ -241,7 +248,8 @@ export const api = {
     apiRequest<unknown>("/credits/purchase", { method: "POST", body, auth: true }),
 
   // KYC (provider)
-  kycStatus: () => apiRequest<unknown>("/kyc/status", { auth: true }),
+  kycStatus: () =>
+    apiRequest<import("./types").KycStatus>("/kyc/status", { auth: true }),
   uploadKyc: (form: FormData) =>
     apiRequest<unknown>("/kyc/upload", { method: "POST", body: form, auth: true }),
 

@@ -74,7 +74,7 @@ export default function KycUploadPage() {
       Object.entries(files).forEach(([k, f]) => f && form.append(k, f));
       await api.uploadKyc(form);
       toast("Documents submitted — usually reviewed within 4 hours.", "success");
-      router.push("/provider/onboarding");
+      router.push("/provider/kyc/status");
     } catch (err) {
       toast(
         err instanceof ApiError ? err.message : "Upload failed. Try again.",

@@ -93,12 +93,20 @@ export default function ProviderDashboardPage() {
                 {data.provider.completedBookings} jobs completed
               </p>
             </div>
-            <Link href="/provider/onboarding">
+            <Link
+              href={
+                data.provider.identityStatus === "INCOMPLETE"
+                  ? "/provider/onboarding"
+                  : "/provider/kyc/status"
+              }
+            >
               <span className="inline-flex items-center gap-1 text-sm font-semibold text-primary">
                 <ShieldCheck className="h-4 w-4" />
                 {data.provider.identityStatus === "VERIFIED"
                   ? "Verified"
-                  : "Verify"}
+                  : data.provider.identityStatus === "UNDER_REVIEW"
+                    ? "In review"
+                    : "Verify"}
                 <ChevronRight className="h-4 w-4" />
               </span>
             </Link>
@@ -132,15 +140,29 @@ export default function ProviderDashboardPage() {
 
           {/* Jobs */}
           <div>
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Jobs
-            </h2>
-            <div className="grid grid-cols-4 gap-3">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                Jobs
+              </h2>
+              <Link
+                href="/provider/jobs"
+                className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
+              >
+                Manage jobs
+                {data.stats.requested > 0 && (
+                  <span className="tabular ml-1 rounded-full bg-urgent-soft px-1.5 text-[11px] font-semibold text-urgent">
+                    {data.stats.requested} new
+                  </span>
+                )}
+                <ChevronRight className="h-4 w-4" />
+              </Link>
+            </div>
+            <Link href="/provider/jobs" className="grid grid-cols-4 gap-3">
               <StatTile label="New" value={data.stats.requested} />
               <StatTile label="Accepted" value={data.stats.accepted} />
               <StatTile label="Active" value={data.stats.inProgress} />
               <StatTile label="Done" value={data.stats.completed} />
-            </div>
+            </Link>
           </div>
 
           {/* Boost */}
