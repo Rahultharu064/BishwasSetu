@@ -12,6 +12,7 @@ import {
   LogOut,
   ChevronRight,
   UserCircle2,
+  MessageSquareWarning,
 } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { useLang } from "@/context/language-context";
@@ -31,6 +32,7 @@ export default function AccountPage() {
 
   const rows = [
     { href: "/bookings", icon: <CalendarCheck className="h-5 w-5" />, label: "My bookings" },
+    { href: "/complaints", icon: <MessageSquareWarning className="h-5 w-5" />, label: "My complaints" },
     { href: "/account/addresses", icon: <MapPin className="h-5 w-5" />, label: "Saved addresses" },
     { href: "/account/payments", icon: <Wallet className="h-5 w-5" />, label: "Payment methods" },
     { href: "/trust-safety", icon: <ShieldCheck className="h-5 w-5" />, label: "Trust & Safety" },

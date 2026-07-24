@@ -115,6 +115,33 @@ export interface Booking {
   service?: Service;
 }
 
+export type ComplaintType =
+  | "SERVICE_QUALITY"
+  | "NO_SHOW"
+  | "OVERCHARGING"
+  | "ABUSIVE_BEHAVIOR"
+  | "FRAUD";
+
+export type ComplaintStatus = "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "DISMISSED";
+
+export interface Complaint {
+  id: string;
+  type: ComplaintType;
+  status: ComplaintStatus;
+  description: string;
+  aiCategory?: string | null;
+  resolution?: string | null;
+  resolvedAt?: string | null;
+  createdAt: string;
+  bookingId?: string;
+  provider?: { legalName: string; trustScore?: number };
+  customer?: { name: string; phone?: string | null };
+  booking?: {
+    scheduledAt?: string | null;
+    category?: { name: string } | null;
+  };
+}
+
 export interface ApiEnvelope<T> {
   success: boolean;
   message: string;

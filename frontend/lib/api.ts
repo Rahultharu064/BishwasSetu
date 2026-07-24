@@ -229,9 +229,9 @@ export const api = {
       auth: true,
     }),
   myComplaints: () =>
-    apiRequest<unknown[]>("/complaints/me", { auth: true }),
+    apiRequest<unknown>("/complaints/me", { auth: true }),
   complaintById: (id: string) =>
-    apiRequest<unknown>(`/complaints/${id}`, { auth: true }),
+    apiRequest<import("./types").Complaint>(`/complaints/${id}`, { auth: true }),
 
   // Credits / boost (provider)
   creditPacks: () => apiRequest<unknown>("/credits/packs", { auth: true }),
@@ -272,6 +272,17 @@ export const api = {
     }),
   adminProviders: (query?: Record<string, string | number | undefined>) =>
     apiRequest<unknown>("/admin/providers", { query, auth: true }),
+  adminComplaints: (query?: Record<string, string | number | undefined>) =>
+    apiRequest<unknown>("/admin/complaints", { query, auth: true }),
+  adminResolveComplaint: (
+    id: string,
+    body: { resolution: string; action: string }
+  ) =>
+    apiRequest<unknown>(`/admin/complaints/${id}/resolve`, {
+      method: "PUT",
+      body,
+      auth: true,
+    }),
 };
 
 // ── Assistant SSE streaming (POST /assistant/chat) ────────────

@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -18,6 +18,7 @@ import { npr, formatDateTime } from "@/lib/format";
 import type { Booking } from "@/lib/types";
 import { BookingStatusBadge } from "@/components/booking-status-badge";
 import { EscrowStatusBar } from "@/components/escrow-status-bar";
+import { BookingLifecycle } from "@/components/booking-lifecycle";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
@@ -42,10 +43,21 @@ export default function BookingDetailPage({
   const { id } = use(params);
   const router = useRouter();
   const { toast } = useToast();
+  const [active, setActive] = useState(false);
   const { data, loading, error, reload } = useFetch<Booking>(
     () => api.bookingById(id),
-    [id]
+    [id],
+    { pollMs: 12000, enabled: active }
   );
+
+  // Poll while the booking is live so status updates arrive without a refresh.
+  useEffect(() => {
+    setActive(
+      !!data &&
+        ["REQUESTED", "ACCEPTED", "IN_PROGRESS"].includes(data.status)
+    );
+  }, [data]);
+
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [complaintOpen, setComplaintOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -144,6 +156,23 @@ export default function BookingDetailPage({
       <p className="mt-1 text-sm text-muted-foreground">
         Booking #{b.id.slice(0, 8)}
       </p>
+
+      {/* Live status timeline */}
+      <div className="mt-6 rounded-xl border border-border bg-card p-5">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-sm font-semibold">Live status</h2>
+          {active && (
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+              </span>
+              Live
+            </span>
+          )}
+        </div>
+        <BookingLifecycle status={b.status} />
+      </div>
 
       {/* Escrow status */}
       {b.escrowStatus !== "NONE" && (

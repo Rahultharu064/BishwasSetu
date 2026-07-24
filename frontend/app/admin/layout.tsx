@@ -7,6 +7,7 @@ import {
   ShieldAlert,
   ClipboardCheck,
   Users,
+  MessageSquareWarning,
   LayoutDashboard,
 } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
@@ -16,6 +17,7 @@ const NAV = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/kyc", label: "Verification Queue", icon: ClipboardCheck },
   { href: "/admin/providers", label: "Providers", icon: Users },
+  { href: "/admin/complaints", label: "Complaints", icon: MessageSquareWarning },
 ];
 
 export default function AdminLayout({
