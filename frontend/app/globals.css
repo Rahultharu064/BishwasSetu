@@ -53,6 +53,12 @@
   --radius-2xl: calc(var(--radius) + 8px);
 }
 
+/*
+ * GharSewa Nepal design tokens — mirrors ui/ux.md §2.
+ * Kept to 5 core colors on purpose: teal-green primary (trust),
+ * vermilion for urgency/destructive, near-black text, warm off-white
+ * page background with pure-white cards.
+ */
 :root {
   color-scheme: light;
   --radius: 0.75rem;
@@ -128,6 +134,22 @@
 @layer base {
   * {
     @apply border-border;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
   body {
     @apply bg-background text-foreground;

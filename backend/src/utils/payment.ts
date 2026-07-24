@@ -103,14 +103,14 @@ export async function verifyEsewaPayment(
 }
 
 
-const BASE_URL = process.env.KHALTI_BASE_URL ?? "https://dev.khalti.com";
-const SECRET_KEY = process.env.KHALTI_SECRET_KEY ?? "";
+const KHALTI_BASE_URL = process.env.KHALTI_BASE_URL ?? "https://dev.khalti.com";
+const KHALTI_SECRET_KEY = process.env.KHALTI_SECRET_KEY ?? "";
 
 async function khaltiFetch<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(`${BASE_URL}${path}`, {
+  const res = await fetch(`${KHALTI_BASE_URL}${path}`, {
     method: "POST",
     headers: {
-      Authorization: `Key ${SECRET_KEY}`,
+      Authorization: `Key ${KHALTI_SECRET_KEY}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify(body),

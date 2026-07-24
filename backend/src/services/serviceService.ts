@@ -89,7 +89,13 @@ export const getProvidersByCategory = async (
       where,
       skip,
       take:    limit,
-      orderBy: { trustScore: 'desc' },
+      // Anti-disintermediation (#4): same on-platform-earned ranking as
+      // providerService.searchProviders — see comment there.
+      orderBy: [
+        { completedBookings: 'desc' },
+        { trustScore:        'desc' },
+        { totalRevenue:      'desc' },
+      ],
       include: {
         user:       { select: { name: true } },
         skills:     { select: { skill: true } },

@@ -331,10 +331,16 @@ export const searchProviders = async (params: {
       where,
       skip,
       take: limit,
-      // Primary: trust score. Secondary: totalRevenue (Verified Revenue Points, PRD §5.2)
+      // Anti-disintermediation (#4): rank primarily by on-platform completed
+      // jobs so a provider's visibility is *earned on the platform* and does
+      // not survive if they take work off-platform. Trust score and on-platform
+      // revenue (Verified Revenue Points, PRD §5.2) break ties. Every one of
+      // these signals is derived solely from on-platform booking history, so
+      // off-platform cash deals accrue no ranking benefit.
       orderBy: [
-        { trustScore:    'desc' },
-        { totalRevenue:  'desc' },
+        { completedBookings: 'desc' },
+        { trustScore:        'desc' },
+        { totalRevenue:      'desc' },
       ],
       include: {
         user:       { select: { name: true } },
