@@ -37,7 +37,7 @@ export async function initiateEscrow(
   if (existing && existing.status !== "PENDING")
     throw new ApiError(409, "Payment already processed for this booking");
 
-  const amountPaisa = booking.totalAmountPaisa as number;
+  const amountPaisa = (booking.priceNpr ?? 0) * 100;
   // Emergency bookings carry the flat 12% tier; standard follows §6.1
   const commissionPct = booking.isEmergency
     ? 12
@@ -192,7 +192,7 @@ export async function refundEscrow(escrowId: string, reason: string) {
     });
     await tx.booking.update({
       where: { id: escrow.bookingId },
-      data: { status: "REFUNDED", cancellationReason: reason },
+      data: { status: "CANCELLED", cancelReason: reason },
     });
     return updated;
   });

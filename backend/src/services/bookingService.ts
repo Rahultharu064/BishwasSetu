@@ -1,5 +1,5 @@
 import { prisma }              from '../config/db'
-import { calculateCommission } from '../utils/commission'
+import { commissionPctForAmount, computeSplit, EMERGENCY_COMMISSION_PCT } from '../utils/commission'
 import { trustQueue }          from '../jobs/queue'
 import type {
   CreateBookingInput,
@@ -175,7 +175,9 @@ export const createBooking = async (
   const riskFlags = await getRiskAdaptiveFlags(providerId)
 
   // 5. Calculate commission — Emergency Dispatch earns 12% flat (PRD §5.3)
-  const { commission } = calculateCommission(priceNpr, isEmergency)
+  const commissionPct = isEmergency ? EMERGENCY_COMMISSION_PCT : commissionPctForAmount(priceNpr * 100);
+  const { commissionPaisa } = computeSplit(priceNpr * 100, commissionPct);
+  const commission = Math.round(commissionPaisa / 100);
 
   // 6. Create booking
   const booking = await prisma.booking.create({
@@ -297,7 +299,9 @@ export const updateBookingStatus = async (
   let commissionResult = null
 
   if (newStatus === 'COMPLETED') {
-    commissionResult = calculateCommission(booking.priceNpr ?? 0, booking.isEmergency)
+    const commissionPct = booking.isEmergency ? EMERGENCY_COMMISSION_PCT : commissionPctForAmount((booking.priceNpr ?? 0) * 100);
+    const { commissionPaisa } = computeSplit((booking.priceNpr ?? 0) * 100, commissionPct);
+    commissionResult = { commission: Math.round(commissionPaisa / 100) };
 
     await prisma.$transaction(async (tx) => {
       await tx.booking.update({

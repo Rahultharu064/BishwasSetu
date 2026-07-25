@@ -126,7 +126,6 @@ model User {
   passwordHash String?   @db.VarChar(255)
   role         Role      @default(CUSTOMER)
   isActive     Boolean   @default(true)
-  fcmToken     String?   @db.VarChar(255)
   deletedAt    DateTime? // soft delete
 
   createdAt DateTime @default(now())
@@ -202,8 +201,6 @@ model Provider {
   trustScore              Float     @default(0) @db.Float
   totalRevenue            Int       @default(0) // cumulative on-platform revenue (Verified Revenue Points, PRD §5.2)
   isAvailable             Boolean   @default(true)
-  latitude                Decimal?  @db.Decimal(10, 7)
-  longitude               Decimal?  @db.Decimal(10, 7)
   embedding               Json? // service description embedding vector
   identityRejectionReason String?   @db.Text
   skillRejectionReason    String?   @db.Text
@@ -371,10 +368,8 @@ model Booking {
   neighborhood  String?       @db.VarChar(100)
   description   String?       @db.Text
   scheduledAt   DateTime
-  completedAt           DateTime?
-  completionLatitude    Decimal?      @db.Decimal(10, 7)
-  completionLongitude   Decimal?      @db.Decimal(10, 7)
-  priceNpr              Int?
+  completedAt   DateTime?
+  priceNpr      Int?
   commission    Int? // platform commission in NPR
   paymentMethod PaymentMethod @default(CASH)
   isBoosted     Boolean       @default(false) // was booking from a boost slot?
@@ -911,3 +906,6 @@ model NeighborhoodCompletion {
   @@index([providerId, completedAt])
   @@index([areaId, completedAt])
 }
+
+
+

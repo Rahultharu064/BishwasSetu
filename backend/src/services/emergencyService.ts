@@ -24,7 +24,7 @@ export async function createEmergencyRequest(
   input: EmergencyRequestInput
 ) {
   if (!isInsideNepal(input.latitude, input.longitude))
-    throw new ApiError("Location must be inside Nepal",400);
+    throw new ApiError(400, "Location must be inside Nepal");
 
   const active = await prisma.emergencyRequest.findFirst({
     where: {
@@ -33,7 +33,7 @@ export async function createEmergencyRequest(
     },
   });
   if (active)
-    throw new ApiError("You already have an active emergency request",403);
+    throw new ApiError(403, "You already have an active emergency request");
 
   const request = await prisma.emergencyRequest.create({
     data: {
@@ -72,10 +72,9 @@ export async function findNearestProviders(
 
   const providers = await prisma.provider.findMany({
     where: {
-      category: request.category,
+      categories: { some: { categoryId: request.category } },
       isAvailable: true,
-      tier: { gte: 2 }, // SKILLED or VERIFIED only
-      status: "VERIFIED",
+      kycTier: { in: ["TIER_2_SKILLED", "TIER_3_VERIFIED"] }, // SKILLED or VERIFIED only
       latitude: { not: null },
       longitude: { not: null },
     },
@@ -83,24 +82,28 @@ export async function findNearestProviders(
       id: true,
       latitude: true,
       longitude: true,
-      fcmToken: true,
-      phone: true,
+      user: {
+        select: {
+          fcmToken: true,
+          phone: true,
+        }
+      }
     },
   });
 
   return providers
     .map((p) => ({
       providerId: p.id,
-      latitude: Number(p.latitude),
-      longitude: Number(p.longitude),
+      latitude: Number(p.latitude!),
+      longitude: Number(p.longitude!),
       distanceKm: haversineKm(
         Number(request.latitude),
         Number(request.longitude),
-        Number(p.latitude),
-        Number(p.longitude)
+        Number(p.latitude!),
+        Number(p.longitude!)
       ),
-      fcmToken: p.fcmToken,
-      phone: p.phone,
+      fcmToken: p.user?.fcmToken,
+      phone: p.user?.phone,
     }))
     .filter((p) => p.distanceKm <= SEARCH_RADIUS_KM)
     .sort((a, b) => a.distanceKm - b.distanceKm)
@@ -143,11 +146,12 @@ export async function acceptEmergency(providerId: string, requestId: string) {
       data: {
         customerId: offer.request.customerId,
         providerId,
-        category: offer.request.category,
+        categoryId: offer.request.category,
         description: offer.request.description ?? "Emergency dispatch",
-        status: "CONFIRMED",
+        status: "ACCEPTED",
         isEmergency: true,
-        totalAmountPaisa: 0, // quoted on-site, updated before escrow initiate
+        priceNpr: 0, // quoted on-site, updated before escrow initiate
+        scheduledAt: new Date(),
       },
     });
     await tx.emergencyRequest.update({

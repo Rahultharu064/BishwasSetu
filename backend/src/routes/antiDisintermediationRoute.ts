@@ -4,12 +4,12 @@
  *   app.use("/api/v1", antiDisintermediationRoutes);
  */
 import { Router } from "express";
-import { requireAuth, requireRole } from "../middlewares/auth.middleware";
-import { validate } from "../middlewares/validate.middleware";
-import * as escrow from "../controllers/escrow.controller";
-import * as guarantee from "../controllers/guarantee.controller";
-import * as emergency from "../controllers/emergency.controller";
-import * as neighborhood from "../controllers/neighborhood.controller";
+import { protect as requireAuth, restrictTo as requireRole } from "../middlewares/authMiddleware";
+import { validate } from "../middlewares/validateMiddleware";
+import * as escrow from "../controllers/escrowController";
+import * as guarantee from "../controllers/guaranteeController";
+import * as emergency from "../controllers/emergencyController";
+import * as neighborhood from "../controllers/neighborhoodController";
 import {
   initiateEscrowSchema,
   verifyEscrowSchema,
@@ -22,7 +22,7 @@ import {
   emergencyIdParamSchema,
   providerIdParamSchema,
   createAreaSchema,
-} from "../validators/antiDisintermediation.validator";
+} from "../validators/antiDisintermediationValidator";
 
 const router = Router();
 

@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import * as escrowService from "../services/escrow.service";
+import * as escrowService from "../services/escrowService";
 
 export async function initiate(req: Request, res: Response, next: NextFunction) {
   try {

@@ -108,13 +108,13 @@ export const purchaseCredits = async (
   let transactionId: string | null = null
 
   if (paymentMethod === 'KHALTI') {
-    const result = await verifyKhaltiPayment(paymentRef, pack.priceNpr)
+    const result = await verifyKhaltiPayment(paymentRef)
     verified      = result.verified
-    transactionId = result.transactionId
+    transactionId = result.gatewayTxnId ?? null
   } else if (paymentMethod === 'ESEWA') {
-    const result = await verifyEsewaPayment(paymentRef, pack.priceNpr, orderId ?? purchase.id)
+    const result = await verifyEsewaPayment(paymentRef)
     verified      = result.verified
-    transactionId = result.transactionId
+    transactionId = result.gatewayTxnId ?? null
   }
 
   if (!verified) {

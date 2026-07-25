@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import * as guaranteeService from "../services/guarantee.service";
+import * as guaranteeService from "../services/guaranteeService";
 
 export async function listMine(req: Request, res: Response, next: NextFunction) {
   try {

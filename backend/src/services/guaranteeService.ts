@@ -1,93 +1,90 @@
-/**
- * 5.4 Hyper-Local "Neighborhood" Tags
- * GPS-verified job completions inside seeded geofences power area-specific
- * social proof: "Has worked for 7 homes in Maharajgunj this month."
- */
-import { prisma } from "../config/prisma";
-import { isWithinGeofence } from "../utils/geo.util";
-import { ApiError } from "../utils/apiError";
-import type { NeighborhoodStat } from "../types/antiDisintermediation.types";
+import { prisma } from "../config/db";
+import { ApiError } from "../utils/apierror";
 
-/**
- * Called by the escrow-released worker with the completion GPS fix.
- * Matches the point against seeded geofences and records the completion.
- */
-export async function recordCompletion(params: {
-  providerId: string;
-  bookingId: string;
-  latitude: number;
-  longitude: number;
-}) {
-  const areas = await prisma.neighborhoodArea.findMany();
-  const match = areas.find((a) =>
-    isWithinGeofence(
-      params.latitude,
-      params.longitude,
-      Number(a.latitude),
-      Number(a.longitude),
-      Number(a.radiusKm)
-    )
-  );
-  if (!match) return null; // outside all known geofences — no tag
-
-  return prisma.neighborhoodCompletion.upsert({
-    where: { bookingId: params.bookingId }, // idempotent per booking
-    update: {},
-    create: {
-      areaId: match.id,
-      providerId: params.providerId,
-      bookingId: params.bookingId,
-      latitude: params.latitude,
-      longitude: params.longitude,
+export async function listGuaranteesForCustomer(customerId: string) {
+  return prisma.serviceGuarantee.findMany({
+    where: { customerId },
+    include: {
+      escrow: { select: { bookingId: true, amountPaisa: true } },
+      claims: true,
     },
+    orderBy: { createdAt: "desc" }
   });
 }
 
-/** Public profile stats: per-area monthly + all-time counts */
-export async function getProviderNeighborhoodStats(
-  providerId: string
-): Promise<NeighborhoodStat[]> {
-  const monthStart = new Date();
-  monthStart.setDate(1);
-  monthStart.setHours(0, 0, 0, 0);
+export async function fileGuaranteeClaim(customerId: string, guaranteeId: string, data: { description: string; photoUrls?: string[] }) {
+  const guarantee = await prisma.serviceGuarantee.findUnique({ where: { id: guaranteeId } });
+  if (!guarantee) throw new ApiError(404, "Guarantee not found");
+  if (guarantee.customerId !== customerId) throw new ApiError(403, "Not authorized");
+  if (guarantee.status !== "ACTIVE") throw new ApiError(400, `Guarantee is ${guarantee.status}`);
+  if (new Date() > guarantee.expiresAt) throw new ApiError(400, "Guarantee has expired");
 
-  const completions = await prisma.neighborhoodCompletion.findMany({
+  return prisma.$transaction(async (tx) => {
+    const claim = await tx.guaranteeClaim.create({
+      data: {
+        guaranteeId,
+        customerId,
+        description: data.description,
+        photoUrls: data.photoUrls ?? [],
+      }
+    });
+
+    await tx.serviceGuarantee.update({
+      where: { id: guaranteeId },
+      data: { status: "CLAIMED" }
+    });
+
+    // Also flag the provider for a trust penalty
+    await tx.trustScoreEvent.create({
+      data: {
+        providerId: guarantee.providerId,
+        score: -5.0,
+        prevScore: 0, // In reality, fetch actual score
+        trigger: "complaint",
+        inputs: { type: "GUARANTEE_CLAIM", claimId: claim.id },
+      }
+    });
+
+    return claim;
+  });
+}
+
+export async function resolveGuaranteeClaim(claimId: string, resolution: string) {
+  const claim = await prisma.guaranteeClaim.findUnique({
+    where: { id: claimId },
+    include: { guarantee: true }
+  });
+  if (!claim) throw new ApiError(404, "Claim not found");
+
+  return prisma.$transaction(async (tx) => {
+    const resolved = await tx.guaranteeClaim.update({
+      where: { id: claimId },
+      data: {
+        resolution,
+        resolvedAt: new Date()
+      }
+    });
+
+    await tx.serviceGuarantee.update({
+      where: { id: claim.guaranteeId },
+      data: { status: "RESOLVED" }
+    });
+
+    return resolved;
+  });
+}
+
+export async function getProviderRevenuePoints(providerId: string) {
+  const ledgers = await prisma.revenuePointLedger.findMany({
     where: { providerId },
-    include: { area: { select: { name: true, city: true } } },
+    select: { points: true }
   });
-
-  const byArea = new Map<string, NeighborhoodStat>();
-  for (const c of completions) {
-    const key = c.area.name;
-    const stat = byArea.get(key) ?? {
-      areaName: c.area.name,
-      city: c.area.city,
-      jobsThisMonth: 0,
-      jobsAllTime: 0,
-    };
-    stat.jobsAllTime += 1;
-    if (c.completedAt >= monthStart) stat.jobsThisMonth += 1;
-    byArea.set(key, stat);
-  }
-
-  return [...byArea.values()].sort((a, b) => b.jobsThisMonth - a.jobsThisMonth);
+  return ledgers.reduce((acc, curr) => acc + curr.points, 0);
 }
 
-/** Admin: seed a new geofenced area */
-export async function createArea(input: {
-  name: string;
-  city: string;
-  latitude: number;
-  longitude: number;
-  radiusKm: number;
-}) {
-  const existing = await prisma.neighborhoodArea.findUnique({
-    where: { name: input.name },
+export async function listOpenLeakageFlags() {
+  return prisma.leakageFlag.findMany({
+    where: { status: "OPEN" },
+    orderBy: { createdAt: "desc" }
   });
-  if (existing) throw new ApiError(409, "Area already exists");
-  return prisma.neighborhoodArea.create({ data: input });
-}
-
-export async function listAreas() {
-  return prisma.neighborhoodArea.findMany({ orderBy: { city: "asc" } });
 }

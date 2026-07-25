@@ -7,10 +7,11 @@
  * Register once at boot: import "./jobs/emergencyDispatch.job";
  */
 import { dispatchQueue } from "../config/queues";
-import { prisma } from "../config/prisma";
-import { findNearestProviders } from "../services/emergency.service";
-import { sendPush, sendSms } from "../services/notification.service";
-import type { DispatchJobPayload } from "../types/antiDisintermediation.types";
+import { prisma } from "../config/db";
+import { findNearestProviders } from "../services/emergencyService";
+import { sendPushNotification as sendPush } from "../utils/firebase";
+import { sendSms } from "../utils/sms";
+import type { DispatchJobPayload, ProviderCandidate } from "../types/antiDisinterminationTypes";
 
 const DISPATCH_WINDOW_MS = 10 * 60 * 1000;
 
@@ -34,7 +35,7 @@ dispatchQueue.process("dispatch", async (job) => {
 
   await prisma.$transaction([
     prisma.emergencyOffer.createMany({
-      data: candidates.map((c) => ({
+      data: candidates.map((c: ProviderCandidate) => ({
         requestId,
         providerId: c.providerId,
         distanceKm: c.distanceKm,
@@ -49,9 +50,10 @@ dispatchQueue.process("dispatch", async (job) => {
 
   // Notify all candidates in parallel — first to accept wins
   await Promise.allSettled(
-    candidates.map(async (c) => {
+    candidates.map(async (c: ProviderCandidate) => {
       if (c.fcmToken) {
-        await sendPush(c.fcmToken, {
+        await sendPush({
+          token: c.fcmToken,
           title: "Emergency Job Nearby!",
           body: `${request.category} needed ${c.distanceKm.toFixed(1)} km away. Accept within 5 min for a Fast Responder badge.`,
           data: { type: "EMERGENCY_OFFER", requestId },
@@ -99,7 +101,8 @@ dispatchQueue.process("expire-check", async (job) => {
     select: { fcmToken: true },
   });
   if (customer?.fcmToken) {
-    await sendPush(customer.fcmToken, {
+    await sendPush({
+      token: customer.fcmToken,
       title: "No providers available",
       body: "We couldn't find an available pro right now. Try a standard booking or retry shortly.",
     });

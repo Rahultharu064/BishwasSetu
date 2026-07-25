@@ -7,7 +7,7 @@
  * Register once at boot: import "./jobs/maintenance.job";
  */
 import { maintenanceQueue } from "../config/queues";
-import { prisma } from "../config/prisma";
+import { prisma } from "../config/db";
 
 // Repeatable schedules (Bull dedupes repeatable jobs by name + cron)
 void maintenanceQueue.add(
@@ -37,12 +37,10 @@ maintenanceQueue.process("leakage-scan", async () => {
     by: ["providerId"],
     where: {
       status: "CANCELLED",
-      cancelledByRole: "CUSTOMER",
-      acceptedAt: { not: null },
       createdAt: { gte: since },
     },
-    _count: { id: true },
-    having: { id: { _count: { gte: 3 } } },
+    _count: { _all: true },
+    having: { providerId: { _count: { gte: 3 } } },
   });
 
   for (const row of suspiciousCancels) {
@@ -58,7 +56,7 @@ maintenanceQueue.process("leakage-scan", async () => {
       data: {
         providerId: row.providerId,
         signal: "CANCEL_AFTER_CONTACT",
-        details: { cancelledCount: row._count.id, windowDays: 30 },
+        details: { cancelledCount: row._count._all, windowDays: 30 },
       },
     });
   }
