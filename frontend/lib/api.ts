@@ -331,6 +331,94 @@ export const api = {
   // Admin — revenue analytics
   adminRevenue: (query: { from: string; to: string }) =>
     apiRequest<unknown>("/admin/analytics/revenue", { query, auth: true }),
+
+  // ── §5.1 Escrow ──────────────────────────────────────────────
+  initiateEscrow: (body: {
+    bookingId: string;
+    gateway: "KHALTI" | "ESEWA";
+    returnUrl: string;
+  }) =>
+    apiRequest<{ escrowId: string; paymentUrl: string; gatewayRef: string }>(
+      "/escrow/initiate",
+      { method: "POST", body, auth: true }
+    ),
+
+  verifyEscrow: (body: { escrowId: string; pidx?: string; data?: string }) =>
+    apiRequest<unknown>("/escrow/verify", { method: "POST", body, auth: true }),
+
+  releaseEscrow: (escrowId: string, gps?: { latitude: number; longitude: number }) =>
+    apiRequest<unknown>(`/escrow/${escrowId}/release`, {
+      method: "POST",
+      body: gps ?? {},
+      auth: true,
+    }),
+
+  getEscrow: (escrowId: string) =>
+    apiRequest<{
+      id: string;
+      status: string;
+      amountPaisa: number;
+      payoutPaisa: number;
+      commissionPaisa: number;
+      guarantee?: { id: string; status: string; expiresAt: string } | null;
+    }>(`/escrow/${escrowId}`, { auth: true }),
+
+  // ── §5.2 Guarantee ───────────────────────────────────────────
+  myGuarantees: () =>
+    apiRequest<
+      {
+        id: string;
+        status: string;
+        expiresAt: string;
+        escrow: { bookingId: string; amountPaisa: number };
+        claims: unknown[];
+      }[]
+    >("/guarantees", { auth: true }),
+
+  fileGuaranteeClaim: (
+    guaranteeId: string,
+    body: { description: string; photoUrls?: string[] }
+  ) =>
+    apiRequest<{ id: string }>(`/guarantees/${guaranteeId}/claims`, {
+      method: "POST",
+      body,
+      auth: true,
+    }),
+
+  // ── §5.3 Emergency ───────────────────────────────────────────
+  createEmergency: (body: {
+    category: string;
+    description?: string;
+    latitude: number;
+    longitude: number;
+    addressLabel?: string;
+  }) =>
+    apiRequest<{ id: string; status: string; expiresAt: string }>(
+      "/emergency",
+      { method: "POST", body, auth: true }
+    ),
+
+  getEmergencyStatus: (requestId: string) =>
+    apiRequest<{
+      id: string;
+      status: string;
+      category: string;
+      acceptedById?: string | null;
+      bookingId?: string | null;
+      offers: { providerId: string; distanceKm: number; status: string }[];
+    }>(`/emergency/${requestId}`, { auth: true }),
+
+  cancelEmergency: (requestId: string) =>
+    apiRequest<unknown>(`/emergency/${requestId}/cancel`, {
+      method: "POST",
+      auth: true,
+    }),
+
+  // ── §5.4 Neighborhood ────────────────────────────────────────
+  neighborhoodStats: (providerId: string) =>
+    apiRequest<
+      { areaName: string; city: string; jobsThisMonth: number; jobsAllTime: number }[]
+    >(`/providers/${providerId}/neighborhood-stats`),
 };
 
 // ── Assistant SSE streaming (POST /assistant/chat) ────────────

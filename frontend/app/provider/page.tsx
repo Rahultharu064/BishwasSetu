@@ -16,7 +16,8 @@ import { apiRequest } from "@/lib/api";
 import { useFetch } from "@/lib/use-fetch";
 import { useAuth } from "@/context/auth-context";
 import { npr } from "@/lib/format";
-import { TrustScoreRing } from "@/components/trust-score-ring";
+import { TrustDashboardCard } from "@/components/trust-dashboard-card";
+import type { TrustEvent } from "@/components/trust-dashboard-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/ui/states";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ interface Dashboard {
     legalName: string;
     trustScore: number;
     identityStatus: string;
+    kycTier: import("@/lib/types").KycTier;
     completedBookings: number;
   };
   stats: {
@@ -40,6 +42,7 @@ interface Dashboard {
     totalEarnings: number;
   };
   creditBalance: number;
+  recentTrustEvents?: TrustEvent[];
 }
 
 export default function ProviderDashboardPage() {
@@ -84,33 +87,14 @@ export default function ProviderDashboardPage() {
         </div>
       ) : (
         <div className="mt-6 space-y-6">
-          {/* Trust + verification */}
-          <div className="flex items-center gap-4 rounded-2xl border border-border bg-card p-5">
-            <TrustScoreRing score={data.provider.trustScore} size={64} />
-            <div className="flex-1">
-              <p className="font-semibold">{data.provider.legalName}</p>
-              <p className="text-sm text-muted-foreground">
-                {data.provider.completedBookings} jobs completed
-              </p>
-            </div>
-            <Link
-              href={
-                data.provider.identityStatus === "INCOMPLETE"
-                  ? "/provider/onboarding"
-                  : "/provider/kyc/status"
-              }
-            >
-              <span className="inline-flex items-center gap-1 text-sm font-semibold text-primary">
-                <ShieldCheck className="h-4 w-4" />
-                {data.provider.identityStatus === "VERIFIED"
-                  ? "Verified"
-                  : data.provider.identityStatus === "UNDER_REVIEW"
-                    ? "In review"
-                    : "Verify"}
-                <ChevronRight className="h-4 w-4" />
-              </span>
-            </Link>
-          </div>
+          {/* Trust + KYC Tier Dashboard Card */}
+          <TrustDashboardCard
+            score={data.provider.trustScore}
+            kycTier={data.provider.kycTier ?? "TIER_1_BASIC"}
+            identityStatus={data.provider.identityStatus}
+            recentEvents={data.recentTrustEvents}
+            onViewAll={() => {}}
+          />
 
           {/* Earnings buckets (ux.md §6.3) */}
           <div>

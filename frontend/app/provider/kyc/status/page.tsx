@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/ui/states";
+import { KycTierCard } from "@/components/kyc-tier-badge";
 
 const IDENTITY_META: Record<
   IdentityStatus,
@@ -159,6 +160,7 @@ function StatusBody({
   data: KycStatus;
   polling: boolean;
 }) {
+  const kycTier = (data as KycStatus & { kycTier?: import("@/lib/types").KycTier }).kycTier ?? "TIER_1_BASIC";
   const meta = IDENTITY_META[data.identityStatus] ?? IDENTITY_META.INCOMPLETE;
   const StatusIcon =
     meta.tone === "verified"
@@ -201,6 +203,11 @@ function StatusBody({
             </Button>
           </Link>
         )}
+      </div>
+
+      {/* KYC Tier */}
+      <div className="mt-4">
+        <KycTierCard tier={kycTier} />
       </div>
 
       {/* Rejection reason */}

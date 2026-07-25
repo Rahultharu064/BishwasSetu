@@ -14,10 +14,12 @@ import {
 import { api, ApiError } from "@/lib/api";
 import { useFetch } from "@/lib/use-fetch";
 import { useToast } from "@/context/toast-context";
+import { useAuth } from "@/context/auth-context";
 import { npr, formatDateTime } from "@/lib/format";
 import type { Booking } from "@/lib/types";
 import { BookingStatusBadge } from "@/components/booking-status-badge";
 import { EscrowStatusBar } from "@/components/escrow-status-bar";
+import { EscrowPaymentCard } from "@/components/escrow-payment-card";
 import { BookingLifecycle } from "@/components/booking-lifecycle";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -44,11 +46,14 @@ export default function BookingDetailPage({
   const router = useRouter();
   const { toast } = useToast();
   const [active, setActive] = useState(false);
+  const { user } = useAuth();
   const { data, loading, error, reload } = useFetch<Booking>(
     () => api.bookingById(id),
     [id],
     { pollMs: 12000, enabled: active }
   );
+  const viewerRole: "CUSTOMER" | "PROVIDER" =
+    user?.role === "PROVIDER" ? "PROVIDER" : "CUSTOMER";
 
   // Poll while the booking is live so status updates arrive without a refresh.
   useEffect(() => {
@@ -174,21 +179,36 @@ export default function BookingDetailPage({
         <BookingLifecycle status={b.status} />
       </div>
 
-      {/* Escrow status */}
-      {b.escrowStatus !== "NONE" && (
+      {/* Escrow Payment Card */}
+      {b.amount != null && b.amount > 0 && (
+        <div className="mt-6">
+          <EscrowPaymentCard
+            bookingId={b.id}
+            amountNpr={b.amount}
+            escrowStatus={b.escrowStatus}
+            isEmergency={false}
+            viewerRole={viewerRole}
+            onPayNow={async (gateway) => {
+              try {
+                toast(`Redirecting to ${gateway}…`, "success");
+                // Real: await api.initiateEscrow({ bookingId: b.id, gateway, returnUrl: window.location.href })
+                //       then redirect to paymentUrl
+              } catch (err) {
+                toast(err instanceof ApiError ? err.message : "Payment failed.", "error");
+              }
+            }}
+            onReleaseFunds={completeJob}
+          />
+        </div>
+      )}
+
+      {/* Escrow status (legacy bar — shown when no amount) */}
+      {b.escrowStatus !== "NONE" && (b.amount == null || b.amount === 0) && (
         <div className="mt-6 rounded-xl border border-border bg-card p-5">
           <h2 className="mb-4 flex items-center gap-1.5 text-sm font-semibold">
             <Lock className="h-4 w-4 text-primary" /> Escrow status
           </h2>
           <EscrowStatusBar status={b.escrowStatus} />
-          {b.amount != null && (
-            <p className="mt-4 text-center text-sm text-muted-foreground">
-              <span className="tabular font-semibold text-foreground">
-                {npr(b.amount)}
-              </span>{" "}
-              held safely by BishwasSetu
-            </p>
-          )}
         </div>
       )}
 
