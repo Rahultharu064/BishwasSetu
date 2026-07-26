@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   Coins,
   ChevronRight,
+  Siren,
 } from "lucide-react";
 import { apiRequest } from "@/lib/api";
 import { useFetch } from "@/lib/use-fetch";
@@ -148,6 +149,23 @@ export default function ProviderDashboardPage() {
               <StatTile label="Done" value={data.stats.completed} />
             </Link>
           </div>
+
+          {/* Emergency dispatch inbox */}
+          <Link
+            href="/provider/emergencies"
+            className="flex items-center gap-3 rounded-2xl border border-urgent/30 bg-urgent-soft/30 p-5 transition-colors hover:bg-urgent-soft/50"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-urgent text-urgent-foreground">
+              <Siren className="h-5 w-5" />
+            </span>
+            <div className="flex-1">
+              <p className="font-semibold">Emergency jobs</p>
+              <p className="text-sm text-muted-foreground">
+                Accept nearby SOS requests — first to respond wins
+              </p>
+            </div>
+            <ChevronRight className="h-5 w-5 text-urgent" />
+          </Link>
 
           {/* Boost */}
           <Link

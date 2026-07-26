@@ -1,20 +1,62 @@
 /**
- * Bull queues backed by Redis. If you already have a queues config,
- * merge these queue definitions into it instead of duplicating.
- * Env: REDIS_URL
+ * Bull queues for anti-disintermediation side effects (escrow release,
+ * emergency dispatch). Uses the same Redis availability gate as config/redis.ts
+ * so local dev without Redis still processes jobs inline via mock queues.
+ *
+ * Env: REDIS_URI or REDIS_URL
  */
 import Queue from "bull";
 
-const REDIS_URL = process.env.REDIS_URL ?? "redis://127.0.0.1:6379";
+const redisUrl = process.env.REDIS_URI || process.env.REDIS_URL;
+const isRedisEnabled = !!(
+  redisUrl &&
+  !redisUrl.includes("localhost") &&
+  !redisUrl.includes("127.0.0.1") &&
+  !redisUrl.includes("::1")
+);
 
-export const escrowQueue = new Queue("escrow", REDIS_URL, {
-  defaultJobOptions: { removeOnComplete: 500, removeOnFail: 1000 },
-});
+type JobHandler = (job: { data: unknown }) => Promise<void> | void;
 
-export const dispatchQueue = new Queue("emergency-dispatch", REDIS_URL, {
-    defaultJobOptions: { removeOnComplete: 500, removeOnFail: 1000 },
-});
+function createMockQueue(name: string) {
+  const handlers = new Map<string, JobHandler>();
+  console.log(`ℹ️ Mock queue "${name}" initialized (Redis not available)`);
+  return {
+    add: async (
+      jobName: string,
+      data: unknown,
+      opts?: { delay?: number; attempts?: number; backoff?: unknown }
+    ) => {
+      const handler = handlers.get(jobName);
+      if (!handler) {
+        console.log(`ℹ️ Mock queue "${name}" ignoring unknown job "${jobName}"`);
+        return { id: "mock-job" };
+      }
+      const run = () => {
+        void Promise.resolve(handler({ data })).catch((err) => {
+          console.error(`Mock queue "${name}" job "${jobName}" failed:`, err);
+        });
+      };
+      if (opts?.delay) setTimeout(run, opts.delay);
+      else setImmediate(run);
+      return { id: "mock-job" };
+    },
+    process: (jobName: string, handler: JobHandler) => {
+      handlers.set(jobName, handler);
+    },
+    close: () => Promise.resolve(),
+    on: () => {},
+  };
+}
 
-export const maintenanceQueue = new Queue("maintenance", REDIS_URL, {
-    defaultJobOptions: { removeOnComplete: 100, removeOnFail: 500 },
-}); 
+function createQueue(name: string) {
+  if (isRedisEnabled && redisUrl) {
+    return new Queue(name, redisUrl, {
+      defaultJobOptions: { removeOnComplete: 500, removeOnFail: 1000 },
+    });
+  }
+  return createMockQueue(name) as unknown as Queue.Queue;
+}
+
+export const escrowQueue = createQueue("escrow");
+export const dispatchQueue = createQueue("emergency-dispatch");
+export const maintenanceQueue = createQueue("maintenance");

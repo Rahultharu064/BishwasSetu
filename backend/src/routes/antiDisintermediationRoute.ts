@@ -1,11 +1,10 @@
 /**
- * Section 5 routes — mount in app.ts:
- *   import antiDisintermediationRoutes from "./routes/antiDisintermediation.routes";
- *   app.use("/api/v1", antiDisintermediationRoutes);
+ * Section 5 — Anti-disintermediation: escrow, workmanship guarantees,
+ * emergency dispatch, and neighborhood proof. Mounted at `/api/v1`.
  */
 import { Router } from "express";
-import { protect as requireAuth, restrictTo as requireRole } from "../middlewares/authMiddleware";
-import { validate } from "../middlewares/validateMiddleware";
+import { protect, restrictTo } from "../middlewares/authMiddleware";
+import { validateRequest } from "../middlewares/validateMiddleware";
 import * as escrow from "../controllers/escrowController";
 import * as guarantee from "../controllers/guaranteeController";
 import * as emergency from "../controllers/emergencyController";
@@ -26,117 +25,124 @@ import {
 
 const router = Router();
 
-// ---------- 5.1 Escrow ----------
+// ── 5.1 Escrow ────────────────────────────────────────────────
 router.post(
   "/escrow/initiate",
-  requireAuth,
-  requireRole("CUSTOMER"),
-  validate(initiateEscrowSchema),
+  protect,
+  restrictTo("CUSTOMER"),
+  validateRequest(initiateEscrowSchema),
   escrow.initiate
 );
 router.post(
   "/escrow/verify",
-  requireAuth,
-  validate(verifyEscrowSchema),
+  protect,
+  validateRequest(verifyEscrowSchema),
   escrow.verify
 );
 router.post(
   "/escrow/:escrowId/release",
-  requireAuth,
-  requireRole("CUSTOMER"),
-  validate(releaseEscrowSchema),
+  protect,
+  restrictTo("CUSTOMER"),
+  validateRequest(releaseEscrowSchema),
   escrow.release
 );
 router.post(
   "/escrow/:escrowId/refund",
-  requireAuth,
-  requireRole("ADMIN"),
-  validate(refundEscrowSchema),
+  protect,
+  restrictTo("ADMIN"),
+  validateRequest(refundEscrowSchema),
   escrow.refund
 );
 router.get(
   "/escrow/:escrowId",
-  requireAuth,
-  validate(escrowIdParamSchema),
+  protect,
+  validateRequest(escrowIdParamSchema),
   escrow.getOne
 );
 
-// ---------- 5.2 Guarantee ----------
-router.get("/guarantees", requireAuth, guarantee.listMine);
+// ── 5.2 Workmanship guarantee ─────────────────────────────────
+router.get("/guarantees", protect, guarantee.listMine);
 router.post(
   "/guarantees/:guaranteeId/claims",
-  requireAuth,
-  requireRole("CUSTOMER"),
-  validate(fileClaimSchema),
+  protect,
+  restrictTo("CUSTOMER"),
+  validateRequest(fileClaimSchema),
   guarantee.fileClaim
 );
 router.patch(
   "/guarantee-claims/:claimId/resolve",
-  requireAuth,
-  requireRole("ADMIN"),
-  validate(resolveClaimSchema),
+  protect,
+  restrictTo("ADMIN"),
+  validateRequest(resolveClaimSchema),
   guarantee.resolveClaim
 );
 router.get(
   "/providers/:providerId/revenue-points",
-  validate(providerIdParamSchema),
+  validateRequest(providerIdParamSchema),
   guarantee.revenuePoints
 );
 router.get(
   "/admin/leakage-flags",
-  requireAuth,
-  requireRole("ADMIN"),
+  protect,
+  restrictTo("ADMIN"),
   guarantee.leakageFlags
 );
 
-// ---------- 5.3 Emergency Dispatch ----------
+// ── 5.3 Emergency dispatch ────────────────────────────────────
 router.post(
   "/emergency",
-  requireAuth,
-  requireRole("CUSTOMER"),
-  validate(createEmergencySchema),
+  protect,
+  restrictTo("CUSTOMER"),
+  validateRequest(createEmergencySchema),
   emergency.create
+);
+// Provider inbox — declared before "/emergency/:requestId" so the literal wins.
+router.get(
+  "/emergency/offers/me",
+  protect,
+  restrictTo("PROVIDER"),
+  emergency.myOffers
 );
 router.post(
   "/emergency/:requestId/accept",
-  requireAuth,
-  requireRole("PROVIDER"),
-  validate(emergencyIdParamSchema),
+  protect,
+  restrictTo("PROVIDER"),
+  validateRequest(emergencyIdParamSchema),
   emergency.accept
 );
 router.post(
   "/emergency/:requestId/decline",
-  requireAuth,
-  requireRole("PROVIDER"),
-  validate(emergencyIdParamSchema),
+  protect,
+  restrictTo("PROVIDER"),
+  validateRequest(emergencyIdParamSchema),
   emergency.decline
 );
 router.get(
   "/emergency/:requestId",
-  requireAuth,
-  validate(emergencyIdParamSchema),
+  protect,
+  validateRequest(emergencyIdParamSchema),
   emergency.status
 );
 router.post(
   "/emergency/:requestId/cancel",
-  requireAuth,
-  requireRole("CUSTOMER"),
-  validate(emergencyIdParamSchema),
+  protect,
+  restrictTo("CUSTOMER"),
+  validateRequest(emergencyIdParamSchema),
   emergency.cancel
 );
 
-// ---------- 5.4 Neighborhood ----------
+// ── 5.4 Neighborhood ──────────────────────────────────────────
 router.get(
   "/providers/:providerId/neighborhood-stats",
-  validate(providerIdParamSchema),
+  validateRequest(providerIdParamSchema),
   neighborhood.providerStats
 );
 router.get("/neighborhood-areas", neighborhood.listAreas);
 router.post(
   "/admin/neighborhood-areas",
-  requireAuth,
-  requireRole("ADMIN"),
-  validate(createAreaSchema),
+  protect,
+  restrictTo("ADMIN"),
+  validateRequest(createAreaSchema),
   neighborhood.createArea
 );
 

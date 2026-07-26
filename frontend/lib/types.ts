@@ -173,6 +173,22 @@ export interface Complaint {
   };
 }
 
+/** GET /emergency/offers/me — a live dispatch offer shown to a provider. */
+export interface EmergencyOffer {
+  offerId: string;
+  requestId: string;
+  distanceKm: number;
+  sentAt: string;
+  category: string;
+  description?: string | null;
+  addressLabel?: string | null;
+  latitude: number;
+  longitude: number;
+  commissionPct: number;
+  expiresAt: string;
+  createdAt: string;
+}
+
 export interface ApiEnvelope<T> {
   success: boolean;
   message: string;

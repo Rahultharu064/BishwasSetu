@@ -414,6 +414,23 @@ export const api = {
       auth: true,
     }),
 
+  // Provider emergency inbox — GET /emergency/offers/me
+  providerEmergencyOffers: () =>
+    apiRequest<{ offers: import("./types").EmergencyOffer[] }>(
+      "/emergency/offers/me",
+      { auth: true }
+    ),
+  acceptEmergency: (requestId: string) =>
+    apiRequest<{ id: string }>(`/emergency/${requestId}/accept`, {
+      method: "POST",
+      auth: true,
+    }),
+  declineEmergency: (requestId: string) =>
+    apiRequest<unknown>(`/emergency/${requestId}/decline`, {
+      method: "POST",
+      auth: true,
+    }),
+
   // ── §5.4 Neighborhood ────────────────────────────────────────
   neighborhoodStats: (providerId: string) =>
     apiRequest<

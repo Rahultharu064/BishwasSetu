@@ -13,10 +13,22 @@ export async function create(req: Request, res: Response, next: NextFunction) {
   }
 }
 
+export async function myOffers(req: Request, res: Response, next: NextFunction) {
+  try {
+    const offers = await emergencyService.getProviderOffers(
+      req.user!.providerId!
+    );
+    res.json({ success: true, data: { offers } });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function accept(req: Request, res: Response, next: NextFunction) {
   try {
+    // Offers are keyed by Provider.id, not User.id.
     const booking = await emergencyService.acceptEmergency(
-      req.user!.id,
+      req.user!.providerId!,
       req.params.requestId
     );
     res.json({ success: true, data: booking });
@@ -27,7 +39,10 @@ export async function accept(req: Request, res: Response, next: NextFunction) {
 
 export async function decline(req: Request, res: Response, next: NextFunction) {
   try {
-    await emergencyService.declineEmergency(req.user!.id, req.params.requestId);
+    await emergencyService.declineEmergency(
+      req.user!.providerId!,
+      req.params.requestId
+    );
     res.json({ success: true });
   } catch (err) {
     next(err);
@@ -37,8 +52,8 @@ export async function decline(req: Request, res: Response, next: NextFunction) {
 export async function status(req: Request, res: Response, next: NextFunction) {
   try {
     const request = await emergencyService.getEmergencyStatus(
-      req.user!.id,
-      req.params.requestId
+      { id: req.user!.id, providerId: req.user!.providerId },
+      req.params.requestId as string
     );
     res.json({ success: true, data: request });
   } catch (err) {

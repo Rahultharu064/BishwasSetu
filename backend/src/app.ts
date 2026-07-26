@@ -40,6 +40,7 @@ import serviceRoutes   from './routes/serviceRoute'
 import adminRoutes     from './routes/adminRoute'
 import paymentRoutes   from './routes/paymentRoute'
 import complaintRoutes from './routes/complaintRoute'
+import antiDisintermediationRoutes from './routes/antiDisintermediationRoute'
 
 
 // ─────────────────────────────────────────────────────────────
@@ -96,6 +97,11 @@ app.use(`${v1}/admin`,            adminLimiter,   adminRoutes)
 
 // Global fallback rate limit for all remaining routes
 app.use(apiLimiter)
+
+// Anti-disintermediation (escrow / guarantees / emergency / neighborhood).
+// Mounted before providerRoutes so its public `/providers/:id/*` reads win
+// over that router's PROVIDER-only catch-all guard.
+app.use(v1, antiDisintermediationRoutes)
 
 // Remaining routes
 app.use(`${v1}/providers`,  providerRoutes)

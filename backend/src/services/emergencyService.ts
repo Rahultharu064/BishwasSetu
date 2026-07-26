@@ -19,12 +19,21 @@ const FAST_RESPONDER_MIN = 5; // accept within 5 min → badge progress
 const MAX_CANDIDATES = 5;
 const SEARCH_RADIUS_KM = 10;
 
+/** EmergencyRequest.category stores a Category.slug — resolve to UUID for FK lookups. */
+async function resolveCategoryId(slug: string): Promise<string> {
+  const category = await prisma.category.findUnique({ where: { slug } });
+  if (!category) throw new ApiError(400, `Unknown service category: ${slug}`);
+  return category.id;
+}
+
 export async function createEmergencyRequest(
   customerId: string,
   input: EmergencyRequestInput
 ) {
   if (!isInsideNepal(input.latitude, input.longitude))
     throw new ApiError(400, "Location must be inside Nepal");
+
+  await resolveCategoryId(input.category);
 
   const active = await prisma.emergencyRequest.findFirst({
     where: {
@@ -70,9 +79,12 @@ export async function findNearestProviders(
   });
   if (!request) return [];
 
+  const categoryId = await resolveCategoryId(request.category).catch(() => null);
+  if (!categoryId) return [];
+
   const providers = await prisma.provider.findMany({
     where: {
-      categories: { some: { categoryId: request.category } },
+      categories: { some: { categoryId } },
       isAvailable: true,
       kycTier: { in: ["TIER_2_SKILLED", "TIER_3_VERIFIED"] }, // SKILLED or VERIFIED only
       latitude: { not: null },
@@ -141,12 +153,14 @@ export async function acceptEmergency(providerId: string, requestId: string) {
       data: { status: "EXPIRED", respondedAt: now },
     });
 
+    const categoryId = await resolveCategoryId(offer.request.category);
+
     // Create the booking on the flat 12% emergency tier
     const booking = await tx.booking.create({
       data: {
         customerId: offer.request.customerId,
         providerId,
-        categoryId: offer.request.category,
+        categoryId,
         description: offer.request.description ?? "Emergency dispatch",
         status: "ACCEPTED",
         isEmergency: true,
@@ -190,7 +204,56 @@ export async function declineEmergency(providerId: string, requestId: string) {
   });
 }
 
-export async function getEmergencyStatus(userId: string, requestId: string) {
+/**
+ * Live inbox for a provider: still-open offers whose dispatch window
+ * hasn't closed. Ordered nearest-first — the closest job is the one most
+ * worth grabbing before another provider does.
+ */
+export async function getProviderOffers(providerId: string) {
+  const offers = await prisma.emergencyOffer.findMany({
+    where: {
+      providerId,
+      status: "SENT",
+      request: { status: "DISPATCHED", expiresAt: { gt: new Date() } },
+    },
+    orderBy: { distanceKm: "asc" },
+    include: {
+      request: {
+        select: {
+          id: true,
+          category: true,
+          description: true,
+          addressLabel: true,
+          latitude: true,
+          longitude: true,
+          commissionPct: true,
+          expiresAt: true,
+          createdAt: true,
+        },
+      },
+    },
+  });
+
+  return offers.map((o) => ({
+    offerId: o.id,
+    requestId: o.requestId,
+    distanceKm: Number(o.distanceKm),
+    sentAt: o.sentAt,
+    category: o.request.category,
+    description: o.request.description,
+    addressLabel: o.request.addressLabel,
+    latitude: Number(o.request.latitude),
+    longitude: Number(o.request.longitude),
+    commissionPct: Number(o.request.commissionPct),
+    expiresAt: o.request.expiresAt,
+    createdAt: o.request.createdAt,
+  }));
+}
+
+export async function getEmergencyStatus(
+  user: { id: string; providerId?: string },
+  requestId: string
+) {
   const request = await prisma.emergencyRequest.findUnique({
     where: { id: requestId },
     include: {
@@ -201,9 +264,10 @@ export async function getEmergencyStatus(userId: string, requestId: string) {
   });
   if (!request) throw new ApiError(404, "Request not found");
   const isParty =
-    request.customerId === userId ||
-    request.acceptedById === userId ||
-    request.offers.some((o) => o.providerId === userId);
+    request.customerId === user.id ||
+    (user.providerId != null && request.acceptedById === user.providerId) ||
+    (user.providerId != null &&
+      request.offers.some((o) => o.providerId === user.providerId));
   if (!isParty) throw new ApiError(403, "Forbidden");
   return request;
 }
