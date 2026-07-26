@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 30
+    },
+    "auditLog": "/run/media/rahul-chaudhary/BAA61E55A61E128D/BishwasSetu/backend/logs/.f4568f656790641dce3d12cea76054f7bc1444b9-audit.json",
+    "files": [
+        {
+            "date": 1785032436873,
+            "name": "/run/media/rahul-chaudhary/BAA61E55A61E128D/BishwasSetu/backend/logs/app-2026-07-26.log",
+            "hash": "c214121a75ea28cb11e5af0200cbc25edacb8808389d159f11560c538fd9fb9b"
+        }
+    ],
+    "hashType": "sha256"
+}

@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 30
+    },
+    "auditLog": "/run/media/rahul-chaudhary/BAA61E55A61E128D/BishwasSetu/backend/logs/.ebd8f26a9dc4d4a25301cf77cdc6aa6f5fd7956e-audit.json",
+    "files": [
+        {
+            "date": 1785032436875,
+            "name": "/run/media/rahul-chaudhary/BAA61E55A61E128D/BishwasSetu/backend/logs/error-2026-07-26.log",
+            "hash": "4924ae854c43ca40e535a6239682ab03e6b7a3a072b7b8509798b5c5e65e9722"
+        }
+    ],
+    "hashType": "sha256"
+}
