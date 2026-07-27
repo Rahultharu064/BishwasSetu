@@ -151,8 +151,31 @@ model User {
   complaints    Complaint[]        @relation("CustomerComplaints")
   sessions      AssistantSession[]
   messages      Message[]          @relation("SentMessages")
+  addresses     SavedAddress[]
 
   @@map("users")
+}
+
+// ─────────────────────────────────────────────
+// Saved service addresses — reused to prefill the booking flow.
+// ─────────────────────────────────────────────
+model SavedAddress {
+  id          String   @id @default(uuid()) @db.Char(36)
+  userId      String   @db.Char(36)
+  label       String   @db.VarChar(40) // Home | Office | Other (or custom)
+  addressLine String   @db.VarChar(300)
+  city        String?  @db.VarChar(100)
+  landmark    String?  @db.VarChar(200)
+  latitude    Decimal? @db.Decimal(10, 7)
+  longitude   Decimal? @db.Decimal(10, 7)
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("saved_addresses")
 }
 
 // ─────────────────────────────────────────────

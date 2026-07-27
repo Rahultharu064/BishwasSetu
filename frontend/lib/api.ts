@@ -473,6 +473,37 @@ export const api = {
       body: { body },
       auth: true,
     }),
+
+  // ── Saved addresses ──────────────────────────────────────────
+  addresses: () =>
+    apiRequest<{ addresses: import("./types").SavedAddress[] }>("/addresses", {
+      auth: true,
+    }),
+  createAddress: (body: import("./types").AddressInput) =>
+    apiRequest<import("./types").SavedAddress>("/addresses", {
+      method: "POST",
+      body,
+      auth: true,
+    }),
+  updateAddress: (
+    id: string,
+    body: Partial<import("./types").AddressInput>
+  ) =>
+    apiRequest<import("./types").SavedAddress>(`/addresses/${id}`, {
+      method: "PATCH",
+      body,
+      auth: true,
+    }),
+  setDefaultAddress: (id: string) =>
+    apiRequest<import("./types").SavedAddress>(`/addresses/${id}/default`, {
+      method: "PATCH",
+      auth: true,
+    }),
+  deleteAddress: (id: string) =>
+    apiRequest<{ id: string }>(`/addresses/${id}`, {
+      method: "DELETE",
+      auth: true,
+    }),
 };
 
 // ── Assistant SSE streaming (POST /assistant/chat) ────────────

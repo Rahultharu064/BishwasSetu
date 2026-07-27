@@ -44,6 +44,22 @@ export default function BookingPage({
     [id]
   );
 
+  // Saved addresses to prefill / quick-pick the service address.
+  const addressReq = useFetch(
+    () => api.addresses(),
+    [isAuthenticated],
+    undefined
+  );
+  const savedAddresses = useMemo(() => {
+    const d = addressReq.data;
+    if (d && typeof d === "object" && "addresses" in d) {
+      const a = (d as { addresses?: import("@/lib/types").SavedAddress[] })
+        .addresses;
+      if (Array.isArray(a)) return a;
+    }
+    return [];
+  }, [addressReq.data]);
+
   const [step, setStep] = useState(0);
   const [categoryId, setCategoryId] = useState("");
   const [description, setDescription] = useState("");
@@ -54,6 +70,18 @@ export default function BookingPage({
   const [method, setMethod] = useState<"KHALTI" | "ESEWA">("KHALTI");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [addressTouched, setAddressTouched] = useState(false);
+
+  const formatAddress = (a: import("@/lib/types").SavedAddress) =>
+    [a.addressLine, a.landmark, a.city].filter(Boolean).join(", ");
+
+  // Prefill with the default saved address until the user edits the field.
+  useEffect(() => {
+    if (addressTouched || address) return;
+    const def =
+      savedAddresses.find((a) => a.isDefault) ?? savedAddresses[0];
+    if (def) setAddress(formatAddress(def));
+  }, [savedAddresses, addressTouched, address]);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -257,13 +285,39 @@ export default function BookingPage({
           <FieldError>{errors.date}</FieldError>
           <div>
             <Label htmlFor="address">Service address</Label>
+            {savedAddresses.length > 0 && (
+              <div className="no-scrollbar mb-2 flex gap-2 overflow-x-auto">
+                {savedAddresses.map((a) => (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => {
+                      setAddress(formatAddress(a));
+                      setAddressTouched(true);
+                    }}
+                    className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground hover:border-primary/40 hover:bg-secondary"
+                  >
+                    <MapPin className="h-3.5 w-3.5" /> {a.label}
+                  </button>
+                ))}
+              </div>
+            )}
             <Input
               id="address"
               value={address}
-              onChange={(e) => setAddress(e.target.value)}
+              onChange={(e) => {
+                setAddress(e.target.value);
+                setAddressTouched(true);
+              }}
               placeholder="Maharajgunj, Kathmandu — house / landmark"
             />
             <FieldError>{errors.address}</FieldError>
+            <Link
+              href="/account/addresses"
+              className="mt-1.5 inline-block text-xs font-medium text-primary hover:underline"
+            >
+              Manage saved addresses
+            </Link>
           </div>
         </div>
       )}

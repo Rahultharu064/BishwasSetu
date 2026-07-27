@@ -265,6 +265,29 @@ export interface ChatThread {
   messages: ChatMessage[];
 }
 
+// ── Saved addresses ───────────────────────────────────────────
+export interface SavedAddress {
+  id: string;
+  label: string;
+  addressLine: string;
+  city?: string | null;
+  landmark?: string | null;
+  latitude?: number | string | null;
+  longitude?: number | string | null;
+  isDefault: boolean;
+  createdAt: string;
+}
+
+export interface AddressInput {
+  label: string;
+  addressLine: string;
+  city?: string;
+  landmark?: string;
+  latitude?: number;
+  longitude?: number;
+  isDefault?: boolean;
+}
+
 export interface ApiEnvelope<T> {
   success: boolean;
   message: string;
