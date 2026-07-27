@@ -10,17 +10,36 @@ import {
   Star,
   MapPin,
   Sparkles,
+  CreditCard,
+  Headphones,
+  Award,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useFetch } from "@/lib/use-fetch";
 import { providersFrom } from "@/lib/normalize";
 import { FALLBACK_CATEGORIES } from "@/lib/fallback-data";
 import type { Category } from "@/lib/types";
-import { SearchBar } from "@/components/home/search-bar";
+import { HeroSearch } from "@/components/home/hero-search";
+import { HeroPreviewCard } from "@/components/home/hero-preview-card";
 import { CategoryGrid, CategoryGridSkeleton } from "@/components/home/category-grid";
 import { EmergencyButton } from "@/components/emergency-button";
 import { ProviderCard, ProviderCardSkeleton } from "@/components/provider-card";
 import { Button } from "@/components/ui/button";
+
+const POPULAR = [
+  "Electrician",
+  "Plumbing",
+  "Deep cleaning",
+  "Solar",
+  "AC repair",
+];
+
+const HERO_TRUST = [
+  { icon: ShieldCheck, label: "4-stage verification" },
+  { icon: CreditCard, label: "Escrow-protected payments" },
+  { icon: Headphones, label: "24/7 incident support" },
+  { icon: Award, label: "Damage cover up to NPR 1L" },
+];
 
 export default function HomePage() {
   const cats = useFetch<Category[]>(() => api.categories(), []);
@@ -33,62 +52,90 @@ export default function HomePage() {
   return (
     <div>
       {/* ── Hero ─────────────────────────────────────────── */}
-      <section className="relative overflow-hidden border-b border-border bg-gradient-to-b from-primary-soft/70 via-primary-soft/20 to-background">
-        {/* soft decorative glow */}
+      <section className="relative overflow-hidden border-b border-border bg-gradient-to-br from-primary-soft/60 via-background to-warning-soft/40">
+        {/* soft decorative glows */}
         <div
           aria-hidden
-          className="pointer-events-none absolute -top-24 left-1/2 h-72 w-[42rem] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl"
+          className="pointer-events-none absolute -left-32 -top-24 h-80 w-80 rounded-full bg-primary/10 blur-3xl"
         />
-        <div className="relative mx-auto max-w-6xl px-4 py-12 md:py-20">
-          <div className="mx-auto max-w-2xl text-center">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/15 bg-card px-3 py-1.5 text-xs font-semibold text-primary shadow-sm">
-              <ShieldCheck className="h-3.5 w-3.5" />
-              Nepal&apos;s trusted home services marketplace
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-24 top-10 h-72 w-72 rounded-full bg-warning/10 blur-3xl"
+        />
+
+        <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-4 py-12 md:py-16 lg:grid-cols-2 lg:gap-8">
+          {/* Left — copy + search */}
+          <div>
+            <span className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-card px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-primary shadow-sm">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
+              </span>
+              Nepal&apos;s most trusted marketplace
             </span>
-            <h1 className="mt-5 text-[2rem] font-bold leading-[1.1] tracking-tight text-foreground md:text-[3.25rem]">
-              Verified pros for
-              <br className="hidden sm:block" /> every home job
+
+            <h1 className="mt-5 text-[2.5rem] font-bold leading-[1.05] tracking-tight text-foreground sm:text-5xl lg:text-[3.5rem]">
+              Hire verified local professionals with total confidence
+              <span className="text-primary">.</span>
             </h1>
-            <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground md:text-lg">
-              Book plumbers, electricians, cleaners and more — with transparent
-              trust scores and escrow-protected payments.
+
+            <p className="mt-5 max-w-md text-base text-muted-foreground md:text-lg">
+              Every provider on BishwasSetu passes a 4-stage identity, skill and
+              reference check. Book in minutes — backed by escrow and a service
+              guarantee.
             </p>
 
-            <div className="mt-7">
-              <SearchBar />
+            <div className="mt-7 max-w-xl">
+              <HeroSearch />
+            </div>
+
+            {/* Popular categories */}
+            <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
+              <span className="text-muted-foreground">Popular:</span>
+              {POPULAR.map((p) => (
+                <Link
+                  key={p}
+                  href={`/search?q=${encodeURIComponent(p)}`}
+                  className="rounded-full border border-border bg-card px-3 py-1 font-medium text-foreground transition-colors hover:border-primary/40 hover:text-primary"
+                >
+                  {p}
+                </Link>
+              ))}
             </div>
 
             {/* Secondary actions */}
-            <div className="mx-auto mt-4 grid max-w-md gap-2.5 sm:grid-cols-2">
-              <Link href="/match" className="sm:order-1">
-                <Button variant="soft" full size="lg">
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link href="/match">
+                <Button variant="soft">
                   <Sparkles className="h-4 w-4" /> AI Smart Match
                 </Button>
               </Link>
-              <div className="sm:order-2">
-                <EmergencyButton />
-              </div>
+              <EmergencyButton />
             </div>
-            <p className="mt-2.5 text-xs text-muted-foreground">
-              Burst pipe or sparking outlet? Emergency dispatch finds the
-              nearest verified pro in under a minute.
-            </p>
+          </div>
 
-            {/* Trust proof chips */}
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm">
-              <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
-                <Star className="h-4 w-4 fill-warning text-warning" />
-                4.8 average rating
-              </span>
-              <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
-                <BadgeCheck className="h-4 w-4 text-primary" />
-                Identity-verified pros
-              </span>
-              <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
-                <Lock className="h-4 w-4 text-primary" />
-                Escrow-protected
-              </span>
-            </div>
+          {/* Right — provider preview */}
+          <div className="mx-auto w-full max-w-md lg:mx-0 lg:ml-auto">
+            <HeroPreviewCard />
+          </div>
+        </div>
+
+        {/* Trust strip band */}
+        <div className="relative border-t border-border bg-card/60 backdrop-blur">
+          <div className="mx-auto grid max-w-6xl grid-cols-2 gap-x-4 gap-y-3 px-4 py-4 md:grid-cols-4">
+            {HERO_TRUST.map((t) => {
+              const Icon = t.icon;
+              return (
+                <div key={t.label} className="flex items-center gap-2.5">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary">
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  <span className="text-sm font-medium text-foreground">
+                    {t.label}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
