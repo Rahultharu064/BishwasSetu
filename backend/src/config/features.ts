@@ -44,6 +44,13 @@ export const features = {
    * GROQ_API_KEY is missing or the call fails — never blocks the response.
    */
   aiSmartMatch: truthy(process.env.AI_SMART_MATCH_ENABLED, true),
+
+  /**
+   * Paid Trust Badges (PRD §4.3 — Skill Verified / Background Checked /
+   * Insured). Providers pay a verification fee; badges display on their
+   * profile once an admin approves. Independent of the credit-pack economy.
+   */
+  trustBadges: truthy(process.env.TRUST_BADGES_ENABLED, true),
 } as const
 
 export type FeatureFlags = typeof features

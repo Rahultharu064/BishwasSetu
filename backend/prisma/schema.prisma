@@ -91,9 +91,10 @@ enum BadgeType {
 }
 
 enum BadgeStatus {
-  PENDING
-  ACTIVE
-  EXPIRED
+  PENDING // fee paid, awaiting admin verification
+  ACTIVE // verified and live on the provider profile
+  EXPIRED // validity window (e.g. annual insurance) lapsed
+  REJECTED // admin declined verification; fee refundable per policy
 }
 
 enum CreditReason {
@@ -555,11 +556,23 @@ model ProviderBadge {
   verifiedBy  String?     @db.Char(36)
   expiresAt   DateTime?
   amountNpr   Int
-  purchasedAt DateTime    @default(now())
+
+  // Payment (PRD §4.3 badge fees) — verified against Khalti/eSewa before PENDING.
+  paymentMethod String? @db.VarChar(10) // KHALTI | ESEWA
+  paymentRef    String? @db.VarChar(100) // gateway ref (pidx / txn uuid) — idempotency key
+
+  // Supporting evidence — insurance document for the Insured badge (Cloudinary).
+  documentUrl String? @db.VarChar(500)
+  documentId  String? @db.VarChar(200)
+
+  rejectionReason String?   @db.VarChar(500)
+  reviewedAt      DateTime?
+  purchasedAt     DateTime  @default(now())
 
   provider Provider @relation(fields: [providerId], references: [id])
 
   @@index([providerId])
+  @@index([status])
   @@map("provider_badges")
 }
 
