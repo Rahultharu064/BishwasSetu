@@ -45,6 +45,50 @@ export interface User {
   email?: string | null;
   phone?: string | null;
   role: Role;
+  city?: string | null;
+  district?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+}
+
+// ── AI Smart Match (POST /match) ──────────────────────────────
+export type BusinessTier = "PRIORITY" | "MEMBER" | "NONE";
+
+export interface SmartMatchProvider {
+  id: string;
+  legalName: string;
+  profilePhoto?: string | null;
+  bio?: string | null;
+  trustScore: number;
+  completedBookings: number;
+  milestoneBadge: MilestoneBadge;
+  kycTier: KycTier;
+  city?: string | null;
+  serviceArea?: string | null;
+  distanceKm: number | null;
+  businessTier: BusinessTier;
+  isPriorityPartner: boolean;
+  skills: string[];
+  categories: string[];
+  rank: number;
+  aiReason?: string | null;
+}
+
+export interface SmartMatchResult {
+  match: {
+    location: {
+      city: string | null;
+      district: string | null;
+      hasCoords: boolean;
+      radiusKm: number;
+    };
+    category: { id: string; name: string; slug: string };
+    aiEnabled: boolean;
+    topPickId: string | null;
+    aiReason: string | null;
+    count: number;
+  };
+  providers: SmartMatchProvider[];
 }
 
 export interface Category {

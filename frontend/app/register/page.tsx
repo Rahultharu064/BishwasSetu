@@ -3,7 +3,7 @@
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ShieldCheck, Lock } from "lucide-react";
+import { ShieldCheck, Lock, MapPin, LocateFixed } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { useToast } from "@/context/toast-context";
 import { Button } from "@/components/ui/button";
@@ -16,9 +16,38 @@ function RegisterInner() {
   const defaultRole = params.get("role") === "provider" ? "PROVIDER" : "CUSTOMER";
 
   const [role, setRole] = useState<"CUSTOMER" | "PROVIDER">(defaultRole);
-  const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    password: "",
+    district: "",
+    city: "",
+  });
+  const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
+  const [locating, setLocating] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+
+  function useMyLocation() {
+    if (!("geolocation" in navigator)) {
+      toast("Location isn't available on this device.", "error");
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setCoords({ lat: pos.coords.latitude, lon: pos.coords.longitude });
+        setLocating(false);
+        toast("Location captured — we'll match the nearest pros.", "success");
+      },
+      () => {
+        setLocating(false);
+        toast("Couldn't get your location. Enter your district instead.", "error");
+      },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  }
 
   function validate() {
     const e: Record<string, string> = {};
@@ -29,6 +58,8 @@ function RegisterInner() {
     if (form.phone && !/^(\+977)?[9][6-9]\d{8}$/.test(form.phone))
       e.phone = "Enter a valid Nepal mobile number.";
     if (form.password.length < 8) e.password = "At least 8 characters.";
+    if (form.district.trim().length < 2) e.district = "Enter your district.";
+    if (form.city.trim().length < 2) e.city = "Enter your city / town.";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -44,6 +75,10 @@ function RegisterInner() {
         phone: form.phone || undefined,
         password: form.password,
         role,
+        district: form.district.trim() || undefined,
+        city: form.city.trim() || undefined,
+        latitude: coords?.lat,
+        longitude: coords?.lon,
       });
       toast("Account created — verify the code we sent you.", "success");
       const channel = form.email ? "email" : "phone";
@@ -136,6 +171,51 @@ function RegisterInner() {
             autoComplete="new-password"
           />
           <FieldError>{errors.password}</FieldError>
+        </div>
+
+        {/* Service location — powers nearest-provider matching */}
+        <div className="rounded-xl border border-border bg-secondary/40 p-3">
+          <div className="mb-2 flex items-center gap-1.5 text-sm font-medium text-foreground">
+            <MapPin className="h-4 w-4 text-primary" />
+            {role === "CUSTOMER" ? "Where do you need service?" : "Where do you work?"}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="district">District</Label>
+              <Input
+                id="district"
+                value={form.district}
+                onChange={(e) => setForm({ ...form, district: e.target.value })}
+                placeholder="Kathmandu"
+                autoComplete="address-level1"
+              />
+              <FieldError>{errors.district}</FieldError>
+            </div>
+            <div>
+              <Label htmlFor="city">City / Town</Label>
+              <Input
+                id="city"
+                value={form.city}
+                onChange={(e) => setForm({ ...form, city: e.target.value })}
+                placeholder="Maharajgunj"
+                autoComplete="address-level2"
+              />
+              <FieldError>{errors.city}</FieldError>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={useMyLocation}
+            disabled={locating}
+            className="mt-2.5 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline disabled:opacity-60"
+          >
+            <LocateFixed className="h-4 w-4" />
+            {coords
+              ? "Location captured ✓"
+              : locating
+                ? "Getting location…"
+                : "Use my current location for sharper matches"}
+          </button>
         </div>
 
         <Button type="submit" full size="lg" disabled={loading}>

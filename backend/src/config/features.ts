@@ -35,6 +35,15 @@ export const features = {
 
   /** Hyper-local neighborhood tags (needs booking volume to populate). */
   neighborhoodTags: truthy(process.env.NEIGHBORHOOD_TAGS_ENABLED, false),
+
+  /**
+   * AI-powered nearest-provider "Smart Match". The deterministic distance +
+   * trust ranking always runs; this flag only controls whether Groq is called
+   * in the background to re-rank the shortlist and explain the top pick.
+   * Default ON, but it degrades gracefully to the deterministic order when
+   * GROQ_API_KEY is missing or the call fails — never blocks the response.
+   */
+  aiSmartMatch: truthy(process.env.AI_SMART_MATCH_ENABLED, true),
 } as const
 
 export type FeatureFlags = typeof features

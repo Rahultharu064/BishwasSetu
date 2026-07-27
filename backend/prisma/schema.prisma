@@ -127,6 +127,15 @@ model User {
   role         Role      @default(CUSTOMER)
   isActive     Boolean   @default(true)
   fcmToken     String?   @db.VarChar(255)
+
+  // Customer default service location (captured at registration).
+  // district + city drive the nearest-provider matching; lat/long enable
+  // haversine ranking. Any of these can be overridden per service request.
+  city         String?   @db.VarChar(80)
+  district     String?   @db.VarChar(80)
+  latitude     Decimal?  @db.Decimal(10, 7)
+  longitude    Decimal?  @db.Decimal(10, 7)
+
   deletedAt    DateTime? // soft delete
 
   createdAt DateTime @default(now())
@@ -190,6 +199,7 @@ model Provider {
   profilePhoto            String?   @db.VarChar(500) // Cloudinary URL
   bio                     String?   @db.Text
   serviceArea             String?   @db.VarChar(100) // district/zone
+  city                    String?   @db.VarChar(80)  // city the provider operates in (pairs with serviceArea district)
   yearsExperience         Int? // self-reported, plain text only — never badged alone
   identityStatus          String    @default("INCOMPLETE") @db.VarChar(20)
   // INCOMPLETE | PENDING_DOCUMENTS | UNDER_REVIEW | VERIFIED | REJECTED
@@ -233,6 +243,7 @@ model Provider {
   @@index([skillStatus])
   @@index([trustScore])
   @@index([serviceArea])
+  @@index([city])
   @@map("providers")
 }
 

@@ -3,7 +3,10 @@ import { z } from 'zod'
 export const CompleteProfileSchema = z.object({
   legalName:      z.string().min(2).max(100).trim(),
   bio:            z.string().max(1000).optional(),
-  serviceArea:    z.string().min(2).max(100).trim(),
+  serviceArea:    z.string().min(2).max(100).trim(),  // district / zone
+  city:           z.string().min(2).max(80).trim().optional(),
+  latitude:       z.coerce.number().min(-90).max(90).optional(),
+  longitude:      z.coerce.number().min(-180).max(180).optional(),
   experienceYears: z.coerce.number().min(0).max(50),
   skills:         z.array(z.string().min(1).max(100)).min(1).max(20),
   categoryIds:    z.array(z.string().uuid()).min(1).max(5),

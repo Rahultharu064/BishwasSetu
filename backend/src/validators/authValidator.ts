@@ -9,9 +9,19 @@ export const RegisterSchema = z.object({
     .optional(),
   password: z.string().min(8).max(100),
   role:     z.enum(['CUSTOMER', 'PROVIDER']).default('CUSTOMER'),
+  // Service location (used for nearest-provider matching). District + city are
+  // the primary signals; lat/long, when the browser can share them, sharpen
+  // the ranking. All optional at signup, refinable later from the profile.
+  city:      z.string().min(1).max(80).trim().optional(),
+  district:  z.string().min(1).max(80).trim().optional(),
+  latitude:  z.coerce.number().min(-90).max(90).optional(),
+  longitude: z.coerce.number().min(-180).max(180).optional(),
 }).refine((data) => data.email || data.phone, {
   message: 'Provide either email or phone number',
   path:    ['email'],
+}).refine((data) => (data.latitude == null) === (data.longitude == null), {
+  message: 'latitude and longitude must be provided together',
+  path:    ['latitude'],
 })
 
 export const LoginSchema = z.object({

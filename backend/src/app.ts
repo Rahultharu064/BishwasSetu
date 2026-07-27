@@ -40,6 +40,7 @@ import serviceRoutes   from './routes/serviceRoute'
 import adminRoutes     from './routes/adminRoute'
 import paymentRoutes   from './routes/paymentRoute'
 import complaintRoutes from './routes/complaintRoute'
+import matchRoutes     from './routes/matchRoute'
 import antiDisintermediationRoutes from './routes/antiDisintermediationRoute'
 
 
@@ -90,6 +91,7 @@ app.use(`${v1}/auth`,            authRoutes)
 // Resource-specific limits
 app.use(`${v1}/providers/search`, searchLimiter)
 app.use(`${v1}/services/search`,  searchLimiter)
+app.use(`${v1}/match`,            searchLimiter)
 app.use(`${v1}/kyc/upload`,       uploadLimiter)
 app.use(`${v1}/assistant/chat`,   assistantLimiter)
 app.use(`${v1}/payments`,         paymentLimiter, paymentRoutes)
@@ -112,6 +114,7 @@ app.use(`${v1}/complaints`, complaintRoutes)
 
 app.use(`${v1}/credits`,    creditRoutes)
 app.use(`${v1}/services`,   serviceRoutes)
+app.use(`${v1}/match`,      matchRoutes)
 
 // ─────────────────────────────────────────────────────────────
 // ERROR HANDLING  (must be last)

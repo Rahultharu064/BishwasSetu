@@ -9,6 +9,11 @@
             "date": 1785032436873,
             "name": "/run/media/rahul-chaudhary/BAA61E55A61E128D/BishwasSetu/backend/logs/app-2026-07-26.log",
             "hash": "c214121a75ea28cb11e5af0200cbc25edacb8808389d159f11560c538fd9fb9b"
+        },
+        {
+            "date": 1785144299059,
+            "name": "/run/media/rahul-chaudhary/BAA61E55A61E128D/BishwasSetu/backend/logs/app-2026-07-27.log",
+            "hash": "7b6298251cda341498934415639db229bcb642f75887d9040e56c1976c0a5416"
         }
     ],
     "hashType": "sha256"

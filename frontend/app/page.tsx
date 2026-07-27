@@ -9,6 +9,7 @@ import {
   ArrowRight,
   Star,
   MapPin,
+  Sparkles,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useFetch } from "@/lib/use-fetch";
@@ -49,6 +50,14 @@ export default function HomePage() {
 
             <div className="mt-6">
               <SearchBar />
+            </div>
+
+            <div className="mx-auto mt-3 max-w-md">
+              <Link href="/match">
+                <Button variant="soft" full size="lg">
+                  <Sparkles className="h-4 w-4" /> AI Smart Match — find the nearest pro
+                </Button>
+              </Link>
             </div>
 
             <div className="mx-auto mt-4 max-w-md">

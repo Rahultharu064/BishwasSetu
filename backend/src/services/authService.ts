@@ -16,7 +16,7 @@ import type { RegisterInput, LoginInput } from '../validators/authValidator'
 // ── REGISTER ─────────────────────────────────
 
 export const registerUser = async (input: RegisterInput) => {
-  const { name, email, phone, password, role } = input
+  const { name, email, phone, password, role, city, district, latitude, longitude } = input
 
   // Check duplicate
   const existing = await prisma.user.findFirst({
@@ -35,16 +35,22 @@ export const registerUser = async (input: RegisterInput) => {
   const passwordHash = await hashPassword(password)
 
   const user = await prisma.user.create({
-    data: { name, email, phone, passwordHash, role },
+    data: { name, email, phone, passwordHash, role, city, district, latitude, longitude },
     select: { id: true, name: true, role: true },
   })
 
-  // If registering as provider — create blank provider profile
+  // If registering as provider — create blank provider profile.
+  // Seed the provider's operating location from the signup fields so they can
+  // be matched immediately (refinable later during onboarding).
   if (role === 'PROVIDER') {
     const provider = await prisma.provider.create({
       data: {
-        userId:    user.id,
-        legalName: name,
+        userId:      user.id,
+        legalName:   name,
+        city,
+        serviceArea: district,
+        latitude,
+        longitude,
       },
     })
 

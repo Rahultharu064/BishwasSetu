@@ -32,7 +32,7 @@ export const completeProfile = async (
   input:      CompleteProfileInput
 ) => {
   const {
-    legalName, bio, serviceArea,
+    legalName, bio, serviceArea, city, latitude, longitude,
     experienceYears, skills, categoryIds, availability,
   } = input
 
@@ -58,6 +58,9 @@ export const completeProfile = async (
         legalName,
         bio,
         serviceArea,
+        city,
+        latitude,
+        longitude,
         yearsExperience: experienceYears,
         // Move identityStatus to PENDING_DOCUMENTS if INCOMPLETE
         identityStatus: 'PENDING_DOCUMENTS',

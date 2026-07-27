@@ -154,6 +154,10 @@ export const api = {
     phone?: string;
     password: string;
     role: "CUSTOMER" | "PROVIDER";
+    city?: string;
+    district?: string;
+    latitude?: number;
+    longitude?: number;
   }) => apiRequest<{ userId: string }>("/auth/register", { method: "POST", body }),
 
   login: (body: { email?: string; phone?: string; password: string }) =>
@@ -180,6 +184,22 @@ export const api = {
   ) => apiRequest<unknown>(`/services/${slug}/providers`, { query }),
   searchServices: (q: string) =>
     apiRequest<unknown>("/services/search", { query: { q } }),
+
+  // AI Smart Match — nearest providers for a category (customer, auth)
+  smartMatch: (body: {
+    categoryId?: string;
+    category?: string;
+    description?: string;
+    city?: string;
+    district?: string;
+    latitude?: number;
+    longitude?: number;
+  }) =>
+    apiRequest<import("./types").SmartMatchResult>("/match", {
+      method: "POST",
+      body,
+      auth: true,
+    }),
 
   // Providers
   searchProviders: (query?: Record<string, string | number | undefined>) =>
