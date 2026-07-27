@@ -1,7 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Zap, MapPin, ChevronLeft, MessageSquare, Clock } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+  Zap,
+  MapPin,
+  ChevronLeft,
+  MessageSquare,
+  Clock,
+  LocateFixed,
+  CheckCircle2,
+} from "lucide-react";
 import { CategoryIcon } from "@/components/category-icon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -97,33 +105,64 @@ export default function EmergencyPage() {
 
   const [stage, setStage] = useState<Stage>("category");
   const [category, setCategory] = useState<string | null>(null);
-  const [address, setAddress] = useState("Maharajgunj, Kathmandu");
+  const [address, setAddress] = useState("");
   const [description, setDescription] = useState("");
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(
+    null
+  );
+  const [locating, setLocating] = useState(false);
   const [requestId, setRequestId] = useState<string | null>(null);
+  const [bookingId, setBookingId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Auto-expire matching screen after 10 min
-  useEffect(() => {
-    if (stage !== "matching") return;
-    const id = setTimeout(() => setStage("no-match"), 10 * 60 * 1000);
-    return () => clearTimeout(id);
-  }, [stage]);
+  // Grab the browser's location for accurate dispatch (Nepal-bounded on the API).
+  function captureLocation() {
+    if (!("geolocation" in navigator)) {
+      toast("Location isn't available on this device.", "error");
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setLocating(false);
+        toast("Location captured.", "success");
+      },
+      () => {
+        setLocating(false);
+        toast(
+          "Couldn't get your location — allow access and try again.",
+          "error"
+        );
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
 
-  // Poll for acceptance
+  // Poll the real dispatch status until a pro accepts or the window closes.
   useEffect(() => {
     if (stage !== "matching" || !requestId) return;
-    const poll = setInterval(async () => {
+    pollRef.current = setInterval(async () => {
       try {
-        const res = await api.bookingById(requestId); // reuse booking fetch for status
-        if (res?.status === "ACCEPTED" || res?.status === "IN_PROGRESS") {
+        const res = await api.getEmergencyStatus(requestId);
+        if (res.status === "ACCEPTED" || res.status === "IN_PROGRESS") {
+          setBookingId(res.bookingId ?? null);
           setStage("accepted");
-          clearInterval(poll);
+        } else if (
+          res.status === "EXPIRED" ||
+          res.status === "CANCELLED" ||
+          res.status === "COMPLETED"
+        ) {
+          setStage("no-match");
         }
       } catch {
-        /* ignore poll errors */
+        /* keep polling through transient errors */
       }
     }, 5000);
-    return () => clearInterval(poll);
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
   }, [stage, requestId]);
 
   async function dispatchEmergency() {
@@ -131,17 +170,44 @@ export default function EmergencyPage() {
       router.push("/login?next=/emergency");
       return;
     }
+    if (!category) return;
+    if (!coords) {
+      toast("Share your location so we can find the nearest pro.", "error");
+      return;
+    }
     setBusy(true);
     try {
-      // In real wiring: call POST /emergency with category, lat/lng etc.
-      // For now we simulate success
-      await new Promise((r) => setTimeout(r, 800));
+      const res = await api.createEmergency({
+        category,
+        description: description.trim() || undefined,
+        latitude: coords.lat,
+        longitude: coords.lng,
+        addressLabel: address.trim() || undefined,
+      });
+      setRequestId(res.id);
       setStage("matching");
     } catch (err) {
-      toast(err instanceof ApiError ? err.message : "Could not dispatch. Try again.", "error");
+      toast(
+        err instanceof ApiError ? err.message : "Could not dispatch. Try again.",
+        "error"
+      );
     } finally {
       setBusy(false);
     }
+  }
+
+  async function cancelDispatch() {
+    if (pollRef.current) clearInterval(pollRef.current);
+    if (requestId) {
+      try {
+        await api.cancelEmergency(requestId);
+      } catch {
+        /* best-effort */
+      }
+    }
+    setRequestId(null);
+    setStage("category");
+    setCategory(null);
   }
 
   return (
@@ -220,9 +286,35 @@ export default function EmergencyPage() {
             <Input
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              placeholder="Your current address"
+              placeholder="Area / landmark (e.g. Maharajgunj, near the chowk)"
               id="emergency-address-input"
             />
+
+            <button
+              type="button"
+              onClick={captureLocation}
+              disabled={locating}
+              className={`mt-3 flex w-full items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-semibold transition-colors ${
+                coords
+                  ? "border-primary/40 bg-primary-soft text-primary"
+                  : "border-urgent/40 text-urgent hover:bg-urgent-soft"
+              }`}
+              id="emergency-locate-btn"
+            >
+              {coords ? (
+                <>
+                  <CheckCircle2 className="h-4 w-4" /> Location shared
+                </>
+              ) : (
+                <>
+                  <LocateFixed className="h-4 w-4" />
+                  {locating ? "Getting location…" : "Share my current location"}
+                </>
+              )}
+            </button>
+            <p className="mt-1.5 text-center text-xs text-muted-foreground">
+              We use your GPS to dispatch the nearest verified pro.
+            </p>
           </div>
 
           <div className="rounded-xl border border-border bg-card p-4">
@@ -244,20 +336,34 @@ export default function EmergencyPage() {
             full
             size="lg"
             onClick={dispatchEmergency}
-            disabled={busy}
+            disabled={busy || !coords}
             id="find-pro-now-btn"
           >
             <Zap className="h-5 w-5" fill="currentColor" />
             {busy ? "Dispatching…" : "Find me a pro now"}
           </Button>
+          {!coords && (
+            <p className="-mt-2 text-center text-xs text-muted-foreground">
+              Share your location above to dispatch.
+            </p>
+          )}
         </div>
       )}
 
       {/* Stage 3 — radar */}
       {stage === "matching" && (
-        <RadarAnimation
-          label={`${category} emergency · ${address}`}
-        />
+        <>
+          <RadarAnimation
+            label={`${category} emergency${address ? ` · ${address}` : ""}`}
+          />
+          <Button
+            variant="ghost"
+            className="mx-auto"
+            onClick={cancelDispatch}
+          >
+            Cancel request
+          </Button>
+        </>
       )}
 
       {/* Stage 4 — accepted */}
@@ -271,9 +377,13 @@ export default function EmergencyPage() {
             A verified provider has accepted your emergency request and is heading your
             way. You&apos;ll receive an SMS confirmation shortly.
           </p>
-          {requestId && (
-            <Link href={`/bookings/${requestId}`}>
+          {bookingId ? (
+            <Link href={`/bookings/${bookingId}`}>
               <Button full className="mt-5">View booking details</Button>
+            </Link>
+          ) : (
+            <Link href="/bookings">
+              <Button full className="mt-5">Go to my bookings</Button>
             </Link>
           )}
         </div>

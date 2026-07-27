@@ -33,39 +33,61 @@ export default function HomePage() {
   return (
     <div>
       {/* ── Hero ─────────────────────────────────────────── */}
-      <section className="border-b border-border bg-gradient-to-b from-primary-soft/60 to-background">
-        <div className="mx-auto max-w-6xl px-4 py-10 md:py-16">
+      <section className="relative overflow-hidden border-b border-border bg-gradient-to-b from-primary-soft/70 via-primary-soft/20 to-background">
+        {/* soft decorative glow */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-24 left-1/2 h-72 w-[42rem] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl"
+        />
+        <div className="relative mx-auto max-w-6xl px-4 py-12 md:py-20">
           <div className="mx-auto max-w-2xl text-center">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-card px-3 py-1.5 text-xs font-semibold text-primary shadow-sm">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/15 bg-card px-3 py-1.5 text-xs font-semibold text-primary shadow-sm">
               <ShieldCheck className="h-3.5 w-3.5" />
               Nepal&apos;s trusted home services marketplace
             </span>
-            <h1 className="mt-4 text-3xl font-bold leading-tight tracking-tight text-foreground md:text-5xl">
-              Verified pros for every home job
+            <h1 className="mt-5 text-[2rem] font-bold leading-[1.1] tracking-tight text-foreground md:text-[3.25rem]">
+              Verified pros for
+              <br className="hidden sm:block" /> every home job
             </h1>
-            <p className="mt-3 text-base text-muted-foreground md:text-lg">
+            <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground md:text-lg">
               Book plumbers, electricians, cleaners and more — with transparent
               trust scores and escrow-protected payments.
             </p>
 
-            <div className="mt-6">
+            <div className="mt-7">
               <SearchBar />
             </div>
 
-            <div className="mx-auto mt-3 max-w-md">
-              <Link href="/match">
+            {/* Secondary actions */}
+            <div className="mx-auto mt-4 grid max-w-md gap-2.5 sm:grid-cols-2">
+              <Link href="/match" className="sm:order-1">
                 <Button variant="soft" full size="lg">
-                  <Sparkles className="h-4 w-4" /> AI Smart Match — find the nearest pro
+                  <Sparkles className="h-4 w-4" /> AI Smart Match
                 </Button>
               </Link>
+              <div className="sm:order-2">
+                <EmergencyButton />
+              </div>
             </div>
+            <p className="mt-2.5 text-xs text-muted-foreground">
+              Burst pipe or sparking outlet? Emergency dispatch finds the
+              nearest verified pro in under a minute.
+            </p>
 
-            <div className="mx-auto mt-4 max-w-md">
-              <EmergencyButton />
-              <p className="mt-2 text-xs text-muted-foreground">
-                Burst pipe or sparking outlet? Get matched with the nearest
-                verified pro in under a minute.
-              </p>
+            {/* Trust proof chips */}
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm">
+              <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
+                <Star className="h-4 w-4 fill-warning text-warning" />
+                4.8 average rating
+              </span>
+              <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
+                <BadgeCheck className="h-4 w-4 text-primary" />
+                Identity-verified pros
+              </span>
+              <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
+                <Lock className="h-4 w-4 text-primary" />
+                Escrow-protected
+              </span>
             </div>
           </div>
         </div>
@@ -217,7 +239,7 @@ function TrustStat({
   sub: string;
 }) {
   return (
-    <div className="flex items-start gap-3 rounded-xl border border-border bg-card p-4">
+    <div className="flex items-start gap-3 rounded-xl border border-border bg-card p-4 transition-all hover:border-primary/30 hover:shadow-sm">
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary">
         {icon}
       </span>
@@ -231,8 +253,8 @@ function TrustStat({
 
 function Step({ n, title, body }: { n: number; title: string; body: string }) {
   return (
-    <div>
-      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-soft font-bold text-primary">
+    <div className="relative">
+      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-base font-bold text-primary-foreground shadow-sm ring-4 ring-primary-soft">
         {n}
       </span>
       <h3 className="mt-3 font-semibold">{title}</h3>

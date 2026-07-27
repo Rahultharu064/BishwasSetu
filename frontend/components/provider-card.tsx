@@ -25,14 +25,16 @@ export function ProviderCard({
   return (
     <Link
       href={`/providers/${provider.id}`}
-      className="group flex gap-4 rounded-xl border border-border bg-card p-4 shadow-sm transition-colors hover:border-primary/40"
+      className="group flex gap-4 rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
     >
       <Avatar src={provider.profilePhoto} name={name} size={56} />
 
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <p className="truncate font-semibold text-foreground">{name}</p>
+            <p className="truncate font-semibold text-foreground transition-colors group-hover:text-primary">
+              {name}
+            </p>
             <div className="mt-1 flex flex-wrap items-center gap-1.5">
               <TierBadge tier={provider.kycTier} size="sm" />
               <ExperienceBadge milestone={provider.milestoneBadge} size="sm" />
