@@ -150,6 +150,7 @@ model User {
   reviews       Review[]
   complaints    Complaint[]        @relation("CustomerComplaints")
   sessions      AssistantSession[]
+  messages      Message[]          @relation("SentMessages")
 
   @@map("users")
 }
@@ -399,11 +400,32 @@ model Booking {
   category  Category   @relation(fields: [categoryId], references: [id])
   review    Review?
   complaint Complaint?
+  messages  Message[]
 
   @@index([customerId])
   @@index([providerId])
   @@index([status])
   @@map("bookings")
+}
+
+// ─────────────────────────────────────────────
+// In-booking messaging — opens only after a booking is accepted
+// (anti-spam: no pre-booking DMs). Both parties are Users; the
+// provider participates via their linked User account.
+// ─────────────────────────────────────────────
+model Message {
+  id        String    @id @default(uuid()) @db.Char(36)
+  bookingId String    @db.Char(36)
+  senderId  String    @db.Char(36) // User.id of the sender
+  body      String    @db.VarChar(2000)
+  readAt    DateTime? // set when the other party has seen it
+  createdAt DateTime  @default(now())
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  sender  User    @relation("SentMessages", fields: [senderId], references: [id])
+
+  @@index([bookingId, createdAt])
+  @@map("messages")
 }
 
 // ─────────────────────────────────────────────

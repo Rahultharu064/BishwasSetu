@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   MapPin,
+  MessageCircle,
 } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { useFetch } from "@/lib/use-fetch";
@@ -226,6 +227,13 @@ export default function BookingDetailPage({
             </Link>
           )}
         </div>
+        {["ACCEPTED", "IN_PROGRESS", "COMPLETED"].includes(b.status) && (
+          <Link href={`/messages/${b.id}`}>
+            <Button variant="soft" size="sm">
+              <MessageCircle className="h-4 w-4" /> Message
+            </Button>
+          </Link>
+        )}
       </div>
 
       {/* Details */}

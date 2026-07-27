@@ -456,6 +456,23 @@ export const api = {
     apiRequest<
       { areaName: string; city: string; jobsThisMonth: number; jobsAllTime: number }[]
     >(`/providers/${providerId}/neighborhood-stats`),
+
+  // ── In-booking messaging ─────────────────────────────────────
+  conversations: () =>
+    apiRequest<{ conversations: import("./types").Conversation[] }>(
+      "/messages/conversations",
+      { auth: true }
+    ),
+  messageThread: (bookingId: string) =>
+    apiRequest<import("./types").ChatThread>(`/messages/${bookingId}`, {
+      auth: true,
+    }),
+  postMessage: (bookingId: string, body: string) =>
+    apiRequest<import("./types").ChatMessage>(`/messages/${bookingId}`, {
+      method: "POST",
+      body: { body },
+      auth: true,
+    }),
 };
 
 // ── Assistant SSE streaming (POST /assistant/chat) ────────────

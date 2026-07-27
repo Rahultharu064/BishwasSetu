@@ -233,6 +233,38 @@ export interface EmergencyOffer {
   createdAt: string;
 }
 
+// ── In-booking messaging ──────────────────────────────────────
+export interface ChatParty {
+  name: string;
+  photo?: string | null;
+  providerId?: string | null;
+}
+
+export interface ChatMessage {
+  id: string;
+  body: string;
+  createdAt: string;
+  mine: boolean;
+  readAt?: string | null;
+}
+
+export interface Conversation {
+  bookingId: string;
+  category?: string | null;
+  status: BookingStatus;
+  other: ChatParty;
+  lastMessage?: { body: string; createdAt: string; mine: boolean } | null;
+  unread: number;
+}
+
+export interface ChatThread {
+  bookingId: string;
+  status: BookingStatus;
+  canSend: boolean;
+  other: ChatParty;
+  messages: ChatMessage[];
+}
+
 export interface ApiEnvelope<T> {
   success: boolean;
   message: string;
