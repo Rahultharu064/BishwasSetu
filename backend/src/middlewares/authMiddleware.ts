@@ -61,6 +61,33 @@ export const protect = async (
   }
 }
 
+// ── Optional auth — attach req.user if a valid token is present, but never
+//    reject the request (guest chat, public reads that personalize when
+//    logged in). Unlike `protect`, always calls next(). ──
+
+export const optionalAuth = async (
+  req: Request,
+  _res: Response,
+  next: NextFunction
+): Promise<void> => {
+  const authHeader = req.headers.authorization
+  if (!authHeader?.startsWith('Bearer ')) return next()
+
+  try {
+    const decoded = verifyAccessToken(authHeader.split(' ')[1])
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+      select: { id: true, role: true, isActive: true, provider: { select: { id: true } } },
+    })
+    if (user?.isActive) {
+      req.user = { id: user.id, role: user.role, providerId: user.provider?.id }
+    }
+  } catch {
+    // Invalid/expired token on an optional-auth route — proceed as a guest.
+  }
+  next()
+}
+
 // ── Role guard — restrict to specific roles ──
 
 export const restrictTo =

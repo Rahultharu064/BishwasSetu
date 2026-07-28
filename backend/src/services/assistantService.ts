@@ -2,6 +2,7 @@ import { Response }          from 'express'
 import { prisma }            from '../config/db'
 import { groq, GROQ_MODELS } from '../config/groq'
 import { redis }             from '../config/redis'
+import { features }          from '../config/features'
 import {
   detectLanguage,
   classifyIntent,
@@ -80,6 +81,21 @@ export const streamChat = async (
   }
 
   const lang = detectLanguage(message)
+
+  // Pilot scope (docs/MVP_SCOPE.md): Groq streaming is opt-in per
+  // AI_ASSISTANT_ENABLED so a low-volume launch doesn't pay for AI infra
+  // it doesn't need yet. Respond over the same SSE protocol so the widget
+  // shows a normal message instead of a broken connection.
+  if (!features.aiAssistant) {
+    sendEvent({
+      type:    'error',
+      message: lang === 'ne'
+        ? 'माफ गर्नुहोस्, यो सुविधा अहिले उपलब्ध छैन। कृपया फोन वा ह्वाट्सएपमार्फत सम्पर्क गर्नुहोस्।'
+        : "The assistant isn't available yet — please reach out via phone or WhatsApp support.",
+    })
+    res.end()
+    return
+  }
 
   try {
     // 2. Load session from Redis

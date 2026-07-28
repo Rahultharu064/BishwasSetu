@@ -45,6 +45,7 @@ import badgeRoutes     from './routes/badgeRoute'
 import antiDisintermediationRoutes from './routes/antiDisintermediationRoute'
 import messageRoutes   from './routes/messageRoute'
 import addressRoutes   from './routes/addressRoute'
+import assistantRoutes from './routes/assistantRoute'
 
 
 // ─────────────────────────────────────────────────────────────
@@ -121,6 +122,7 @@ app.use(`${v1}/credits`,    creditRoutes)
 app.use(`${v1}/services`,   serviceRoutes)
 app.use(`${v1}/match`,      matchRoutes)
 app.use(`${v1}/badges`,     badgeRoutes)
+app.use(`${v1}/assistant`,  assistantRoutes)
 
 // ─────────────────────────────────────────────────────────────
 // ERROR HANDLING  (must be last)

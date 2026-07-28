@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import * as AssistantController from '../controllers/assistantController'
-import { protect, restrictTo } from '../middlewares/authMiddleware'
+import { protect, restrictTo, optionalAuth } from '../middlewares/authMiddleware'
 import { validate }            from '../middlewares/validateMiddleware'
 import { ChatSchema, KbArticleSchema } from '../validators/assistantValidator'
 
@@ -9,10 +9,7 @@ const router = Router()
 
 router.post(
   '/chat',
-  (req, res, next) => {
-    // Try to authenticate but don't block if no token
-    protect(req, res, () => next())
-  },
+  optionalAuth,
   validate(ChatSchema),
   AssistantController.chat
 )
