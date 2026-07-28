@@ -22,6 +22,12 @@ import type { Category } from "@/lib/types";
 import { HeroSearch } from "@/components/home/hero-search";
 import { HeroPreviewCard } from "@/components/home/hero-preview-card";
 import { CategoryGrid, CategoryGridSkeleton } from "@/components/home/category-grid";
+import { MarketplaceSteps } from "@/components/home/marketplace-steps";
+import { TrustProcess } from "@/components/home/trust-process";
+import { StatsBand } from "@/components/home/stats-band";
+import { Testimonials } from "@/components/home/testimonials";
+import { AppDownload } from "@/components/home/app-download";
+import { Faq } from "@/components/home/faq";
 import { EmergencyButton } from "@/components/emergency-button";
 import { ProviderCard, ProviderCardSkeleton } from "@/components/provider-card";
 import { Button } from "@/components/ui/button";
@@ -222,34 +228,16 @@ export default function HomePage() {
         </section>
 
         {/* ── How it works ──────────────────────────────── */}
-        <section className="rounded-2xl border border-border bg-card p-6 md:p-8">
-          <h2 className="text-xl font-bold tracking-tight">How BishwasSetu works</h2>
-          <div className="mt-6 grid gap-6 md:grid-cols-3">
-            <Step
-              n={1}
-              title="Find a verified pro"
-              body="Search or browse categories. Compare real trust scores, tiers and neighborhood activity."
-            />
-            <Step
-              n={2}
-              title="Book & pay into escrow"
-              body="Your payment is held safely by BishwasSetu — the provider is only paid when you're satisfied."
-            />
-            <Step
-              n={3}
-              title="Confirm & review"
-              body="Tap “Job Complete” to release payment. Rate the work — it powers the trust score."
-            />
-          </div>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Link href="/how-it-works">
-              <Button variant="outline">Learn more</Button>
-            </Link>
-            <Link href="/services">
-              <Button>Get started</Button>
-            </Link>
-          </div>
-        </section>
+        <MarketplaceSteps />
+
+        {/* ── Quality control / trust process ─────────────── */}
+        <TrustProcess />
+
+        {/* ── Growth stats ──────────────────────────────── */}
+        <StatsBand />
+
+        {/* ── Testimonials ──────────────────────────────── */}
+        <Testimonials />
 
         {/* ── Provider CTA ──────────────────────────────── */}
         <section className="overflow-hidden rounded-2xl bg-primary text-primary-foreground">
@@ -271,6 +259,12 @@ export default function HomePage() {
             </Link>
           </div>
         </section>
+
+        {/* ── Mobile app CTA ─────────────────────────────── */}
+        <AppDownload />
+
+        {/* ── FAQ ────────────────────────────────────────── */}
+        <Faq />
       </div>
     </div>
   );
@@ -294,18 +288,6 @@ function TrustStat({
         <p className="font-semibold leading-tight text-foreground">{title}</p>
         <p className="mt-0.5 text-sm text-muted-foreground">{sub}</p>
       </div>
-    </div>
-  );
-}
-
-function Step({ n, title, body }: { n: number; title: string; body: string }) {
-  return (
-    <div className="relative">
-      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-base font-bold text-primary-foreground shadow-sm ring-4 ring-primary-soft">
-        {n}
-      </span>
-      <h3 className="mt-3 font-semibold">{title}</h3>
-      <p className="mt-1 text-sm text-muted-foreground">{body}</p>
     </div>
   );
 }
