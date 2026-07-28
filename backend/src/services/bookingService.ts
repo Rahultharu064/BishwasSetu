@@ -274,6 +274,26 @@ export const updateBookingStatus = async (
     }
   }
 
+  // 4.5. A HELD escrow must be released through POST /escrow/:escrowId/release
+  //      (customer-only) — that's the path that actually flips EscrowPayment
+  //      to RELEASED, computes the real payout split, and fires the
+  //      escrow-released job (7-day guarantee, revenue points, neighborhood
+  //      tag, payout notification). This generic endpoint would otherwise
+  //      silently flip Booking.escrowStatus without any of that ever running.
+  if (newStatus === 'COMPLETED') {
+    const escrow = await prisma.escrowPayment.findUnique({
+      where: { bookingId },
+      select: { id: true, status: true },
+    })
+    if (escrow && escrow.status === 'HELD') {
+      throw {
+        code:    'ESCROW_HELD',
+        message: `This booking has a HELD escrow payment — release it via POST /escrow/${escrow.id}/release instead.`,
+        status:  409,
+      }
+    }
+  }
+
   // 5. Risk-adaptive: if provider trust < 40 and marking COMPLETED,
   //    check if customer needs to manually confirm (first 3 bookings)
   if (newStatus === 'COMPLETED' && actorRole === 'PROVIDER') {
@@ -480,7 +500,20 @@ export const getBooking = async (
     throw { code: 'FORBIDDEN', message: 'Access denied', status: 403 }
   }
 
-  return booking
+  // EscrowPayment.bookingId is a plain FK (no Prisma relation declared on
+  // Booking), so it can't be `include`d above — fetch it separately.
+  const escrow = await prisma.escrowPayment.findUnique({
+    where: { bookingId },
+    select: {
+      id: true,
+      status: true,
+      gateway: true,
+      amountPaisa: true,
+      commissionPct: true,
+    },
+  })
+
+  return { ...booking, escrow }
 }
 
 // ─────────────────────────────────────────────

@@ -48,7 +48,7 @@ export async function refund(req: Request, res: Response, next: NextFunction) {
 export async function getOne(req: Request, res: Response, next: NextFunction) {
   try {
     const escrow = await escrowService.getEscrowForUser(
-      req.user!.id,
+      { id: req.user!.id, providerId: req.user!.providerId },
       req.params.escrowId
     );
     res.json({ success: true, data: escrow });

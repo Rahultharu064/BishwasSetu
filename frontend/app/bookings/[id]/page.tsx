@@ -80,7 +80,15 @@ export default function BookingDetailPage({
   async function completeJob() {
     setBusy(true);
     try {
-      await api.updateBookingStatus(id, "COMPLETED");
+      if (b.escrow?.status === "HELD") {
+        // Real escrow-paid booking — release via the dedicated endpoint so
+        // the payout split, 7-day guarantee and notifications actually fire.
+        const gps = await getBestEffortLocation();
+        await api.releaseEscrow(b.escrow.id, gps);
+      } else {
+        // Cash / no-escrow booking — plain status flip.
+        await api.updateBookingStatus(id, "COMPLETED");
+      }
       // Optionally leave a review in the same step.
       if (rating > 0) {
         try {
@@ -191,9 +199,29 @@ export default function BookingDetailPage({
             viewerRole={viewerRole}
             onPayNow={async (gateway) => {
               try {
-                toast(`Redirecting to ${gateway}…`, "success");
-                // Real: await api.initiateEscrow({ bookingId: b.id, gateway, returnUrl: window.location.href })
-                //       then redirect to paymentUrl
+                const returnUrl = `${window.location.origin}/bookings/${b.id}/payment-return`;
+                const result = await api.initiateEscrow({
+                  bookingId: b.id,
+                  gateway,
+                  returnUrl,
+                });
+                if (gateway === "ESEWA" && result.formFields) {
+                  // eSewa ePay v2 requires a signed POST form submit.
+                  const form = document.createElement("form");
+                  form.method = "POST";
+                  form.action = result.paymentUrl;
+                  for (const [key, value] of Object.entries(result.formFields)) {
+                    const input = document.createElement("input");
+                    input.type = "hidden";
+                    input.name = key;
+                    input.value = value;
+                    form.appendChild(input);
+                  }
+                  document.body.appendChild(form);
+                  form.submit();
+                } else {
+                  window.location.href = result.paymentUrl;
+                }
               } catch (err) {
                 toast(err instanceof ApiError ? err.message : "Payment failed.", "error");
               }
@@ -381,6 +409,28 @@ export default function BookingDetailPage({
       </Sheet>
     </div>
   );
+}
+
+/** Best-effort GPS for neighborhood tagging — never blocks or fails the release. */
+function getBestEffortLocation(): Promise<{ latitude: number; longitude: number } | undefined> {
+  return new Promise((resolve) => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      resolve(undefined);
+      return;
+    }
+    const timeout = setTimeout(() => resolve(undefined), 3000);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        clearTimeout(timeout);
+        resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+      },
+      () => {
+        clearTimeout(timeout);
+        resolve(undefined);
+      },
+      { timeout: 3000 }
+    );
+  });
 }
 
 function Row({

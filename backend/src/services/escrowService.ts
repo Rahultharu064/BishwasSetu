@@ -198,13 +198,20 @@ export async function refundEscrow(escrowId: string, reason: string) {
   });
 }
 
-export async function getEscrowForUser(userId: string, escrowId: string) {
+export async function getEscrowForUser(
+  user: { id: string; providerId?: string },
+  escrowId: string
+) {
   const escrow = await prisma.escrowPayment.findUnique({
     where: { id: escrowId },
     include: { guarantee: { select: { id: true, status: true, expiresAt: true } } },
   });
   if (!escrow) throw new ApiError(404, "Escrow not found");
-  if (escrow.customerId !== userId && escrow.providerId !== userId)
-    throw new ApiError(403, "Forbidden");
+  // escrow.providerId is a Provider.id, not a User.id — compare against
+  // the caller's provider profile id, not their user id (PROVIDER-role
+  // callers have no matching customerId, so this is the only path for them).
+  const isCustomer = escrow.customerId === user.id;
+  const isProvider = user.providerId != null && escrow.providerId === user.providerId;
+  if (!isCustomer && !isProvider) throw new ApiError(403, "Forbidden");
   return escrow;
 }

@@ -211,6 +211,14 @@ export interface Booking {
   /** Present on provider-facing booking lists. */
   customer?: { id: string; name: string } | null;
   review?: { rating: number } | null;
+  /** The real EscrowPayment row for this booking, if a gateway payment was initiated. */
+  escrow?: {
+    id: string;
+    status: EscrowStatus;
+    gateway: "KHALTI" | "ESEWA";
+    amountPaisa: number;
+    commissionPct: number;
+  } | null;
 }
 
 export interface Pagination {

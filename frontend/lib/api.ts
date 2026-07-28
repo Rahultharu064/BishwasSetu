@@ -3,7 +3,7 @@
 // - Refresh token lives in an HttpOnly cookie (credentials: 'include')
 // - Unwraps the { success, message, data } envelope; throws ApiError on failure.
 
-import type { ApiEnvelope } from "./types";
+import type { ApiEnvelope, EscrowStatus } from "./types";
 
 export const API_BASE =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/v1";
@@ -358,13 +358,20 @@ export const api = {
     gateway: "KHALTI" | "ESEWA";
     returnUrl: string;
   }) =>
-    apiRequest<{ escrowId: string; paymentUrl: string; gatewayRef: string }>(
-      "/escrow/initiate",
-      { method: "POST", body, auth: true }
-    ),
+    apiRequest<{
+      escrowId: string;
+      paymentUrl: string;
+      gatewayRef: string;
+      /** eSewa only — ePay v2 requires a signed POST form submit, not a GET redirect. */
+      formFields?: Record<string, string>;
+    }>("/escrow/initiate", { method: "POST", body, auth: true }),
 
   verifyEscrow: (body: { escrowId: string; pidx?: string; data?: string }) =>
-    apiRequest<unknown>("/escrow/verify", { method: "POST", body, auth: true }),
+    apiRequest<{ id: string; status: EscrowStatus }>("/escrow/verify", {
+      method: "POST",
+      body,
+      auth: true,
+    }),
 
   releaseEscrow: (escrowId: string, gps?: { latitude: number; longitude: number }) =>
     apiRequest<unknown>(`/escrow/${escrowId}/release`, {
