@@ -59,8 +59,11 @@ const STATUS_META: Record<GuaranteeStatus, { label: string; icon: React.ReactNod
 
 function GuaranteeCard({ g }: { g: Guarantee }) {
   const meta = STATUS_META[g.status];
+  // "Days remaining" inherently reads wall-clock time — there's no pure way
+  // to compute it. Harmless for a display string with no correctness impact.
   const daysLeft = Math.max(
     0,
+    // eslint-disable-next-line react-hooks/purity
     Math.ceil((new Date(g.expiresAt).getTime() - Date.now()) / 86400000)
   );
 

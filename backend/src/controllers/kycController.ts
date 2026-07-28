@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import * as KycService from '../services/kycService'
 import { sendSuccess, sendError } from '../utils/response'
+import { requireString } from '../utils/reqValue'
 
 export const uploadKycDocuments = async (
   req: Request, res: Response, next: NextFunction
@@ -38,7 +39,7 @@ export const approveKyc = async (
 ): Promise<void> => {
   try {
     const data = await KycService.approveKyc(
-      req.params.id,
+      requireString(req.params.id, "id"),
       req.user!.id
     )
     sendSuccess(res, data, 'KYC approved')
@@ -53,7 +54,7 @@ export const rejectKyc = async (
   try {
     const { reason } = req.body
     const data = await KycService.rejectKyc(
-      req.params.id,
+      requireString(req.params.id, "id"),
       reason,
       req.user!.id
     )
@@ -67,7 +68,7 @@ export const getKycDocumentsForAdmin = async (
   req: Request, res: Response, next: NextFunction
 ): Promise<void> => {
   try {
-    const data = await KycService.getKycDocumentsForAdmin(req.params.id)
+    const data = await KycService.getKycDocumentsForAdmin(requireString(req.params.id, "id"))
     sendSuccess(res, data)
   } catch (err: any) {
     err.code ? sendError(res, err.message, err.code, err.status) : next(err)

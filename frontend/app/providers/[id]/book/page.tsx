@@ -75,11 +75,13 @@ export default function BookingPage({
   const formatAddress = (a: import("@/lib/types").SavedAddress) =>
     [a.addressLine, a.landmark, a.city].filter(Boolean).join(", ");
 
-  // Prefill with the default saved address until the user edits the field.
+  // Prefill with the default saved address until the user edits the field
+  // (savedAddresses arrives asynchronously after mount — genuine effect use).
   useEffect(() => {
     if (addressTouched || address) return;
     const def =
       savedAddresses.find((a) => a.isDefault) ?? savedAddresses[0];
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (def) setAddress(formatAddress(def));
   }, [savedAddresses, addressTouched, address]);
 
@@ -90,12 +92,14 @@ export default function BookingPage({
   }, [authLoading, isAuthenticated, id, router]);
 
   const provider = data?.provider;
-  const categories = provider?.categories ?? [];
+  const categories = useMemo(() => provider?.categories ?? [], [provider]);
   const priceNum = Number(price) || 0;
   const rate = commissionRate(priceNum);
 
+  // Default to the first category once the provider profile loads.
   useEffect(() => {
     if (!categoryId && categories.length) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCategoryId(categories[0].category?.id ?? "");
     }
   }, [categories, categoryId]);

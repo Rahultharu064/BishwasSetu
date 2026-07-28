@@ -54,9 +54,10 @@ export default function ProviderBadgesPage() {
   const catalog: BadgeCatalogItem[] = Array.isArray(catalogReq.data)
     ? catalogReq.data
     : [];
-  const mine: ProviderBadgeRecord[] = Array.isArray(mineReq.data)
-    ? mineReq.data
-    : [];
+  const mine: ProviderBadgeRecord[] = useMemo(
+    () => (Array.isArray(mineReq.data) ? mineReq.data : []),
+    [mineReq.data]
+  );
 
   // A badge type is locked from re-purchase while ACTIVE or PENDING.
   const heldTypes = useMemo(

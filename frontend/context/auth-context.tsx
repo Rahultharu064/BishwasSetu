@@ -27,12 +27,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Rehydrate from localStorage on mount.
+  // Rehydrate from localStorage on mount — localStorage doesn't exist during
+  // SSR/first render, so this can only happen client-side, after mount.
   useEffect(() => {
     try {
       const token = getAccessToken();
       const raw =
         typeof window !== "undefined" ? localStorage.getItem(USER_KEY) : null;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (token && raw) setUser(JSON.parse(raw) as User);
     } catch {
       /* ignore corrupt storage */

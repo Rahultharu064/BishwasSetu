@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import * as PaymentService from '../services/paymentService'
 import { sendSuccess, sendError } from '../utils/response'
+import { requireString } from '../utils/reqValue'
 
 // ── Initiate payment ──────────────────────────────────────────
 
@@ -28,13 +29,13 @@ export const khaltiReturn = async (
 ): Promise<void> => {
   try {
     const result = await PaymentService.handleKhaltiReturn({
-      pidx:      req.query.pidx      as string,
-      txnId:     req.query.txnId     as string,
+      pidx:      requireString(req.query.pidx, "pidx"),
+      txnId:     requireString(req.query.txnId, "txnId"),
       amount:    Number(req.query.amount),
-      status:    req.query.status    as string,
-      orderId:   req.query.purchase_order_id   as string,
-      orderName: req.query.purchase_order_name as string,
-      mobile:    req.query.mobile    as string,
+      status:    requireString(req.query.status, "status"),
+      orderId:   requireString(req.query.purchase_order_id, "purchase_order_id"),
+      orderName: requireString(req.query.purchase_order_name, "purchase_order_name"),
+      mobile:    requireString(req.query.mobile, "mobile"),
     })
 
     // Redirect to frontend with result
@@ -54,7 +55,7 @@ export const esewaSuccess = async (
   req: Request, res: Response
 ): Promise<void> => {
   try {
-    const encodedData = req.query.data as string
+    const encodedData = requireString(req.query.data, "data")
     const result      = await PaymentService.handleEsewaReturn(encodedData)
 
     const redirectUrl = result.success
@@ -83,7 +84,7 @@ export const initiateBookingPayment = async (
 ): Promise<void> => {
   try {
     const data = await PaymentService.initiateBookingPayment({
-      bookingId:     req.params.id,
+      bookingId:     requireString(req.params.id, "id"),
       customerId:    req.user!.id,
       paymentMethod: req.body.paymentMethod,
       returnUrl:     req.body.returnUrl,

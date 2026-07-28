@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import * as ProviderService from '../services/providerService'
 import { sendSuccess, sendError }  from '../utils/response'
+import { asString, requireString } from '../utils/reqValue'
 
 export const getMyProfile = async (
   req: Request, res: Response, next: NextFunction
@@ -50,7 +51,7 @@ export const getPublicProfile = async (
   req: Request, res: Response, next: NextFunction
 ): Promise<void> => {
   try {
-    const data = await ProviderService.getPublicProfile(req.params.id)
+    const data = await ProviderService.getPublicProfile(requireString(req.params.id, "id"))
     sendSuccess(res, data)
   } catch (err: any) {
     err.code ? sendError(res, err.message, err.code, err.status) : next(err)
@@ -62,11 +63,11 @@ export const searchProviders = async (
 ): Promise<void> => {
   try {
     const data = await ProviderService.searchProviders({
-      q:          req.query.q as string,
-      category:   req.query.category as string,
-      serviceArea: req.query.serviceArea as string,
+      q:          asString(req.query.q),
+      category:   asString(req.query.category),
+      serviceArea: asString(req.query.serviceArea),
       trustMin:   Number(req.query.trustMin ?? 0),
-      sort:       req.query.sort as string,
+      sort:       asString(req.query.sort),
       page:       Number(req.query.page  ?? 1),
       limit:      Number(req.query.limit ?? 10),
     })

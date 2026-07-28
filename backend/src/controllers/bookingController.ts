@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import * as BookingService from '../services/bookingService'
 import { sendSuccess, sendError } from '../utils/response'
+import { asString, requireString } from '../utils/reqValue'
 
 export const createBooking = async (
   req: Request, res: Response, next: NextFunction
@@ -23,7 +24,7 @@ export const updateBookingStatus = async (
       : req.user!.id
 
     const data = await BookingService.updateBookingStatus(
-      req.params.id,
+      requireString(req.params.id, "id"),
       actorId,
       actorRole,
       req.body
@@ -39,7 +40,7 @@ export const getBooking = async (
 ): Promise<void> => {
   try {
     const data = await BookingService.getBooking(
-      req.params.id,
+      requireString(req.params.id, "id"),
       req.user!.id,
       req.user!.role
     )
@@ -54,7 +55,7 @@ export const getCustomerBookings = async (
 ): Promise<void> => {
   try {
     const data = await BookingService.getCustomerBookings(req.user!.id, {
-      status: req.query.status as string,
+      status: asString(req.query.status),
       page:   Number(req.query.page  ?? 1),
       limit:  Number(req.query.limit ?? 10),
     })
@@ -71,7 +72,7 @@ export const getProviderBookings = async (
     const data = await BookingService.getProviderBookings(
       req.user!.providerId!,
       {
-        status: req.query.status as string,
+        status: asString(req.query.status),
         page:   Number(req.query.page  ?? 1),
         limit:  Number(req.query.limit ?? 10),
       }

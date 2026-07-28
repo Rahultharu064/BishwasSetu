@@ -2,7 +2,6 @@
 
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   ChevronLeft,
   Lock,
@@ -44,7 +43,6 @@ export default function BookingDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const router = useRouter();
   const { toast } = useToast();
   const [active, setActive] = useState(false);
   const { user } = useAuth();
@@ -57,7 +55,12 @@ export default function BookingDetailPage({
     user?.role === "PROVIDER" ? "PROVIDER" : "CUSTOMER";
 
   // Poll while the booking is live so status updates arrive without a refresh.
+  // `active` deliberately lags one render behind `data` — it gates the same
+  // useFetch call that produces `data`, so it can't be derived inline without
+  // creating a circular read (this render's poll `enabled` would depend on
+  // this render's own fetch result).
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setActive(
       !!data &&
         ["REQUESTED", "ACCEPTED", "IN_PROGRESS"].includes(data.status)
@@ -192,7 +195,6 @@ export default function BookingDetailPage({
       {b.amount != null && b.amount > 0 && (
         <div className="mt-6">
           <EscrowPaymentCard
-            bookingId={b.id}
             amountNpr={b.amount}
             escrowStatus={b.escrowStatus}
             isEmergency={false}

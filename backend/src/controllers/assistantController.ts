@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import * as AssistantService from '../services/assistantService'
 import { sendSuccess, sendError } from '../utils/response'
+import { asString, requireString } from '../utils/reqValue'
 
 // POST /api/v1/assistant/chat — SSE streaming
 export const chat = async (
@@ -27,7 +28,7 @@ export const getHistory = async (
 ): Promise<void> => {
   try {
     const data = await AssistantService.getSessionHistory(
-      req.params.sessionId,
+      requireString(req.params.sessionId, "sessionId"),
       req.user!.id
     )
     sendSuccess(res, data)
@@ -53,7 +54,7 @@ export const updateKbArticle = async (
   req: Request, res: Response, next: NextFunction
 ): Promise<void> => {
   try {
-    const data = await AssistantService.updateKbArticle(req.params.id, req.body)
+    const data = await AssistantService.updateKbArticle(requireString(req.params.id, "id"), req.body)
     sendSuccess(res, data, 'KB article updated')
   } catch (err: any) {
     err.code ? sendError(res, err.message, err.code, err.status) : next(err)
@@ -64,7 +65,7 @@ export const deleteKbArticle = async (
   req: Request, res: Response, next: NextFunction
 ): Promise<void> => {
   try {
-    const data = await AssistantService.deleteKbArticle(req.params.id)
+    const data = await AssistantService.deleteKbArticle(requireString(req.params.id, "id"))
     sendSuccess(res, data)
   } catch (err: any) {
     err.code ? sendError(res, err.message, err.code, err.status) : next(err)
@@ -76,8 +77,8 @@ export const listKbArticles = async (
 ): Promise<void> => {
   try {
     const data = await AssistantService.listKbArticles({
-      category: req.query.category as string,
-      lang:     req.query.lang     as string,
+      category: asString(req.query.category),
+      lang:     asString(req.query.lang),
       page:     Number(req.query.page  ?? 1),
       limit:    Number(req.query.limit ?? 20),
     })

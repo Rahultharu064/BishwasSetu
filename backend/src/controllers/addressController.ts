@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import * as addressService from "../services/addressService";
+import { requireString } from "../utils/reqValue";
 
 export async function list(req: Request, res: Response, next: NextFunction) {
   try {
@@ -23,7 +24,7 @@ export async function update(req: Request, res: Response, next: NextFunction) {
   try {
     const data = await addressService.updateAddress(
       req.user!.id,
-      req.params.id,
+      requireString(req.params.id, "id"),
       req.body
     );
     res.json({ success: true, data });
@@ -40,7 +41,7 @@ export async function setDefault(
   try {
     const data = await addressService.setDefaultAddress(
       req.user!.id,
-      req.params.id
+      requireString(req.params.id, "id")
     );
     res.json({ success: true, data });
   } catch (err) {
@@ -50,7 +51,7 @@ export async function setDefault(
 
 export async function remove(req: Request, res: Response, next: NextFunction) {
   try {
-    const data = await addressService.deleteAddress(req.user!.id, req.params.id);
+    const data = await addressService.deleteAddress(req.user!.id, requireString(req.params.id, "id"));
     res.json({ success: true, data });
   } catch (err) {
     next(err);

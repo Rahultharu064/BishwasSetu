@@ -7,7 +7,6 @@ import {
   Wallet,
   Lock,
   TrendingUp,
-  Briefcase,
   ShieldCheck,
   Coins,
   ChevronRight,

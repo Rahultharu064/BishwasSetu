@@ -23,11 +23,13 @@ const KEY = "bs_lang";
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLang] = useState<Lang>("en");
 
+  // Rehydrate from localStorage on mount — client-only, unavailable at SSR.
   useEffect(() => {
     const saved =
       typeof window !== "undefined"
         ? (localStorage.getItem(KEY) as Lang | null)
         : null;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (saved === "en" || saved === "ne") setLang(saved);
   }, []);
 

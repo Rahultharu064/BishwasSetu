@@ -67,8 +67,11 @@ export default function ProviderJobsPage() {
   );
   const { bookings } = useMemo(() => bookingsFrom(req.data), [req.data]);
 
-  // Keep polling only while at least one job is still in flight.
+  // Keep polling only while at least one job is still in flight. `live` gates
+  // the same useFetch call that produces `bookings`, so it can't be derived
+  // inline without a circular read — it deliberately lags one render behind.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLive(bookings.some((b) => LIVE_STATES.includes(b.status)));
   }, [bookings]);
 

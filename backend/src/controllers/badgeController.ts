@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from 'express'
 import * as BadgeService from '../services/badgeService'
 import { sendSuccess, sendError } from '../utils/response'
+import { requireString } from '../utils/reqValue'
 
 const handle = (err: any, res: Response, next: NextFunction) => {
   if (err?.code && err?.status) {
@@ -71,7 +72,7 @@ export const getPending = async (req: Request, res: Response, next: NextFunction
 // ── ADMIN: PUT /api/v1/badges/admin/:id/verify ─────────
 export const verify = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const result = await BadgeService.verifyBadge(req.params.id as string, req.user!.id)
+    const result = await BadgeService.verifyBadge(requireString(req.params.id, "id"), req.user!.id)
     sendSuccess(res, result, result.message)
   } catch (err) {
     handle(err, res, next)
@@ -82,7 +83,7 @@ export const verify = async (req: Request, res: Response, next: NextFunction) =>
 export const reject = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const result = await BadgeService.rejectBadge(
-      req.params.id as string,
+      requireString(req.params.id, "id"),
       req.user!.id,
       req.body.reason
     )

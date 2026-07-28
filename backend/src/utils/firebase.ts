@@ -19,7 +19,7 @@ export interface MulticastPayload {
 export const sendPushNotification = async (
   payload: PushPayload
 ): Promise<boolean> => {
-  if (!payload.token) return false
+  if (!payload.token || !messaging) return false
 
   try {
     await messaging.send({
@@ -55,7 +55,7 @@ export const sendPushNotification = async (
 export const sendMulticastNotification = async (
   payload: MulticastPayload
 ): Promise<void> => {
-  if (!payload.tokens.length) return
+  if (!payload.tokens.length || !messaging) return
 
   const chunks = []
   for (let i = 0; i < payload.tokens.length; i += 500) {

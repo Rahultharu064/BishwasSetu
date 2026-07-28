@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import * as guaranteeService from "../services/guaranteeService";
+import { requireString } from "../utils/reqValue";
 
 export async function listMine(req: Request, res: Response, next: NextFunction) {
   try {
@@ -16,7 +17,7 @@ export async function fileClaim(req: Request, res: Response, next: NextFunction)
   try {
     const claim = await guaranteeService.fileGuaranteeClaim(
       req.user!.id,
-      req.params.guaranteeId,
+      requireString(req.params.guaranteeId, "guaranteeId"),
       req.body
     );
     res.status(201).json({ success: true, data: claim });
@@ -32,7 +33,7 @@ export async function resolveClaim(
 ) {
   try {
     const claim = await guaranteeService.resolveGuaranteeClaim(
-      req.params.claimId,
+      requireString(req.params.claimId, "claimId"),
       req.body.resolution
     );
     res.json({ success: true, data: claim });
@@ -47,10 +48,9 @@ export async function revenuePoints(
   next: NextFunction
 ) {
   try {
-    const points = await guaranteeService.getProviderRevenuePoints(
-      req.params.providerId
-    );
-    res.json({ success: true, data: { providerId: req.params.providerId, points } });
+    const providerId = requireString(req.params.providerId, "providerId");
+    const points = await guaranteeService.getProviderRevenuePoints(providerId);
+    res.json({ success: true, data: { providerId, points } });
   } catch (err) {
     next(err);
   }

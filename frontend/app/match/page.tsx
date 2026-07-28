@@ -50,8 +50,11 @@ function MatchInner() {
     if (!authLoading && !isAuthenticated) router.replace("/login?next=/match");
   }, [authLoading, isAuthenticated, router]);
 
-  // Prefill saved profile location.
+  // Prefill saved profile location once the auth context resolves (arrives
+  // asynchronously after mount) — the functional updater keeps this a no-op
+  // once the user has typed their own value.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (user?.district) setDistrict((d) => d || user.district!);
     if (user?.city) setCity((c) => c || user.city!);
   }, [user]);

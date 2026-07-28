@@ -2,6 +2,21 @@ import { prisma } from '../config/db'
 import { uploadToCloudinary, getSignedUrl } from '../utils/cloudinary'
 import { kycQueue } from '../jobs/queue'
 import { features } from '../config/features'
+import { sendPushNotification } from '../utils/firebase'
+import { sendSms } from '../utils/sms'
+
+async function notifyProvider(providerId: string, title: string, body: string) {
+  const provider = await prisma.provider.findUnique({
+    where:  { id: providerId },
+    select: { user: { select: { fcmToken: true, phone: true } } },
+  })
+  if (provider?.user?.fcmToken) {
+    await sendPushNotification({ token: provider.user.fcmToken, title, body })
+  }
+  if (provider?.user?.phone) {
+    await sendSms(provider.user.phone, `GharSewa: ${body}`)
+  }
+}
 
 // ── Upload KYC documents ──────────────────────────────────────
 
@@ -197,7 +212,7 @@ export const approveKyc = async (providerId: string, adminId: string) => {
     })
   })
 
-  // TODO: send notification to provider (Step 10)
+  await notifyProvider(providerId, 'KYC approved', 'Your identity verification is complete — you now have full platform access.')
   return { message: 'Provider KYC approved', providerId }
 }
 
@@ -227,6 +242,6 @@ export const rejectKyc = async (
     })
   })
 
-  // TODO: send notification to provider (Step 10)
+  await notifyProvider(providerId, 'KYC needs attention', `Your identity verification was rejected: ${reason}`)
   return { message: 'Provider KYC rejected', providerId }
 }

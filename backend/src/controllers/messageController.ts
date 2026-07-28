@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import * as messageService from "../services/messageService";
+import { requireString } from "../utils/reqValue";
 
 export async function conversations(
   req: Request,
@@ -18,7 +19,7 @@ export async function thread(req: Request, res: Response, next: NextFunction) {
   try {
     const data = await messageService.getThread(
       req.user!.id,
-      req.params.bookingId
+      requireString(req.params.bookingId, "bookingId")
     );
     res.json({ success: true, data });
   } catch (err) {
@@ -30,7 +31,7 @@ export async function send(req: Request, res: Response, next: NextFunction) {
   try {
     const data = await messageService.sendMessage(
       req.user!.id,
-      req.params.bookingId,
+      requireString(req.params.bookingId, "bookingId"),
       req.body?.body
     );
     res.status(201).json({ success: true, data });

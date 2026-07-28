@@ -84,7 +84,6 @@ function GatewayOption({
 // ── Escrow Payment Card ───────────────────────────────────────
 
 interface EscrowPaymentCardProps {
-  bookingId: string;
   amountNpr: number;
   escrowStatus: EscrowStatus;
   isEmergency?: boolean;
@@ -95,7 +94,6 @@ interface EscrowPaymentCardProps {
 }
 
 export function EscrowPaymentCard({
-  bookingId,
   amountNpr,
   escrowStatus,
   isEmergency = false,

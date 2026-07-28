@@ -1,5 +1,6 @@
 import { prisma }               from '../config/db'
 import { verifyKhaltiPayment, verifyEsewaPayment } from '../utils/payment'
+import { sendPushNotification } from '../utils/firebase'
 import type { PurchaseCreditsInput, ActivateBoostInput } from '../validators/creditsValidator'
 
 // Cost in credits per placement type
@@ -301,8 +302,18 @@ export const deductCredits = async (params: {
     where: { providerId },
   })
   if (updatedWallet && updatedWallet.balance <= 10) {
-    // TODO: fire push notification "Low credits — recharge to keep boost active" (Step 10)
     console.log(`🔔 Low credit warning for provider ${providerId}: ${updatedWallet.balance} credits`)
+    const provider = await prisma.provider.findUnique({
+      where:  { id: providerId },
+      select: { user: { select: { fcmToken: true } } },
+    })
+    if (provider?.user?.fcmToken) {
+      await sendPushNotification({
+        token: provider.user.fcmToken,
+        title: 'Low credits',
+        body:  `Only ${updatedWallet.balance} credits left — recharge to keep your boost active.`,
+      })
+    }
   }
 }
 

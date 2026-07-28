@@ -13,7 +13,6 @@ import { BookingStatusBadge } from "@/components/booking-status-badge";
 import { EscrowStatusBar } from "@/components/escrow-status-bar";
 import { EmptyState, ErrorState } from "@/components/ui/states";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
 
 function BookingsInner() {
   const router = useRouter();

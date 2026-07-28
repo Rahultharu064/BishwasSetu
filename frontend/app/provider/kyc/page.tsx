@@ -153,9 +153,12 @@ function FileRow({
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
 
+  // Creates a browser object-URL resource (with matching cleanup) — a genuine
+  // external-system sync, not derivable state.
   useEffect(() => {
     if (file && file.type.startsWith("image/")) {
       const url = URL.createObjectURL(file);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPreview(url);
       return () => URL.revokeObjectURL(url);
     }

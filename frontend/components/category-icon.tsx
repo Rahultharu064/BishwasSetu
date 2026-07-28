@@ -45,6 +45,10 @@ export function CategoryIcon({
   name: string;
   className?: string;
 }) {
+  // categoryIcon() is a lookup into a fixed, module-level table of Lucide
+  // icons — it always returns one of those stable references, never a newly
+  // constructed component, so no per-render identity/state-reset risk here.
   const Icon = categoryIcon(name);
+  // eslint-disable-next-line react-hooks/static-components
   return <Icon className={className} />;
 }

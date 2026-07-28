@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import * as ServiceModule from '../services/serviceService'
 import { sendSuccess, sendError } from '../utils/response'
+import { asString, requireString } from '../utils/reqValue'
 
 // ── Level 1: Categories ───────────────────────────────────────
 
@@ -19,7 +20,7 @@ export const getCategoryBySlug = async (
   req: Request, res: Response, next: NextFunction
 ): Promise<void> => {
   try {
-    const data = await ServiceModule.getCategoryBySlug(req.params.slug)
+    const data = await ServiceModule.getCategoryBySlug(requireString(req.params.slug, "slug"))
     sendSuccess(res, data)
   } catch (err: any) {
     err.code ? sendError(res, err.message, err.code, err.status) : next(err)
@@ -30,8 +31,8 @@ export const getProvidersByCategory = async (
   req: Request, res: Response, next: NextFunction
 ): Promise<void> => {
   try {
-    const data = await ServiceModule.getProvidersByCategory(req.params.slug, {
-      serviceArea: req.query.serviceArea as string,
+    const data = await ServiceModule.getProvidersByCategory(requireString(req.params.slug, "slug"), {
+      serviceArea: asString(req.query.serviceArea),
       trustMin:    Number(req.query.trustMin ?? 0),
       page:        Number(req.query.page    ?? 1),
       limit:       Number(req.query.limit   ?? 10),
@@ -57,7 +58,7 @@ export const updateCategory = async (
   req: Request, res: Response, next: NextFunction
 ): Promise<void> => {
   try {
-    const data = await ServiceModule.updateCategory(req.params.id, req.body)
+    const data = await ServiceModule.updateCategory(requireString(req.params.id, "id"), req.body)
     sendSuccess(res, data, 'Category updated')
   } catch (err: any) {
     err.code ? sendError(res, err.message, err.code, err.status) : next(err)
@@ -69,7 +70,7 @@ export const toggleCategory = async (
 ): Promise<void> => {
   try {
     const data = await ServiceModule.toggleCategory(
-      req.params.id,
+      requireString(req.params.id, "id"),
       req.body.isActive
     )
     sendSuccess(res, data)
@@ -84,7 +85,7 @@ export const getSubCategories = async (
   req: Request, res: Response, next: NextFunction
 ): Promise<void> => {
   try {
-    const data = await ServiceModule.getSubCategories(req.params.slug)
+    const data = await ServiceModule.getSubCategories(requireString(req.params.slug, "slug"))
     sendSuccess(res, data)
   } catch (err: any) {
     err.code ? sendError(res, err.message, err.code, err.status) : next(err)
@@ -96,8 +97,8 @@ export const getSubCategoryBySlug = async (
 ): Promise<void> => {
   try {
     const data = await ServiceModule.getSubCategoryBySlug(
-      req.params.categorySlug,
-      req.params.subSlug
+      requireString(req.params.categorySlug, "categorySlug"),
+      requireString(req.params.subSlug, "subSlug")
     )
     sendSuccess(res, data)
   } catch (err: any) {
@@ -120,7 +121,7 @@ export const updateSubCategory = async (
   req: Request, res: Response, next: NextFunction
 ): Promise<void> => {
   try {
-    const data = await ServiceModule.updateSubCategory(req.params.id, req.body)
+    const data = await ServiceModule.updateSubCategory(requireString(req.params.id, "id"), req.body)
     sendSuccess(res, data, 'Sub-category updated')
   } catch (err: any) {
     err.code ? sendError(res, err.message, err.code, err.status) : next(err)
@@ -133,7 +134,7 @@ export const getServices = async (
   req: Request, res: Response, next: NextFunction
 ): Promise<void> => {
   try {
-    const data = await ServiceModule.getServices(req.params.subCategoryId)
+    const data = await ServiceModule.getServices(requireString(req.params.subCategoryId, "subCategoryId"))
     sendSuccess(res, data)
   } catch (err: any) {
     err.code ? sendError(res, err.message, err.code, err.status) : next(err)
@@ -145,9 +146,9 @@ export const getServiceBySlug = async (
 ): Promise<void> => {
   try {
     const data = await ServiceModule.getServiceBySlug(
-      req.params.categorySlug,
-      req.params.subSlug,
-      req.params.serviceSlug
+      requireString(req.params.categorySlug, "categorySlug"),
+      requireString(req.params.subSlug, "subSlug"),
+      requireString(req.params.serviceSlug, "serviceSlug")
     )
     sendSuccess(res, data)
   } catch (err: any) {
@@ -170,7 +171,7 @@ export const updateService = async (
   req: Request, res: Response, next: NextFunction
 ): Promise<void> => {
   try {
-    const data = await ServiceModule.updateService(req.params.id, req.body)
+    const data = await ServiceModule.updateService(requireString(req.params.id, "id"), req.body)
     sendSuccess(res, data, 'Service updated')
   } catch (err: any) {
     err.code ? sendError(res, err.message, err.code, err.status) : next(err)
@@ -182,7 +183,7 @@ export const toggleService = async (
 ): Promise<void> => {
   try {
     const data = await ServiceModule.toggleService(
-      req.params.id,
+      requireString(req.params.id, "id"),
       req.body.isActive
     )
     sendSuccess(res, data)
@@ -197,7 +198,7 @@ export const searchServices = async (
   req: Request, res: Response, next: NextFunction
 ): Promise<void> => {
   try {
-    const data = await ServiceModule.searchServices(req.query.q as string)
+    const data = await ServiceModule.searchServices(asString(req.query.q) ?? '')
     sendSuccess(res, data)
   } catch (err: any) {
     err.code ? sendError(res, err.message, err.code, err.status) : next(err)

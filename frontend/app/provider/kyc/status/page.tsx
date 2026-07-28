@@ -108,7 +108,10 @@ export default function KycStatusPage() {
   );
 
   // Poll while the review is in progress so the outcome arrives automatically.
+  // `polling` gates the same useFetch call that produces `data`, so it can't
+  // be derived inline without a circular read — deliberately one render behind.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPolling(data?.identityStatus === "UNDER_REVIEW");
   }, [data]);
 

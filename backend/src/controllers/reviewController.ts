@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import * as ReviewService from '../services/reviewService'
 import { sendSuccess, sendError } from '../utils/response'
+import { requireString } from '../utils/reqValue'
 
 export const createReview = async (
   req: Request, res: Response, next: NextFunction
@@ -18,7 +19,7 @@ export const addProviderReply = async (
 ): Promise<void> => {
   try {
     const data = await ReviewService.addProviderReply(
-      req.params.id,
+      requireString(req.params.id, "id"),
       req.user!.providerId!,
       req.body
     )
@@ -32,7 +33,7 @@ export const getProviderReviews = async (
   req: Request, res: Response, next: NextFunction
 ): Promise<void> => {
   try {
-    const data = await ReviewService.getProviderReviews(req.params.providerId, {
+    const data = await ReviewService.getProviderReviews(requireString(req.params.providerId, "providerId"), {
       page:   Number(req.query.page   ?? 1),
       limit:  Number(req.query.limit  ?? 10),
       rating: req.query.rating ? Number(req.query.rating) : undefined,

@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import * as emergencyService from "../services/emergencyService";
+import { requireString } from "../utils/reqValue";
 
 export async function create(req: Request, res: Response, next: NextFunction) {
   try {
@@ -29,7 +30,7 @@ export async function accept(req: Request, res: Response, next: NextFunction) {
     // Offers are keyed by Provider.id, not User.id.
     const booking = await emergencyService.acceptEmergency(
       req.user!.providerId!,
-      req.params.requestId
+      requireString(req.params.requestId, "requestId")
     );
     res.json({ success: true, data: booking });
   } catch (err) {
@@ -41,7 +42,7 @@ export async function decline(req: Request, res: Response, next: NextFunction) {
   try {
     await emergencyService.declineEmergency(
       req.user!.providerId!,
-      req.params.requestId
+      requireString(req.params.requestId, "requestId")
     );
     res.json({ success: true });
   } catch (err) {
@@ -53,7 +54,7 @@ export async function status(req: Request, res: Response, next: NextFunction) {
   try {
     const request = await emergencyService.getEmergencyStatus(
       { id: req.user!.id, providerId: req.user!.providerId },
-      req.params.requestId as string
+      requireString(req.params.requestId, "requestId")
     );
     res.json({ success: true, data: request });
   } catch (err) {
@@ -65,7 +66,7 @@ export async function cancel(req: Request, res: Response, next: NextFunction) {
   try {
     const request = await emergencyService.cancelEmergency(
       req.user!.id,
-      req.params.requestId
+      requireString(req.params.requestId, "requestId")
     );
     res.json({ success: true, data: request });
   } catch (err) {

@@ -29,6 +29,9 @@ export function useFetch<T>(
 
   useEffect(() => {
     let cancelled = false;
+    // Textbook data-fetching effect — resetting loading/error before an async
+    // call that itself sets state in a callback is the standard pattern.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     setError(null);
     fn()

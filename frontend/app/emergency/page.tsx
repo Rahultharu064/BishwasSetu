@@ -100,7 +100,7 @@ function RadarAnimation({ label }: { label: string }) {
 
 export default function EmergencyPage() {
   const router = useRouter();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { toast } = useToast();
 
   const [stage, setStage] = useState<Stage>("category");

@@ -8,7 +8,6 @@ import {
   Star,
   ShieldCheck,
   Lock,
-  ChevronRight,
   Info,
   BadgeCheck,
 } from "lucide-react";
