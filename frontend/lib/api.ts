@@ -557,7 +557,18 @@ export const api = {
 };
 
 // ── Assistant SSE streaming (POST /assistant/chat) ────────────
+
+/** Retrieval metadata sent once, before tokens stream (backend `meta` event). */
+export interface ChatStreamMeta {
+  intent: string;
+  lang: "ne" | "en";
+  /** KB articles the answer is grounded in — surface these as citations. */
+  sources: { title: string; category: string }[];
+}
+
 export interface ChatStreamHandlers {
+  /** Fires once with retrieval intent/language and the KB sources used. */
+  onMeta?: (meta: ChatStreamMeta) => void;
   onToken: (text: string) => void;
   onDone: () => void;
   onError: (message: string) => void;
