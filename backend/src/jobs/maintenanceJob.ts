@@ -20,12 +20,23 @@ void maintenanceQueue.add(
   {},
   { repeat: { cron: "30 2 * * *" } } // daily 02:30 NPT server time
 );
+void maintenanceQueue.add(
+  "expire-badges",
+  {},
+  { repeat: { cron: "15 1 * * *" } } // daily 01:15 — expire lapsed annual badges (Insured)
+);
 
 maintenanceQueue.process("expire-guarantees", async () => {
   await prisma.serviceGuarantee.updateMany({
     where: { status: "ACTIVE", expiresAt: { lt: new Date() } },
     data: { status: "EXPIRED" },
   });
+});
+
+maintenanceQueue.process("expire-badges", async () => {
+  const { expireLapsedBadges } = await import("../services/badgeService");
+  const expired = await expireLapsedBadges();
+  if (expired > 0) console.log(`🎖️  Expired ${expired} lapsed trust badge(s)`);
 });
 
 maintenanceQueue.process("leakage-scan", async () => {

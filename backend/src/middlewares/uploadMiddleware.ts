@@ -42,3 +42,6 @@ export const kycUploadFields = upload.fields([
 
 // Single profile photo
 export const profilePhotoUpload = upload.single('profilePhoto')
+
+// Single insurance / evidence document for a Trust Badge purchase (PRD §4.3)
+export const badgeDocumentUpload = upload.single('document')

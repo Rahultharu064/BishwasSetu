@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   BadgeCheck,
   Flag,
+  Award,
 } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { cn } from "@/lib/utils";
@@ -19,6 +20,7 @@ const NAV = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/kyc", label: "Verification Queue", icon: ClipboardCheck },
   { href: "/admin/skill-evidence", label: "Skill Evidence", icon: BadgeCheck },
+  { href: "/admin/badges", label: "Trust Badges", icon: Award },
   { href: "/admin/providers", label: "Providers", icon: Users },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/complaints", label: "Complaints", icon: MessageSquareWarning },

@@ -23,6 +23,56 @@ export type MilestoneBadge =
   | "TRUSTED_PRO"
   | "MASTER_PROVIDER";
 
+// ── Paid Trust Badges (PRD §4.3) ──────────────────────────────
+export type TrustBadgeType =
+  | "SKILL_VERIFIED"
+  | "BACKGROUND_CHECKED"
+  | "INSURED"
+  | "FAST_RESPONDER";
+
+export type PurchasableBadgeType =
+  | "SKILL_VERIFIED"
+  | "BACKGROUND_CHECKED"
+  | "INSURED";
+
+export type BadgeStatus = "PENDING" | "ACTIVE" | "EXPIRED" | "REJECTED";
+
+export interface BadgeCatalogItem {
+  badgeType: PurchasableBadgeType;
+  label: string;
+  priceNpr: number;
+  validityDays: number | null;
+  annual: boolean;
+  requiresDocument: boolean;
+  verificationStep: string;
+  description: string;
+}
+
+export interface ProviderBadgeRecord {
+  id: string;
+  badgeType: TrustBadgeType;
+  status: BadgeStatus;
+  amountNpr: number;
+  expiresAt?: string | null;
+  rejectionReason?: string | null;
+  reviewedAt?: string | null;
+  purchasedAt: string;
+}
+
+/** Admin queue row — pending badge awaiting verification. */
+export interface PendingBadge extends ProviderBadgeRecord {
+  documentUrl?: string | null;
+  documentId?: string | null;
+  catalog?: BadgeCatalogItem | null;
+  provider: {
+    id: string;
+    legalName: string;
+    kycTier: KycTier;
+    trustScore: number;
+    user?: { name: string; phone?: string | null };
+  };
+}
+
 export type BookingStatus =
   | "REQUESTED"
   | "ACCEPTED"
@@ -134,6 +184,7 @@ export interface Provider {
   user?: { name: string };
   categories?: { category: Category }[];
   reviews?: Review[];
+  badges?: ProviderBadgeRecord[];
   _count?: { reviews?: number };
 }
 

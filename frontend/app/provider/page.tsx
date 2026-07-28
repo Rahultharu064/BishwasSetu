@@ -183,6 +183,23 @@ export default function ProviderDashboardPage() {
             </div>
             <ChevronRight className="h-5 w-5 text-muted-foreground" />
           </Link>
+
+          {/* Trust badges (PRD §4.3) */}
+          <Link
+            href="/provider/badges"
+            className="flex items-center gap-3 rounded-2xl border border-border bg-card p-5 transition-colors hover:border-primary/40"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-soft text-primary">
+              <ShieldCheck className="h-5 w-5" />
+            </span>
+            <div className="flex-1">
+              <p className="font-semibold">Trust badges</p>
+              <p className="text-sm text-muted-foreground">
+                Get Skill Verified, Insured &amp; more
+              </p>
+            </div>
+            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+          </Link>
         </div>
       )}
     </div>

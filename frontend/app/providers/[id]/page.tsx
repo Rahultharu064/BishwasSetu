@@ -18,7 +18,8 @@ import { relativeTime } from "@/lib/format";
 import type { Provider, Review } from "@/lib/types";
 import { Avatar } from "@/components/ui/avatar";
 import { TrustScoreRing } from "@/components/trust-score-ring";
-import { TierBadge, ExperienceBadge, FastResponderChip } from "@/components/badges";
+import { TierBadge, ExperienceBadge, FastResponderChip, TrustBadge } from "@/components/badges";
+import type { TrustBadgeType } from "@/lib/types";
 import { TrustBreakdownSheet } from "@/components/trust-breakdown-sheet";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -60,6 +61,10 @@ export default function ProviderProfilePage({
     ? reviews.reduce((a, r) => a + r.rating, 0) / reviews.length
     : null;
   const isFastResponder = p.badges?.some((b) => b.badgeType === "FAST_RESPONDER");
+  // Paid trust badges (PRD §4.3) — backend returns only ACTIVE badges here.
+  const paidBadges = (p.badges ?? [])
+    .map((b) => b.badgeType as TrustBadgeType)
+    .filter((t) => t === "SKILL_VERIFIED" || t === "BACKGROUND_CHECKED" || t === "INSURED");
 
   return (
     <div className="mx-auto max-w-3xl px-4 pb-28 pt-6 md:pb-10">
@@ -79,6 +84,9 @@ export default function ProviderProfilePage({
             <TierBadge tier={p.kycTier} />
             <ExperienceBadge milestone={p.milestoneBadge} />
             {isFastResponder && <FastResponderChip />}
+            {paidBadges.map((t) => (
+              <TrustBadge key={t} type={t} size="default" />
+            ))}
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
             {p.serviceArea && (

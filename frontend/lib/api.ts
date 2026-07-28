@@ -457,6 +457,49 @@ export const api = {
       { areaName: string; city: string; jobsThisMonth: number; jobsAllTime: number }[]
     >(`/providers/${providerId}/neighborhood-stats`),
 
+  // ── §4.3 Trust Badges ────────────────────────────────────────
+  badgeCatalog: () =>
+    apiRequest<import("./types").BadgeCatalogItem[]>("/badges/catalog", {
+      auth: true,
+    }),
+  myBadges: () =>
+    apiRequest<import("./types").ProviderBadgeRecord[]>("/badges/me", {
+      auth: true,
+    }),
+  uploadBadgeDocument: (form: FormData) =>
+    apiRequest<{ documentUrl: string; documentId: string; fileType: string }>(
+      "/badges/document",
+      { method: "POST", body: form, auth: true }
+    ),
+  purchaseBadge: (body: {
+    badgeType: import("./types").PurchasableBadgeType;
+    paymentMethod: "KHALTI" | "ESEWA";
+    paymentRef: string;
+    documentUrl?: string;
+    documentId?: string;
+  }) =>
+    apiRequest<{ badge: import("./types").ProviderBadgeRecord; message: string }>(
+      "/badges/purchase",
+      { method: "POST", body, auth: true }
+    ),
+  // Admin badge queue
+  adminPendingBadges: (query?: Record<string, string | number | undefined>) =>
+    apiRequest<{
+      badges: import("./types").PendingBadge[];
+      pagination: import("./types").Pagination;
+    }>("/badges/admin/pending", { query, auth: true }),
+  adminVerifyBadge: (id: string) =>
+    apiRequest<unknown>(`/badges/admin/${id}/verify`, {
+      method: "PUT",
+      auth: true,
+    }),
+  adminRejectBadge: (id: string, reason: string) =>
+    apiRequest<unknown>(`/badges/admin/${id}/reject`, {
+      method: "PUT",
+      body: { reason },
+      auth: true,
+    }),
+
   // ── In-booking messaging ─────────────────────────────────────
   conversations: () =>
     apiRequest<{ conversations: import("./types").Conversation[] }>(

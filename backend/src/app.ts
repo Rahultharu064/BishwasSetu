@@ -41,6 +41,7 @@ import adminRoutes     from './routes/adminRoute'
 import paymentRoutes   from './routes/paymentRoute'
 import complaintRoutes from './routes/complaintRoute'
 import matchRoutes     from './routes/matchRoute'
+import badgeRoutes     from './routes/badgeRoute'
 import antiDisintermediationRoutes from './routes/antiDisintermediationRoute'
 import messageRoutes   from './routes/messageRoute'
 import addressRoutes   from './routes/addressRoute'
@@ -119,6 +120,7 @@ app.use(`${v1}/addresses`,  addressRoutes)
 app.use(`${v1}/credits`,    creditRoutes)
 app.use(`${v1}/services`,   serviceRoutes)
 app.use(`${v1}/match`,      matchRoutes)
+app.use(`${v1}/badges`,     badgeRoutes)
 
 // ─────────────────────────────────────────────────────────────
 // ERROR HANDLING  (must be last)
