@@ -16,6 +16,7 @@ interface AuthState {
   loading: boolean;
   isAuthenticated: boolean;
   setSession: (accessToken: string, user: User) => void;
+  updateUser: (patch: Partial<User>) => void;
   logout: () => Promise<void>;
 }
 
@@ -50,6 +51,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
   }, []);
 
+  const updateUser = useCallback((patch: Partial<User>) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, ...patch };
+      if (typeof window !== "undefined")
+        localStorage.setItem(USER_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
   const logout = useCallback(async () => {
     try {
       await api.logout();
@@ -68,6 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         isAuthenticated: !!user,
         setSession,
+        updateUser,
         logout,
       }}
     >

@@ -99,6 +99,7 @@ export interface User {
   district?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  preferredPaymentMethod?: "KHALTI" | "ESEWA" | "CASH" | null;
 }
 
 // ── AI Smart Match (POST /match) ──────────────────────────────

@@ -6,3 +6,6 @@ dist/
 *.log
 uploads/
 /generated/
+logs/
+scratch-token.ts
+tsc_output.txt

@@ -137,6 +137,10 @@ model User {
   latitude     Decimal?  @db.Decimal(10, 7)
   longitude    Decimal?  @db.Decimal(10, 7)
 
+  // Preferred gateway for booking checkout; prefills (never forces) the
+  // payment method selector. Null = no preference set yet.
+  preferredPaymentMethod PaymentMethod?
+
   deletedAt    DateTime? // soft delete
 
   createdAt DateTime @default(now())

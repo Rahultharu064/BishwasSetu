@@ -36,7 +36,7 @@ export default function BookingPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
-  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
   const { toast } = useToast();
 
   const { data, loading } = useFetch<ProfileResponse>(
@@ -68,9 +68,20 @@ export default function BookingPage({
   const [address, setAddress] = useState("");
   const [price, setPrice] = useState<string>("");
   const [method, setMethod] = useState<"KHALTI" | "ESEWA">("KHALTI");
+  const [methodTouched, setMethodTouched] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [addressTouched, setAddressTouched] = useState(false);
+
+  // Prefill from the customer's saved payment preference (only Khalti/eSewa
+  // are selectable here — cash isn't wired into the escrow checkout flow).
+  useEffect(() => {
+    if (methodTouched) return;
+    const pref = user?.preferredPaymentMethod;
+    if (pref === "KHALTI" || pref === "ESEWA")
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setMethod(pref);
+  }, [user?.preferredPaymentMethod, methodTouched]);
 
   const formatAddress = (a: import("@/lib/types").SavedAddress) =>
     [a.addressLine, a.landmark, a.city].filter(Boolean).join(", ");
@@ -402,7 +413,10 @@ export default function BookingPage({
                 <button
                   key={m}
                   type="button"
-                  onClick={() => setMethod(m)}
+                  onClick={() => {
+                    setMethod(m);
+                    setMethodTouched(true);
+                  }}
                   className={`rounded-xl border p-4 text-center font-semibold ${
                     method === m
                       ? "border-primary bg-primary-soft text-primary"

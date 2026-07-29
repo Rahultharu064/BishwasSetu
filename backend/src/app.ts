@@ -46,6 +46,7 @@ import antiDisintermediationRoutes from './routes/antiDisintermediationRoute'
 import messageRoutes   from './routes/messageRoute'
 import addressRoutes   from './routes/addressRoute'
 import assistantRoutes from './routes/assistantRoute'
+import userRoutes       from './routes/userRoute'
 
 
 // ─────────────────────────────────────────────────────────────
@@ -117,6 +118,7 @@ app.use(`${v1}/reviews`,    reviewRoutes)
 app.use(`${v1}/complaints`, complaintRoutes)
 app.use(`${v1}/messages`,   messageRoutes)
 app.use(`${v1}/addresses`,  addressRoutes)
+app.use(`${v1}/users`,      userRoutes)
 
 app.use(`${v1}/credits`,    creditRoutes)
 app.use(`${v1}/services`,   serviceRoutes)

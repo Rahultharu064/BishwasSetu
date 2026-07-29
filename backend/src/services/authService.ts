@@ -9,8 +9,8 @@ import {
   rotateRefreshToken,
   verifyRefreshToken,
 } from '../utils/jwt'
-import { sendSms } from '../utils/sms'       // implemented below
-import { sendEmail } from '../utils/email'   // stub — wire later
+import { sendSms } from '../utils/sms'
+import { sendEmail } from '../utils/email'
 import type { RegisterInput, LoginInput } from '../validators/authValidator'
 
 // ── REGISTER ─────────────────────────────────
@@ -88,10 +88,11 @@ export const verifyUserOtp = async (userId: string, code: string) => {
   const user = await prisma.user.findUnique({
     where:  { id: userId },
     select: {
-      id:       true,
-      name:     true,
-      role:     true,
-      provider: { select: { id: true, identityStatus: true } },
+      id:                     true,
+      name:                   true,
+      role:                   true,
+      preferredPaymentMethod: true,
+      provider:               { select: { id: true, identityStatus: true } },
     },
   })
 
@@ -113,11 +114,12 @@ export const verifyUserOtp = async (userId: string, code: string) => {
     accessToken,
     refreshToken,
     user: {
-      id:         user.id,
-      name:       user.name,
-      role:       user.role,
-      providerId: user.provider?.id,
-      kycStatus:  user.provider?.identityStatus,
+      id:                     user.id,
+      name:                   user.name,
+      role:                   user.role,
+      preferredPaymentMethod: user.preferredPaymentMethod,
+      providerId:             user.provider?.id,
+      kycStatus:              user.provider?.identityStatus,
     },
   }
 }

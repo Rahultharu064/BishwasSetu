@@ -560,6 +560,22 @@ export const api = {
       method: "DELETE",
       auth: true,
     }),
+
+  // ── Payment preference ───────────────────────────────────────
+  getPaymentPreference: () =>
+    apiRequest<{
+      preferredPaymentMethod: "KHALTI" | "ESEWA" | "CASH" | null;
+    }>("/users/me/payment-preference", { auth: true }),
+  updatePaymentPreference: (
+    preferredPaymentMethod: "KHALTI" | "ESEWA" | "CASH"
+  ) =>
+    apiRequest<{
+      preferredPaymentMethod: "KHALTI" | "ESEWA" | "CASH" | null;
+    }>("/users/me/payment-preference", {
+      method: "PATCH",
+      body: { preferredPaymentMethod },
+      auth: true,
+    }),
 };
 
 // ── Assistant SSE streaming (POST /assistant/chat) ────────────
