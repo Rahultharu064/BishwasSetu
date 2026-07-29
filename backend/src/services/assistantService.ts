@@ -9,7 +9,7 @@ import {
   retrieveChunks,
   RetrievedChunk,
 } from '../assistant/assistantRetrieval'
-import { fetchContext }      from '../assistant/assistantContext'
+import { fetchContext, type Requester } from '../assistant/assistantContext'
 import type { ChatInput }    from '../validators/assistantValidator'
 
 const SESSION_TTL = 30 * 60          // 30 minutes in seconds
@@ -63,11 +63,12 @@ const saveSession = async (
 // ── Main chat handler (streaming) ─────────────────────────────
 
 export const streamChat = async (
-  input:   ChatInput,
-  userId:  string | undefined,
-  res:     Response
+  input:      ChatInput,
+  requester:  Requester | undefined,
+  res:        Response
 ): Promise<void> => {
   const { message, sessionId, contextType, contextId } = input
+  const userId = requester?.id
 
   // 1. Set SSE headers
   res.setHeader('Content-Type',  'text/event-stream')
@@ -107,8 +108,9 @@ export const streamChat = async (
     // 4. Retrieve KB chunks via MySQL FULLTEXT search
     const chunks = await retrieveChunks(message, lang, 5)
 
-    // 5. Fetch live platform context
-    const liveContextObj = await fetchContext(contextType, contextId, userId)
+    // 5. Fetch live platform context — scoped to the requester so a guest or
+    // another user can never pull someone else's booking/complaint/wallet.
+    const liveContextObj = await fetchContext(contextType, contextId, requester ?? {})
     const liveContext    = liveContextObj?.summary ?? null
 
     // 6. Build system prompt
@@ -326,6 +328,7 @@ CRITICAL RULES:
 4. Never make promises about refunds, approvals, or outcomes.
 5. You CANNOT book, cancel, or modify anything — you are read-only.
 6. Keep responses concise — under 150 words unless the user asks for detail.
+7. LIVE CONTEXT, when present, belongs only to the signed-in user asking the question — never imply you can see or discuss any other person's bookings, complaints, or wallet.
 
 CURRENT INTENT: ${intent}
 

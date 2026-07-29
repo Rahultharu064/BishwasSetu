@@ -11,7 +11,7 @@ export const chat = async (
 ): Promise<void> => {
   try {
     // streamChat handles SSE headers and response internally
-    await AssistantService.streamChat(req.body, req.user?.id, res)
+    await AssistantService.streamChat(req.body, req.user, res)
   } catch (err) {
     // SSE already opened — can't send JSON error, log and close
     console.error('Chat controller error:', err)

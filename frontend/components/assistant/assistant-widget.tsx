@@ -1,14 +1,18 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Sparkles, X, Send, Bot, User, WifiOff } from "lucide-react";
 import { streamAssistantChat } from "@/lib/api";
+import { useAuth } from "@/context/auth-context";
 import { cn } from "@/lib/utils";
 
 interface Msg {
   role: "user" | "assistant";
   content: string;
 }
+
+type ContextType = "booking" | "provider" | "complaint" | "credits" | "general";
 
 const SUGGESTIONS = [
   "How does escrow protect me?",
@@ -20,7 +24,36 @@ function newSessionId() {
   return `web_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+const UUID_RE = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
+
+/**
+ * Scope the assistant's live context to whatever page (and, for credits,
+ * whichever user) the visitor is actually on — the backend only ever
+ * returns data the signed-in user is authorized to see (see
+ * assistantContext.ts), this just decides what's worth asking for.
+ */
+function contextForRoute(
+  pathname: string,
+  providerId?: string | null
+): { contextType: ContextType; contextId?: string } {
+  const booking = pathname.match(new RegExp(`^/bookings/(${UUID_RE})$`, "i"));
+  if (booking) return { contextType: "booking", contextId: booking[1] };
+
+  const complaint = pathname.match(new RegExp(`^/complaints/(${UUID_RE})$`, "i"));
+  if (complaint) return { contextType: "complaint", contextId: complaint[1] };
+
+  const provider = pathname.match(new RegExp(`^/providers/(${UUID_RE})`, "i"));
+  if (provider) return { contextType: "provider", contextId: provider[1] };
+
+  if (pathname.startsWith("/provider") && providerId)
+    return { contextType: "credits", contextId: providerId };
+
+  return { contextType: "general" };
+}
+
 export function AssistantWidget() {
+  const pathname = usePathname();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
@@ -51,7 +84,11 @@ export function AssistantWidget() {
 
     abortRef.current = new AbortController();
     await streamAssistantChat(
-      { message: trimmed, sessionId: sessionId.current, contextType: "general" },
+      {
+        message: trimmed,
+        sessionId: sessionId.current,
+        ...contextForRoute(pathname, user?.providerId),
+      },
       {
         onToken: (t) =>
           setMessages((m) => {

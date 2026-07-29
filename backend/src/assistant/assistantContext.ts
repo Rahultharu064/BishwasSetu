@@ -1,4 +1,5 @@
 import { prisma } from '../config/db'
+import type { Role } from '@prisma/client'
 
 export interface InjectedContext {
   type:    string
@@ -6,15 +7,36 @@ export interface InjectedContext {
   summary: string    // short plain-text summary for the system prompt
 }
 
+/** Whoever is asking — undefined for a guest. */
+export interface Requester {
+  id?:         string
+  role?:       Role
+  providerId?: string
+}
+
+const ACCESS_DENIED: InjectedContext = {
+  type:    'denied',
+  data:    {},
+  summary: 'The requested context is not accessible to this user. Do not reveal any details about it — if asked, say you can only discuss the signed-in user\'s own bookings, complaints, or provider info.',
+}
+
+const isStaff = (requester: Requester) =>
+  requester.role === 'ADMIN' || requester.role === 'MODERATOR'
+
 // ── Booking context ───────────────────────────────────────────
+// Private to the two parties on the booking (customer + assigned provider),
+// plus staff. Everyone else — including guests — gets a denial, never data.
 
 const getBookingContext = async (
-  bookingId: string
+  bookingId: string,
+  requester: Requester
 ): Promise<InjectedContext> => {
   const booking = await prisma.booking.findUnique({
     where: { id: bookingId },
     select: {
       id:          true,
+      customerId:  true,
+      providerId:  true,
       status:      true,
       scheduledAt: true,
       priceNpr:    true,
@@ -27,6 +49,12 @@ const getBookingContext = async (
   if (!booking) {
     return { type: 'booking', data: {}, summary: 'Booking not found.' }
   }
+
+  const owns =
+    isStaff(requester) ||
+    booking.customerId === requester.id ||
+    booking.providerId === requester.providerId
+  if (!owns) return ACCESS_DENIED
 
   return {
     type: 'booking',
@@ -44,6 +72,8 @@ Current booking context:
 }
 
 // ── Provider context ──────────────────────────────────────────
+// A provider's public profile — same info anyone can see on their listing
+// page, so this stays open to guests too.
 
 const getProviderContext = async (
   providerId: string
@@ -92,13 +122,17 @@ Provider context:
 }
 
 // ── Complaint context ─────────────────────────────────────────
+// Private to the complainant + the provider it's about, plus staff.
 
 const getComplaintContext = async (
-  complaintId: string
+  complaintId: string,
+  requester:   Requester
 ): Promise<InjectedContext> => {
   const complaint = await prisma.complaint.findUnique({
     where:  { id: complaintId },
     select: {
+      customerId:  true,
+      providerId:  true,
       type:        true,
       status:      true,
       description: true,
@@ -111,6 +145,12 @@ const getComplaintContext = async (
   if (!complaint) {
     return { type: 'complaint', data: {}, summary: 'Complaint not found.' }
   }
+
+  const owns =
+    isStaff(requester) ||
+    complaint.customerId === requester.id ||
+    complaint.providerId === requester.providerId
+  if (!owns) return ACCESS_DENIED
 
   return {
     type: 'complaint',
@@ -127,10 +167,15 @@ Complaint context:
 }
 
 // ── Credits context ───────────────────────────────────────────
+// A provider's own credit wallet — never another provider's.
 
 const getCreditsContext = async (
-  providerId: string
+  providerId: string,
+  requester:  Requester
 ): Promise<InjectedContext> => {
+  const owns = isStaff(requester) || providerId === requester.providerId
+  if (!owns) return ACCESS_DENIED
+
   const wallet = await prisma.creditWallet.findUnique({
     where:  { providerId },
     select: { balance: true, totalEarned: true, totalSpent: true },
@@ -149,26 +194,29 @@ Credits context:
 }
 
 // ── Main context fetcher ──────────────────────────────────────
+// `requester` is the authenticated caller (empty object for a guest) —
+// every context type except the public provider profile is scoped so a
+// user can only ever see their own data, never another user's.
 
 export const fetchContext = async (
   contextType: string,
-  contextId?:  string,
-  userId?:     string
+  contextId:   string | undefined,
+  requester:   Requester
 ): Promise<InjectedContext | null> => {
   try {
     switch (contextType) {
       case 'booking':
-        return contextId ? getBookingContext(contextId) : null
+        return contextId ? getBookingContext(contextId, requester) : null
 
       case 'provider':
         return contextId ? getProviderContext(contextId) : null
 
       case 'complaint':
-        return contextId ? getComplaintContext(contextId) : null
+        return contextId ? getComplaintContext(contextId, requester) : null
 
       case 'credits':
         // contextId is providerId for credits
-        return contextId ? getCreditsContext(contextId) : null
+        return contextId ? getCreditsContext(contextId, requester) : null
 
       default:
         return null
