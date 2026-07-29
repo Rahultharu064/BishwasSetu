@@ -11,6 +11,7 @@ import {
   IdCard,
   Camera,
   FileBadge,
+  Images,
   X,
 } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
@@ -18,6 +19,7 @@ import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/context/toast-context";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import type { SkillEvidenceType } from "@/lib/types";
 
 interface DocField {
   key: "governmentId" | "selfie" | "certificate";
@@ -96,7 +98,9 @@ export default function KycUploadPage() {
         <ChevronLeft className="h-4 w-4" /> Verification
       </Link>
 
-      <h1 className="text-2xl font-bold tracking-tight">Upload your documents</h1>
+      <h1 id="identity" className="scroll-mt-6 text-2xl font-bold tracking-tight">
+        Upload your documents
+      </h1>
       <p className="mt-1 text-sm text-muted-foreground">
         Encrypted and used only for verification. A human double-checks the AI review.
       </p>
@@ -135,6 +139,149 @@ export default function KycUploadPage() {
           ID and selfie are required to submit.
         </p>
       )}
+
+      <div className="mt-10 border-t border-border pt-8">
+        <h2 id="skill-evidence" className="scroll-mt-6 text-xl font-bold tracking-tight">
+          Skill evidence
+        </h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          A CTEVT/professional certificate or a few photos of completed work —
+          proves your craft and unlocks the Skilled badge.
+        </p>
+        <div className="mt-4">
+          <SkillEvidenceForm />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const EVIDENCE_TYPES: { value: SkillEvidenceType; label: string; hint: string; icon: React.ReactNode }[] = [
+  {
+    value: "certificate",
+    label: "Certificate",
+    hint: "CTEVT or another professional certificate",
+    icon: <FileBadge className="h-4 w-4" />,
+  },
+  {
+    value: "work_photo",
+    label: "Work photos",
+    hint: "Up to 3 photos of jobs you've completed",
+    icon: <Images className="h-4 w-4" />,
+  },
+];
+
+function SkillEvidenceForm() {
+  const { toast } = useToast();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [type, setType] = useState<SkillEvidenceType>("certificate");
+  const [files, setFiles] = useState<File[]>([]);
+  const [busy, setBusy] = useState(false);
+
+  const maxFiles = type === "certificate" ? 1 : 3;
+
+  function addFiles(list: FileList | null) {
+    if (!list) return;
+    const next = [...files, ...Array.from(list)].slice(0, maxFiles);
+    setFiles(next);
+  }
+
+  async function submit() {
+    if (!files.length) return;
+    setBusy(true);
+    try {
+      const form = new FormData();
+      form.append("type", type);
+      files.forEach((f) => form.append("files", f));
+      const result = await api.submitSkillEvidence(form);
+      toast(result.message, "success");
+      setFiles([]);
+    } catch (err) {
+      toast(
+        err instanceof ApiError ? err.message : "Submission failed. Try again.",
+        "error"
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="rounded-xl border border-dashed border-border bg-card p-4">
+      <div className="flex gap-2">
+        {EVIDENCE_TYPES.map((t) => (
+          <button
+            key={t.value}
+            type="button"
+            onClick={() => {
+              setType(t.value);
+              setFiles([]);
+            }}
+            className={cn(
+              "flex flex-1 flex-col items-center gap-1 rounded-lg border px-3 py-2.5 text-xs font-semibold transition-colors",
+              type === t.value
+                ? "border-primary bg-primary-soft text-primary"
+                : "border-border text-muted-foreground hover:bg-secondary"
+            )}
+          >
+            {t.icon}
+            {t.label}
+          </button>
+        ))}
+      </div>
+      <p className="mt-2 text-xs text-muted-foreground">
+        {EVIDENCE_TYPES.find((t) => t.value === type)?.hint}
+      </p>
+
+      {files.length > 0 && (
+        <ul className="mt-3 space-y-1.5">
+          {files.map((f, i) => (
+            <li
+              key={`${f.name}-${i}`}
+              className="flex items-center justify-between rounded-lg bg-secondary px-3 py-2 text-xs"
+            >
+              <span className="truncate">{f.name}</span>
+              <button
+                type="button"
+                aria-label="Remove file"
+                onClick={() => setFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                className="ml-2 shrink-0 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {files.length < maxFiles && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-3"
+          onClick={() => inputRef.current?.click()}
+        >
+          <Camera className="h-3.5 w-3.5" /> Add {files.length ? "another" : "file"}
+        </Button>
+      )}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*,.pdf"
+        multiple={maxFiles > 1}
+        className="hidden"
+        onChange={(e) => addFiles(e.target.files)}
+      />
+
+      <Button
+        full
+        className="mt-4"
+        onClick={submit}
+        disabled={!files.length || busy}
+      >
+        <Upload className="h-4 w-4" />
+        {busy ? "Submitting…" : "Submit for review"}
+      </Button>
     </div>
   );
 }

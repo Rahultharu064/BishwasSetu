@@ -235,12 +235,26 @@ export interface ProviderBookingsResponse {
 }
 
 // ── KYC status (GET /kyc/status) — reuses IdentityStatus/SkillStatus above ──
+export type SkillEvidenceType = "certificate" | "work_photo" | "reference";
+export type SkillEvidenceReviewStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+export interface SkillEvidenceItem {
+  id: string;
+  type: SkillEvidenceType;
+  reviewStatus: SkillEvidenceReviewStatus;
+  authenticityTier: "NONE" | "TIER_1" | "TIER_2";
+  rejectReason?: string | null;
+  createdAt: string;
+  reviewedAt?: string | null;
+}
+
 export interface KycStatus {
   identityStatus: IdentityStatus;
   skillStatus: SkillStatus;
   identityRejectionReason?: string | null;
   skillRejectionReason?: string | null;
   documents: { type: string; uploadedAt: string }[];
+  skillEvidence: SkillEvidenceItem[];
   aiDecision?: {
     confidence?: number | null;
     forgeryRisk?: number | null;

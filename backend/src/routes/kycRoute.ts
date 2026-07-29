@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import * as KycController from '../controllers/kycController'
 import { protect, restrictTo }  from '../middlewares/authMiddleware'
-import { kycUploadFields }      from '../middlewares/uploadMiddleware'
+import { kycUploadFields, skillEvidenceUpload } from '../middlewares/uploadMiddleware'
 
 const router = Router()
 
@@ -21,6 +21,14 @@ router.get(
   KycController.getKycStatus
 )
 
+router.post(
+  '/skill-evidence',
+  protect,
+  restrictTo('PROVIDER'),
+  skillEvidenceUpload,
+  KycController.submitSkillEvidence
+)
+
 // ── Admin routes ───────────────────────────────
 router.get(
   '/admin/:id/documents',
@@ -29,18 +37,7 @@ router.get(
   KycController.getKycDocumentsForAdmin
 )
 
-router.put(
-  '/admin/:id/approve',
-  protect,
-  restrictTo('ADMIN', 'MODERATOR'),
-  KycController.approveKyc
-)
-
-router.put(
-  '/admin/:id/reject',
-  protect,
-  restrictTo('ADMIN', 'MODERATOR'),
-  KycController.rejectKyc
-)
+// Approve/reject live under /admin/kyc/:id/{approve,reject} (adminRoute.ts) —
+// that's the real, notification-wired admin review flow the frontend uses.
 
 export default router

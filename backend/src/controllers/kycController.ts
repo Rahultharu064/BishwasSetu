@@ -34,42 +34,31 @@ export const getKycStatus = async (
   }
 }
 
-export const approveKyc = async (
-  req: Request, res: Response, next: NextFunction
-): Promise<void> => {
-  try {
-    const data = await KycService.approveKyc(
-      requireString(req.params.id, "id"),
-      req.user!.id
-    )
-    sendSuccess(res, data, 'KYC approved')
-  } catch (err: any) {
-    err.code ? sendError(res, err.message, err.code, err.status) : next(err)
-  }
-}
-
-export const rejectKyc = async (
-  req: Request, res: Response, next: NextFunction
-): Promise<void> => {
-  try {
-    const { reason } = req.body
-    const data = await KycService.rejectKyc(
-      requireString(req.params.id, "id"),
-      reason,
-      req.user!.id
-    )
-    sendSuccess(res, data, 'KYC rejected')
-  } catch (err: any) {
-    err.code ? sendError(res, err.message, err.code, err.status) : next(err)
-  }
-}
-
 export const getKycDocumentsForAdmin = async (
   req: Request, res: Response, next: NextFunction
 ): Promise<void> => {
   try {
     const data = await KycService.getKycDocumentsForAdmin(requireString(req.params.id, "id"))
     sendSuccess(res, data)
+  } catch (err: any) {
+    err.code ? sendError(res, err.message, err.code, err.status) : next(err)
+  }
+}
+
+const SKILL_EVIDENCE_TYPES = ['certificate', 'work_photo', 'reference']
+
+export const submitSkillEvidence = async (
+  req: Request, res: Response, next: NextFunction
+): Promise<void> => {
+  try {
+    const type = req.body?.type
+    if (!SKILL_EVIDENCE_TYPES.includes(type)) {
+      sendError(res, `type must be one of: ${SKILL_EVIDENCE_TYPES.join(', ')}`, 'INVALID_TYPE', 400)
+      return
+    }
+    const files = (req.files as Express.Multer.File[] | undefined) ?? []
+    const data = await KycService.submitSkillEvidence(req.user!.providerId!, type, files)
+    sendSuccess(res, data, 'Skill evidence submitted', 201)
   } catch (err: any) {
     err.code ? sendError(res, err.message, err.code, err.status) : next(err)
   }

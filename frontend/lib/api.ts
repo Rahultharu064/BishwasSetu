@@ -272,6 +272,12 @@ export const api = {
     apiRequest<import("./types").KycStatus>("/kyc/status", { auth: true }),
   uploadKyc: (form: FormData) =>
     apiRequest<unknown>("/kyc/upload", { method: "POST", body: form, auth: true }),
+  submitSkillEvidence: (form: FormData) =>
+    apiRequest<{ status: string; message: string }>("/kyc/skill-evidence", {
+      method: "POST",
+      body: form,
+      auth: true,
+    }),
 
   // Admin
   adminDashboard: () => apiRequest<unknown>("/admin/dashboard", { auth: true }),

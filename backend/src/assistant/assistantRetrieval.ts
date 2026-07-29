@@ -19,11 +19,14 @@ export const detectLanguage = (message: string): 'ne' | 'en' => {
   // If >20% of characters are Devanagari → Nepali
   if (totalChars > 0 && devanagariChars / totalChars > 0.2) return 'ne'
 
-  // Romanized Nepali detection (common words)
+  // Romanized Nepali detection (common words). Must be words that are
+  // actually Nepali when spelled in Latin script — plain English platform
+  // terms like "booking"/"provider"/"trust"/"score" do NOT belong here, they
+  // false-positive on ordinary English questions (e.g. "What is a trust
+  // score?" was being misdetected as Nepali and answered in Nepali).
   const nepaliRomanized = [
     'kasto', 'kasari', 'k cha', 'garnuhos', 'dhanyabad',
-    'namaskar', 'tapai', 'malai', 'huncha', 'gardina',
-    'booking', 'garnu', 'provider', 'trust', 'score',
+    'namaskar', 'tapai', 'malai', 'huncha', 'gardina', 'garnu',
   ]
   const lower = message.toLowerCase()
   const hasNepaliWords = nepaliRomanized.some((w) => lower.includes(w))

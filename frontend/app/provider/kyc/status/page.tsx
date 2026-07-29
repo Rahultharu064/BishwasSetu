@@ -78,6 +78,12 @@ const DOC_META: Record<
   certificate: { label: "Certificate", icon: FileBadge },
 };
 
+const EVIDENCE_TYPE_LABEL: Record<string, string> = {
+  certificate: "Certificate",
+  work_photo: "Work photo",
+  reference: "Reference",
+};
+
 const TONE_STYLES = {
   pending: "bg-secondary text-muted-foreground",
   review: "bg-warning-soft text-warning",
@@ -261,13 +267,54 @@ function StatusBody({
           </Badge>
         ) : (
           <Link
-            href="/provider/kyc"
+            href="/provider/kyc#skill-evidence"
             className="text-sm font-medium text-primary hover:underline"
           >
             Add evidence
           </Link>
         )}
       </div>
+
+      {/* Skill evidence submissions */}
+      {data.skillEvidence.length > 0 && (
+        <div className="mt-4 rounded-xl border border-border bg-card p-4">
+          <p className="text-sm font-semibold">Skill evidence submissions</p>
+          <ul className="mt-3 space-y-3">
+            {data.skillEvidence.map((ev) => (
+              <li key={ev.id} className="rounded-lg bg-secondary p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2 text-sm font-medium">
+                    <FileBadge className="h-4 w-4 text-muted-foreground" />
+                    {EVIDENCE_TYPE_LABEL[ev.type] ?? ev.type}
+                  </span>
+                  <Badge
+                    variant={
+                      ev.reviewStatus === "APPROVED"
+                        ? "primary"
+                        : ev.reviewStatus === "REJECTED"
+                          ? "urgentSoft"
+                          : "warning"
+                    }
+                    size="sm"
+                  >
+                    {ev.reviewStatus === "APPROVED"
+                      ? "Approved"
+                      : ev.reviewStatus === "REJECTED"
+                        ? "Rejected"
+                        : "Pending review"}
+                  </Badge>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Submitted {relativeTime(ev.createdAt)}
+                </p>
+                {ev.reviewStatus === "REJECTED" && ev.rejectReason && (
+                  <p className="mt-1.5 text-xs text-urgent">{ev.rejectReason}</p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Submitted documents */}
       {data.documents.length > 0 && (

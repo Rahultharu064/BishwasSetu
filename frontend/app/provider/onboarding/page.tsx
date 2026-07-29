@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Phone,
   Camera,
@@ -12,18 +13,24 @@ import {
   Clock,
   ChevronRight,
 } from "lucide-react";
-import { useToast } from "@/context/toast-context";
-import { Button } from "@/components/ui/button";
+import { apiRequest } from "@/lib/api";
+import { useFetch } from "@/lib/use-fetch";
+import { useAuth } from "@/context/auth-context";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorState } from "@/components/ui/states";
+import type { KycTier } from "@/lib/types";
 
 interface Tier {
   id: number;
-  code: string;
+  code: KycTier;
   name: string;
   nameNp: string;
   icon: React.ReactNode;
   reqs: string[];
   unlocks: string;
+  href: string;
 }
 
 const TIERS: Tier[] = [
@@ -35,6 +42,7 @@ const TIERS: Tier[] = [
     icon: <Phone className="h-5 w-5" />,
     reqs: ["Phone OTP", "Profile photo", "3 work photos"],
     unlocks: "Accept jobs under NPR 1,000",
+    href: "/provider/me",
   },
   {
     id: 2,
@@ -44,6 +52,7 @@ const TIERS: Tier[] = [
     icon: <BadgeCheck className="h-5 w-5" />,
     reqs: ["CTEVT / professional certificate"],
     unlocks: "All standard jobs + Skilled badge",
+    href: "/provider/kyc#skill-evidence",
   },
   {
     id: 3,
@@ -53,13 +62,53 @@ const TIERS: Tier[] = [
     icon: <ShieldCheck className="h-5 w-5" />,
     reqs: ["Citizenship / passport", "Video KYC selfie"],
     unlocks: "High-value jobs · Trust badge · Insurance",
+    href: "/provider/kyc#identity",
   },
 ];
 
+const TIER_INDEX: Record<KycTier, number> = {
+  TIER_1_BASIC: 1,
+  TIER_2_SKILLED: 2,
+  TIER_3_VERIFIED: 3,
+};
+
+interface DashboardProvider {
+  kycTier: KycTier;
+}
+
 export default function OnboardingPage() {
-  const { toast } = useToast();
-  // Demo progression state — Tier 1 complete, currently on Tier 2.
-  const [completed, setCompleted] = useState(1);
+  const router = useRouter();
+  const { isAuthenticated, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated)
+      router.replace("/login?next=/provider/onboarding");
+  }, [authLoading, isAuthenticated, router]);
+
+  const { data, loading, error, reload } = useFetch<{ provider: DashboardProvider }>(
+    () => apiRequest<{ provider: DashboardProvider }>("/providers/me/dashboard", { auth: true }),
+    [isAuthenticated]
+  );
+
+  if (authLoading || !isAuthenticated) return null;
+
+  if (loading)
+    return (
+      <div className="mx-auto max-w-lg space-y-4 px-4 py-8">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-20 w-full rounded-xl" />
+        <Skeleton className="h-40 w-full rounded-2xl" />
+      </div>
+    );
+
+  if (error || !data)
+    return (
+      <div className="mx-auto max-w-lg px-4 py-10">
+        <ErrorState message={error ?? "Couldn't load your verification status."} onRetry={reload} />
+      </div>
+    );
+
+  const completed = TIER_INDEX[data.provider.kycTier] ?? 1;
 
   return (
     <div className="mx-auto max-w-lg px-4 py-8">
@@ -153,26 +202,13 @@ export default function OnboardingPage() {
                 <ChevronRight className="h-4 w-4 text-primary" /> {tier.unlocks}
               </p>
 
-              {current &&
-                (tier.id === 1 ? (
-                  <Button
-                    full
-                    className="mt-4"
-                    onClick={() => {
-                      setCompleted(tier.id);
-                      toast("Tier 1 complete — you can start accepting small jobs.", "success");
-                    }}
-                  >
-                    <Camera className="h-4 w-4" /> Complete Tier {tier.id}
+              {current && tier.id !== 1 && (
+                <Link href={tier.href} className="mt-4 block">
+                  <Button full>
+                    <Camera className="h-4 w-4" /> Upload documents
                   </Button>
-                ) : (
-                  // Tiers 2 & 3 require real document uploads
-                  <Link href="/provider/kyc" className="mt-4 block">
-                    <Button full>
-                      <Camera className="h-4 w-4" /> Upload documents
-                    </Button>
-                  </Link>
-                ))}
+                </Link>
+              )}
               {!done && !current && (
                 <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Clock className="h-3.5 w-3.5" /> Finish the previous tier first

@@ -2,21 +2,6 @@ import { prisma } from '../config/db'
 import { uploadToCloudinary, getSignedUrl } from '../utils/cloudinary'
 import { kycQueue } from '../jobs/queue'
 import { features } from '../config/features'
-import { sendPushNotification } from '../utils/firebase'
-import { sendSms } from '../utils/sms'
-
-async function notifyProvider(providerId: string, title: string, body: string) {
-  const provider = await prisma.provider.findUnique({
-    where:  { id: providerId },
-    select: { user: { select: { fcmToken: true, phone: true } } },
-  })
-  if (provider?.user?.fcmToken) {
-    await sendPushNotification({ token: provider.user.fcmToken, title, body })
-  }
-  if (provider?.user?.phone) {
-    await sendSms(provider.user.phone, `GharSewa: ${body}`)
-  }
-}
 
 // ── Upload KYC documents ──────────────────────────────────────
 
@@ -122,9 +107,9 @@ export const uploadKycDocuments = async (
     }
   }
 
-  // Enqueue AI pipeline job
+  // Enqueue AI pipeline job — name must match the processor in jobs/kycJob.ts
   await kycQueue.add(
-    'process-kyc',
+    'run-pipeline',
     { providerId },
     { attempts: 3, backoff: { type: 'exponential', delay: 5000 } }
   )
@@ -170,13 +155,84 @@ export const getKycStatus = async (providerId: string) => {
     select: { type: true, uploadedAt: true },
   })
 
+  // Skill evidence (Tier 2 pathway) — per-item review status/reason, since a
+  // provider can have several submissions (certificate + work photos).
+  const skillEvidence = await prisma.skillEvidence.findMany({
+    where:   { providerId },
+    orderBy: { createdAt: 'desc' },
+    select: {
+      id:               true,
+      type:             true,
+      reviewStatus:     true,
+      authenticityTier: true,
+      rejectReason:     true,
+      createdAt:        true,
+      reviewedAt:       true,
+    },
+  })
+
   return {
     identityStatus:          provider.identityStatus,
     skillStatus:             provider.skillStatus,
     identityRejectionReason: provider.identityRejectionReason,
     skillRejectionReason:    provider.skillRejectionReason,
     documents,
+    skillEvidence,
     aiDecision,
+  }
+}
+
+// ── Provider: submit skill evidence (Tier 2 — CTEVT certificate or work
+//    photos). Feeds the admin review queue in adminService.ts.  ──────────
+
+const SKILL_EVIDENCE_TYPES = ['certificate', 'work_photo', 'reference'] as const
+export type SkillEvidenceType = (typeof SKILL_EVIDENCE_TYPES)[number]
+
+export const submitSkillEvidence = async (
+  providerId: string,
+  type:       SkillEvidenceType,
+  files:      Express.Multer.File[]
+) => {
+  const provider = await prisma.provider.findUnique({
+    where:  { id: providerId },
+    select: { skillStatus: true },
+  })
+  if (!provider) {
+    throw { code: 'PROVIDER_NOT_FOUND', message: 'Provider not found', status: 404 }
+  }
+  if (!files?.length) {
+    throw { code: 'NO_FILES', message: 'At least one file is required', status: 400 }
+  }
+
+  const uploaded = await Promise.all(
+    files.map(async (file) => {
+      const filename = `skill_${providerId}_${type}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+      return uploadToCloudinary(file.buffer, 'bishwassetu/skill-evidence', filename, { type: 'authenticated' })
+    })
+  )
+
+  await prisma.$transaction(async (tx) => {
+    await tx.skillEvidence.createMany({
+      data: uploaded.map((r) => ({
+        providerId,
+        type,
+        cloudinaryId: r.publicId,
+        fileUrl:      r.secureUrl,
+      })),
+    })
+
+    // Don't downgrade an already-verified provider just for supplementary evidence.
+    if (provider.skillStatus !== 'VERIFIED') {
+      await tx.provider.update({
+        where: { id: providerId },
+        data:  { skillStatus: 'PENDING_REVIEW' },
+      })
+    }
+  })
+
+  return {
+    status:  provider.skillStatus === 'VERIFIED' ? provider.skillStatus : 'PENDING_REVIEW',
+    message: `${files.length} file(s) submitted for skill review.`,
   }
 }
 
@@ -192,56 +248,4 @@ export const getKycDocumentsForAdmin = async (providerId: string) => {
     ...doc,
     signedUrl: getSignedUrl(doc.cloudinaryId, 900),
   }))
-}
-
-// ── Admin: approve KYC ────────────────────────────────────────
-
-export const approveKyc = async (providerId: string, adminId: string) => {
-  await prisma.$transaction(async (tx) => {
-    await tx.provider.update({
-      where: { id: providerId },
-      data:  {
-        identityStatus:          'VERIFIED',
-        identityRejectionReason: null,
-      },
-    })
-
-    await tx.kycAiDecision.updateMany({
-      where: { providerId },
-      data:  { adminOverride: 'APPROVE' },
-    })
-  })
-
-  await notifyProvider(providerId, 'KYC approved', 'Your identity verification is complete — you now have full platform access.')
-  return { message: 'Provider KYC approved', providerId }
-}
-
-// ── Admin: reject KYC ─────────────────────────────────────────
-
-export const rejectKyc = async (
-  providerId: string,
-  reason:     string,
-  adminId:    string
-) => {
-  if (!reason?.trim()) {
-    throw { code: 'REJECTION_REASON_REQUIRED', message: 'Rejection reason is required', status: 400 }
-  }
-
-  await prisma.$transaction(async (tx) => {
-    await tx.provider.update({
-      where: { id: providerId },
-      data:  {
-        identityStatus:          'REJECTED',
-        identityRejectionReason: reason,
-      },
-    })
-
-    await tx.kycAiDecision.updateMany({
-      where: { providerId },
-      data:  { adminOverride: 'REJECT' },
-    })
-  })
-
-  await notifyProvider(providerId, 'KYC needs attention', `Your identity verification was rejected: ${reason}`)
-  return { message: 'Provider KYC rejected', providerId }
 }

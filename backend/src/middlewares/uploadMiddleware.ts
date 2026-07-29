@@ -40,6 +40,9 @@ export const kycUploadFields = upload.fields([
   { name: 'certificate',  maxCount: 1 },
 ])
 
+// Skill evidence (Tier 2) — a certificate or up to 3 work photos per submission
+export const skillEvidenceUpload = upload.array('files', 3)
+
 // Single profile photo
 export const profilePhotoUpload = upload.single('profilePhoto')
 
