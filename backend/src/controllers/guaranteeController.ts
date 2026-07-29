@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import * as guaranteeService from "../services/guaranteeService";
 import { requireString } from "../utils/reqValue";
+import { uploadToCloudinary } from "../utils/cloudinary";
 
 export async function listMine(req: Request, res: Response, next: NextFunction) {
   try {
@@ -15,10 +16,22 @@ export async function listMine(req: Request, res: Response, next: NextFunction) 
 
 export async function fileClaim(req: Request, res: Response, next: NextFunction) {
   try {
+    const files = (req.files as Express.Multer.File[] | undefined) ?? [];
+    const photoUrls = await Promise.all(
+      files.map(async (file, i) => {
+        const uploaded = await uploadToCloudinary(
+          file.buffer,
+          "bishwassetu/guarantee-claims",
+          `claim_${req.params.guaranteeId}_${Date.now()}_${i}`
+        );
+        return uploaded.secureUrl;
+      })
+    );
+
     const claim = await guaranteeService.fileGuaranteeClaim(
       req.user!.id,
       requireString(req.params.guaranteeId, "guaranteeId"),
-      req.body
+      { description: req.body.description, photoUrls }
     );
     res.status(201).json({ success: true, data: claim });
   } catch (err) {

@@ -62,11 +62,11 @@ export default function AdminComplaintsPage() {
     if (!selected || resolution.trim().length < 10) return;
     setBusy(true);
     try {
-      await api.adminResolveComplaint(selected.id, {
+      const result = await api.adminResolveComplaint(selected.id, {
         resolution: resolution.trim(),
         action,
       });
-      toast("Complaint resolved.", "success");
+      toast(result.message, action === "REFUND" && !result.refundIssued ? "info" : "success");
       setSelected(null);
       setResolution("");
       req.reload();

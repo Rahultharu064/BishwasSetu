@@ -48,3 +48,6 @@ export const profilePhotoUpload = upload.single('profilePhoto')
 
 // Single insurance / evidence document for a Trust Badge purchase (PRD §4.3)
 export const badgeDocumentUpload = upload.single('document')
+
+// Workmanship guarantee claim — up to 5 evidence photos
+export const guaranteeClaimUpload = upload.array('photos', 5)

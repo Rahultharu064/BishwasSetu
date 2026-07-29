@@ -5,6 +5,7 @@
 import { Router } from "express";
 import { protect, restrictTo } from "../middlewares/authMiddleware";
 import { validateRequest } from "../middlewares/validateMiddleware";
+import { guaranteeClaimUpload } from "../middlewares/uploadMiddleware";
 import * as escrow from "../controllers/escrowController";
 import * as guarantee from "../controllers/guaranteeController";
 import * as emergency from "../controllers/emergencyController";
@@ -66,6 +67,7 @@ router.post(
   "/guarantees/:guaranteeId/claims",
   protect,
   restrictTo("CUSTOMER"),
+  guaranteeClaimUpload,
   validateRequest(fileClaimSchema),
   guarantee.fileClaim
 );

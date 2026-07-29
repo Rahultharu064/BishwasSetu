@@ -42,7 +42,7 @@ const TIERS: Tier[] = [
     icon: <Phone className="h-5 w-5" />,
     reqs: ["Phone OTP", "Profile photo", "3 work photos"],
     unlocks: "Accept jobs under NPR 1,000",
-    href: "/provider/me",
+    href: "/provider",
   },
   {
     id: 2,

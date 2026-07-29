@@ -6,6 +6,8 @@ import {
 } from '../services/notificationsService'
 import type { CreateComplaintInput, ResolveComplaintInput } from '../validators/complaintValidator'
 
+const REFUNDABLE_ESCROW_STATUSES = ['HELD', 'DISPUTED']
+
 
 const triageComplaint = async (
   type:        string,
@@ -190,6 +192,7 @@ export const resolveComplaint = async (
       status:     true,
       customerId: true,
       providerId: true,
+      bookingId:  true,
       provider:   { select: { user: { select: { id: true } } } },
     },
   })
@@ -200,6 +203,25 @@ export const resolveComplaint = async (
 
   if (complaint.status === 'RESOLVED' || complaint.status === 'DISMISSED') {
     throw { code: 'ALREADY_RESOLVED', message: 'Complaint is already closed', status: 400 }
+  }
+
+  // REFUND: actually move the escrow, don't just relabel the complaint
+  let refundIssued = false
+  if (action === 'REFUND') {
+    const escrow = await prisma.escrowPayment.findUnique({ where: { bookingId: complaint.bookingId } })
+    if (escrow && REFUNDABLE_ESCROW_STATUSES.includes(escrow.status)) {
+      await prisma.$transaction([
+        prisma.escrowPayment.update({
+          where: { id: escrow.id },
+          data:  { status: 'REFUNDED', refundedAt: new Date() },
+        }),
+        prisma.booking.update({
+          where: { id: complaint.bookingId },
+          data:  { status: 'CANCELLED', cancelReason: resolution },
+        }),
+      ])
+      refundIssued = true
+    }
   }
 
   // Apply action to provider
@@ -234,7 +256,14 @@ export const resolveComplaint = async (
   // Notify customer
   await notifyComplaintResolved(complaint.customerId, resolution)
 
-  return { complaint: updated, action, message: `Complaint ${action === 'DISMISSED' ? 'dismissed' : 'resolved'}` }
+  const message =
+    action === 'REFUND'
+      ? refundIssued
+        ? 'Complaint resolved — escrow refunded and booking cancelled.'
+        : 'Complaint resolved, but no held escrow was found to refund (cash booking or funds already released) — process the refund manually via ops.'
+      : `Complaint ${action === 'DISMISSED' ? 'dismissed' : 'resolved'}`
+
+  return { complaint: updated, action, refundIssued, message }
 }
 
 // ── Auto-suspend on threshold ─────────────────────────────────

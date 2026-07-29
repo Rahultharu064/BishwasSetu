@@ -43,7 +43,6 @@ export const fileClaimSchema = z.object({
   params: z.object({ guaranteeId: z.string().min(1) }),
   body: z.object({
     description: z.string().min(10).max(2000),
-    photoUrls: z.array(z.string().url()).max(5).optional(),
   }),
 });
 

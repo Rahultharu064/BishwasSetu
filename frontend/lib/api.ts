@@ -312,11 +312,14 @@ export const api = {
     id: string,
     body: { resolution: string; action: string }
   ) =>
-    apiRequest<unknown>(`/admin/complaints/${id}/resolve`, {
-      method: "PUT",
-      body,
-      auth: true,
-    }),
+    apiRequest<{ action: string; refundIssued: boolean; message: string }>(
+      `/admin/complaints/${id}/resolve`,
+      {
+        method: "PUT",
+        body,
+        auth: true,
+      }
+    ),
 
   // Admin — user management
   adminUsers: (query?: Record<string, string | number | undefined>) =>
@@ -408,13 +411,10 @@ export const api = {
       }[]
     >("/guarantees", { auth: true }),
 
-  fileGuaranteeClaim: (
-    guaranteeId: string,
-    body: { description: string; photoUrls?: string[] }
-  ) =>
+  fileGuaranteeClaim: (guaranteeId: string, form: FormData) =>
     apiRequest<{ id: string }>(`/guarantees/${guaranteeId}/claims`, {
       method: "POST",
-      body,
+      body: form,
       auth: true,
     }),
 
