@@ -16,13 +16,23 @@ const createLimiter = (
     standardHeaders:  true,
     legacyHeaders:    false,
     message:          { success: false, error: { code: 'RATE_LIMITED', message, status: 429 } },
+    // Rate limiting is a safety net, not core functionality — a Redis blip
+    // must never 500 real requests. On a store error, allow the request
+    // through instead of throwing (express-rate-limit's default is to throw).
+    passOnStoreError: true,
   }
 
   // Use Redis store only if Redis is available
   if (redis) {
     try {
       options.store = new RedisStore({
-        sendCommand: (...args: string[]) => (redis as any).call(...args),
+        // Read `redis` fresh on every call — it's a live binding that can
+        // flip to null after this store is constructed if the connection
+        // drops later, so guard against calling .call() on null.
+        sendCommand: (...args: string[]) => {
+          if (!redis) throw new Error('Redis unavailable')
+          return (redis as any).call(...args)
+        },
         prefix:      `rl:${keyPrefix}:`,
       })
     } catch (err) {

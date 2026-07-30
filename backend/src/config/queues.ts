@@ -8,12 +8,7 @@
 import Queue from "bull";
 
 const redisUrl = process.env.REDIS_URI || process.env.REDIS_URL;
-const isRedisEnabled = !!(
-  redisUrl &&
-  !redisUrl.includes("localhost") &&
-  !redisUrl.includes("127.0.0.1") &&
-  !redisUrl.includes("::1")
-);
+const isRedisEnabled = !!redisUrl;
 
 type JobHandler = (job: { data: unknown }) => Promise<void> | void;
 

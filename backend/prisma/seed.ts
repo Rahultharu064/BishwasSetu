@@ -34,8 +34,11 @@ async function main() {
       update: {},
       create: {
         name: 'Plumbing',
+        nameNp: 'प्लम्बिङ',
+        slug: 'plumbing',
         icon: '🔧',
         description: 'Pipe installation, repair, and maintenance services',
+        sortOrder: 1,
       },
     }),
     prisma.category.upsert({
@@ -43,8 +46,11 @@ async function main() {
       update: {},
       create: {
         name: 'Electrical',
+        nameNp: 'इलेक्ट्रिकल',
+        slug: 'electrical',
         icon: '⚡',
         description: 'Electrical wiring, repair, and installation services',
+        sortOrder: 2,
       },
     }),
     prisma.category.upsert({
@@ -52,8 +58,11 @@ async function main() {
       update: {},
       create: {
         name: 'Cleaning',
+        nameNp: 'सफाई',
+        slug: 'cleaning',
         icon: '🧹',
         description: 'Home and office cleaning services',
+        sortOrder: 3,
       },
     }),
     prisma.category.upsert({
@@ -61,8 +70,11 @@ async function main() {
       update: {},
       create: {
         name: 'Carpentry',
+        nameNp: 'काठको काम',
+        slug: 'carpentry',
         icon: '🔨',
         description: 'Woodworking, furniture repair, and installation',
+        sortOrder: 4,
       },
     }),
     prisma.category.upsert({
@@ -70,8 +82,11 @@ async function main() {
       update: {},
       create: {
         name: 'Painting',
+        nameNp: 'रङरोगन',
+        slug: 'painting',
         icon: '🎨',
         description: 'Interior and exterior painting services',
+        sortOrder: 5,
       },
     }),
     prisma.category.upsert({
@@ -79,8 +94,11 @@ async function main() {
       update: {},
       create: {
         name: 'Gardening',
+        nameNp: 'बगैंचा हेरचाह',
+        slug: 'gardening',
         icon: '🌱',
         description: 'Lawn care, landscaping, and garden maintenance',
+        sortOrder: 6,
       },
     }),
   ]);

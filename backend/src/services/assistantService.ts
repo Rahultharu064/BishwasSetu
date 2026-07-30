@@ -34,13 +34,19 @@ interface SessionData {
 // ── Load session from Redis ────────────────────────────────────
 
 const loadSession = async (sessionId: string): Promise<SessionData> => {
-  if (!redis) return { messages: [], contextType: 'general', lang: 'en' }
-  const raw = await redis.get(`assistant:session:${sessionId}`)
-  if (raw) {
-    await redis.expire(`assistant:session:${sessionId}`, SESSION_TTL)
-    return JSON.parse(raw)
+  const empty = { messages: [], contextType: 'general', lang: 'en' as const }
+  if (!redis) return empty
+  try {
+    const raw = await redis.get(`assistant:session:${sessionId}`)
+    if (raw) {
+      await redis.expire(`assistant:session:${sessionId}`, SESSION_TTL)
+      return JSON.parse(raw)
+    }
+    return empty
+  } catch (err) {
+    console.error('Assistant session load failed (Redis unavailable):', err)
+    return empty
   }
-  return { messages: [], contextType: 'general', lang: 'en' }
 }
 
 // ── Save session to Redis ──────────────────────────────────────
@@ -52,12 +58,16 @@ const saveSession = async (
   if (!redis) return
   // Keep only last MAX_HISTORY messages to avoid token overflow
   data.messages = data.messages.slice(-MAX_HISTORY)
-  await redis.set(
-    `assistant:session:${sessionId}`,
-    JSON.stringify(data),
-    'EX',
-    SESSION_TTL
-  )
+  try {
+    await redis.set(
+      `assistant:session:${sessionId}`,
+      JSON.stringify(data),
+      'EX',
+      SESSION_TTL
+    )
+  } catch (err) {
+    console.error('Assistant session save failed (Redis unavailable):', err)
+  }
 }
 
 // ── Main chat handler (streaming) ─────────────────────────────
