@@ -10,7 +10,7 @@ const createLimiter = (
   keyPrefix:     string,
   message:       string
 ) => {
-  const options: any = {
+  const baseOptions: any = {
     windowMs:         windowMinutes * 60 * 1000,
     max,
     standardHeaders:  true,
@@ -22,30 +22,39 @@ const createLimiter = (
     passOnStoreError: true,
   }
 
-  // Use Redis store only if Redis is available
+  const memoryLimiter = rateLimit({ ...baseOptions })
+
+  // Build a Redis-backed limiter too, but never route a request through it
+  // unless the connection is actually 'ready' at that moment (checked below,
+  // per-request). rate-limit-redis has a real bug: on a failed command, its
+  // retry path does `this.incrementScriptSha = this.loadIncrementScript(key)`
+  // WITHOUT awaiting it — if that rejects (Redis down), it's an unhandled
+  // promise rejection that `passOnStoreError` can never catch, because it
+  // never reaches express-rate-limit's own try/catch. This app treats any
+  // unhandled rejection as fatal (server.ts), so once this fired it took the
+  // whole API down — confirmed live. The only safe fix is to never let
+  // sendCommand be invoked at all while Redis isn't confirmed ready.
+  let redisLimiter: ReturnType<typeof rateLimit> | null = null
   if (redis) {
     try {
-      options.store = new RedisStore({
-        // Read `redis` fresh on every call — it's a live binding that can
-        // flip to null after this store is constructed if the connection
-        // drops later, so guard against calling .call() on null.
-        sendCommand: (...args: string[]) => {
-          if (!redis) throw new Error('Redis unavailable')
-          return (redis as any).call(...args)
-        },
-        prefix:      `rl:${keyPrefix}:`,
+      redisLimiter = rateLimit({
+        ...baseOptions,
+        store: new RedisStore({
+          sendCommand: (...args: string[]) => (redis as any).call(...args),
+          prefix:      `rl:${keyPrefix}:`,
+        }),
       })
     } catch (err) {
       console.warn(`⚠️ Failed to initialize Redis store for ${keyPrefix}, using in-memory store instead:`, err)
     }
-  }
-  
-  // If we don't have a store (Redis failed or not available), use default in-memory
-  if (!options.store) {
+  } else {
     console.log(`ℹ️ Using in-memory rate limit store for ${keyPrefix}`)
   }
 
-  return rateLimit(options)
+  return (req: any, res: any, next: any) => {
+    const useRedis = redisLimiter && redis && redis.status === 'ready'
+    return (useRedis ? redisLimiter : memoryLimiter)!(req, res, next)
+  }
 }
 
 // ── Route-specific limiters ───────────────────────────────────
