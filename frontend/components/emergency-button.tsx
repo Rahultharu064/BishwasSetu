@@ -1,9 +1,13 @@
+"use client";
+
 import Link from "next/link";
 import { Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLang } from "@/context/language-context";
 
 // Full-width vermilion button, Zap icon, subtle pulse (ux.md §3 / §5.1)
 export function EmergencyButton({ className }: { className?: string }) {
+  const { tr } = useLang();
   return (
     <Link
       href="/emergency"
@@ -13,7 +17,7 @@ export function EmergencyButton({ className }: { className?: string }) {
       )}
     >
       <Zap className="h-5 w-5" fill="currentColor" />
-      Find Me a Pro Now
+      {tr("home.hero.emergencyCta")}
     </Link>
   );
 }

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Search, MapPin } from "lucide-react";
+import { useLang } from "@/context/language-context";
 
 /**
  * Two-field hero search (what + where) styled as a single white pill,
@@ -10,6 +11,7 @@ import { Search, MapPin } from "lucide-react";
  */
 export function HeroSearch() {
   const router = useRouter();
+  const { tr } = useLang();
   const [what, setWhat] = useState("");
   const [where, setWhere] = useState("Kathmandu");
 
@@ -31,13 +33,13 @@ export function HeroSearch() {
         <Search className="h-5 w-5 shrink-0 text-muted-foreground" />
         <span className="min-w-0 flex-1">
           <span className="block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-            What you need
+            {tr("search.whatLabel")}
           </span>
           <input
             value={what}
             onChange={(e) => setWhat(e.target.value)}
-            placeholder="Electrician, plumber, tutor…"
-            aria-label="What service do you need"
+            placeholder={tr("search.whatPlaceholder")}
+            aria-label={tr("search.ariaWhat")}
             className="w-full bg-transparent text-[15px] text-foreground placeholder:text-muted-foreground focus:outline-none"
           />
         </span>
@@ -49,13 +51,13 @@ export function HeroSearch() {
         <MapPin className="h-5 w-5 shrink-0 text-muted-foreground" />
         <span className="min-w-0 flex-1">
           <span className="block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Where
+            {tr("search.whereLabel")}
           </span>
           <input
             value={where}
             onChange={(e) => setWhere(e.target.value)}
-            placeholder="Your city or area"
-            aria-label="Where do you need it"
+            placeholder={tr("search.wherePlaceholder")}
+            aria-label={tr("search.ariaWhere")}
             className="w-full bg-transparent text-[15px] text-foreground placeholder:text-muted-foreground focus:outline-none"
           />
         </span>
@@ -65,7 +67,7 @@ export function HeroSearch() {
         type="submit"
         className="flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-foreground px-6 text-sm font-semibold text-background transition-colors hover:bg-foreground/90 sm:rounded-full"
       >
-        <Search className="h-4 w-4" /> Search
+        <Search className="h-4 w-4" /> {tr("common.search")}
       </button>
     </form>
   );

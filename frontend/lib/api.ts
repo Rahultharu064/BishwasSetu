@@ -602,6 +602,8 @@ export async function streamAssistantChat(
     sessionId: string;
     contextType?: "booking" | "provider" | "complaint" | "credits" | "general";
     contextId?: string;
+    /** Site's EN/NE toggle — fallback language when the message itself is ambiguous. */
+    uiLang?: "ne" | "en";
   },
   handlers: ChatStreamHandlers,
   signal?: AbortSignal

@@ -18,6 +18,7 @@ import { api } from "@/lib/api";
 import { useFetch } from "@/lib/use-fetch";
 import { providersFrom } from "@/lib/normalize";
 import { FALLBACK_CATEGORIES } from "@/lib/fallback-data";
+import { useLang } from "@/context/language-context";
 import type { Category } from "@/lib/types";
 import { HeroSearch } from "@/components/home/hero-search";
 import { HeroPreviewCard } from "@/components/home/hero-preview-card";
@@ -40,20 +41,21 @@ const POPULAR = [
   "AC repair",
 ];
 
-const HERO_TRUST = [
-  { icon: ShieldCheck, label: "4-stage verification" },
-  { icon: CreditCard, label: "Escrow-protected payments" },
-  { icon: Headphones, label: "24/7 incident support" },
-  { icon: Award, label: "Damage cover up to NPR 1L" },
-];
-
 export default function HomePage() {
+  const { tr } = useLang();
   const cats = useFetch<Category[]>(() => api.categories(), []);
   const featured = useFetch(() => api.searchProviders({ limit: 6 }), []);
 
   const categories =
     cats.data && cats.data.length ? cats.data : FALLBACK_CATEGORIES;
   const providers = providersFrom(featured.data);
+
+  const HERO_TRUST = [
+    { icon: ShieldCheck, label: tr("home.hero.trust1") },
+    { icon: CreditCard, label: tr("home.hero.trust2") },
+    { icon: Headphones, label: tr("home.hero.trust3") },
+    { icon: Award, label: tr("home.hero.trust4") },
+  ];
 
   return (
     <div>
@@ -77,18 +79,16 @@ export default function HomePage() {
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
               </span>
-              Nepal&apos;s most trusted marketplace
+              {tr("home.hero.badge")}
             </span>
 
             <h1 className="mt-5 text-[2.5rem] font-bold leading-[1.05] tracking-tight text-foreground sm:text-5xl lg:text-[3.5rem]">
-              Hire verified local professionals with total confidence
+              {tr("home.hero.title")}
               <span className="text-primary">.</span>
             </h1>
 
             <p className="mt-5 max-w-md text-base text-muted-foreground md:text-lg">
-              Every provider on BishwasSetu passes a 4-stage identity, skill and
-              reference check. Book in minutes — backed by escrow and a service
-              guarantee.
+              {tr("home.hero.subtitle")}
             </p>
 
             <div className="mt-7 max-w-xl">
@@ -97,7 +97,7 @@ export default function HomePage() {
 
             {/* Popular categories */}
             <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
-              <span className="text-muted-foreground">Popular:</span>
+              <span className="text-muted-foreground">{tr("home.hero.popular")}</span>
               {POPULAR.map((p) => (
                 <Link
                   key={p}
@@ -113,7 +113,7 @@ export default function HomePage() {
             <div className="mt-6 flex flex-wrap gap-3">
               <Link href="/match">
                 <Button variant="soft">
-                  <Sparkles className="h-4 w-4" /> AI Smart Match
+                  <Sparkles className="h-4 w-4" /> {tr("home.hero.aiSmartMatch")}
                 </Button>
               </Link>
               <EmergencyButton />
@@ -152,17 +152,17 @@ export default function HomePage() {
           <div className="mb-4 flex items-end justify-between">
             <div>
               <h2 className="text-xl font-bold tracking-tight">
-                Browse by category
+                {tr("home.categories.heading")}
               </h2>
               <p className="text-sm text-muted-foreground">
-                Every provider is identity-verified before they can take jobs.
+                {tr("home.categories.subtitle")}
               </p>
             </div>
             <Link
               href="/services"
               className="hidden items-center gap-1 text-sm font-semibold text-primary hover:underline sm:inline-flex"
             >
-              All services <ArrowRight className="h-4 w-4" />
+              {tr("home.categories.allServices")} <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
           {cats.loading ? (

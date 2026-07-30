@@ -10,7 +10,10 @@ export interface RetrievedChunk {
 
 // ── Detect language from message ─────────────────────────────
 
-export const detectLanguage = (message: string): 'ne' | 'en' => {
+export const detectLanguage = (
+  message:  string,
+  fallback: 'ne' | 'en' = 'en'
+): 'ne' | 'en' => {
   // Devanagari Unicode range: U+0900–U+097F
   const devanagariPattern = /[\u0900-\u097F]/
   const devanagariChars   = (message.match(devanagariPattern) ?? []).length
@@ -30,8 +33,13 @@ export const detectLanguage = (message: string): 'ne' | 'en' => {
   ]
   const lower = message.toLowerCase()
   const hasNepaliWords = nepaliRomanized.some((w) => lower.includes(w))
+  if (hasNepaliWords) return 'ne'
 
-  return hasNepaliWords ? 'ne' : 'en'
+  // Message itself is ambiguous (plain English, or too short/generic to
+  // tell — "ok", "hi", a bare number) — fall back to the caller's UI
+  // language preference (the site's EN/NE toggle) instead of a hardcoded
+  // English default.
+  return fallback
 }
 
 // ── Classify user intent ──────────────────────────────────────

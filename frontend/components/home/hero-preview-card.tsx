@@ -1,17 +1,21 @@
+"use client";
+
 import { BadgeCheck, Award, Home, Clock, CheckCircle2 } from "lucide-react";
 import { TrustScoreRing } from "@/components/trust-score-ring";
+import { useLang } from "@/context/language-context";
 
 /**
  * Illustrative provider card shown in the hero — a static mockup that
  * mirrors the real ProviderCard/profile so newcomers see the payoff.
  */
 export function HeroPreviewCard() {
+  const { tr } = useLang();
   return (
     <div className="relative">
       {/* Floating: response time */}
       <div className="absolute -right-2 top-6 z-10 rounded-2xl border border-border bg-card px-4 py-2.5 shadow-lg shadow-black/10 sm:-right-4">
         <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-          Response time
+          {tr("home.preview.responseTime")}
         </p>
         <p className="flex items-center gap-1 text-sm font-bold text-foreground">
           <Clock className="h-3.5 w-3.5 text-primary" /> ~ 12 min
@@ -25,7 +29,7 @@ export function HeroPreviewCard() {
         </span>
         <div>
           <p className="text-sm font-bold leading-tight text-foreground">
-            Booking confirmed
+            {tr("home.preview.bookingConfirmed")}
           </p>
           <p className="text-xs text-muted-foreground">Today, 4:30 PM</p>
         </div>
@@ -60,28 +64,28 @@ export function HeroPreviewCard() {
           <div className="mt-5 flex flex-col items-center">
             <TrustScoreRing score={98} size={84} stroke={6} />
             <p className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Trust score
+              {tr("home.preview.trustScore")}
             </p>
           </div>
 
           {/* Badges */}
           <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
             <Chip tone="primary">
-              <BadgeCheck className="h-3.5 w-3.5" /> Identity verified
+              <BadgeCheck className="h-3.5 w-3.5" /> {tr("home.preview.identityVerified")}
             </Chip>
             <Chip tone="skilled">
-              <Award className="h-3.5 w-3.5" /> Skill Tier 2 Expert
+              <Award className="h-3.5 w-3.5" /> {tr("home.preview.skillTier")}
             </Chip>
             <Chip tone="neutral">
-              <Home className="h-3.5 w-3.5" /> 412+ jobs
+              <Home className="h-3.5 w-3.5" /> {tr("home.preview.jobsDone")}
             </Chip>
           </div>
 
           {/* Stats */}
           <div className="mt-5 grid w-full grid-cols-3 divide-x divide-border rounded-2xl bg-secondary/70 py-3">
-            <Stat value="4.9★" label="Rating" />
-            <Stat value="412" label="Jobs" />
-            <Stat value="12" label="Years" />
+            <Stat value="4.9★" label={tr("home.preview.rating")} />
+            <Stat value="412" label={tr("home.preview.jobs")} />
+            <Stat value="12" label={tr("home.preview.years")} />
           </div>
         </div>
       </div>

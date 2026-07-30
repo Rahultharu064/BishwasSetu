@@ -1,0 +1,189 @@
+// Static UI-string dictionary for the EN/NE language toggle (context/language-context.tsx).
+// Separate from that context's `t(en, ne)` helper, which picks between two
+// values already supplied by the backend (e.g. Category.name/nameNp) — this
+// dictionary is for strings that live only in the frontend: nav labels,
+// headings, buttons, placeholders, validation messages.
+//
+// Keys are dot-namespaced by area (nav.*, footer.*, home.*, booking.*, …) so
+// it's easy to find where a string is used. Extend this file as more of the
+// site is translated — components read it via `tr(key)` from useLang().
+
+export const STRINGS = {
+  // ── Common ──────────────────────────────────────────────
+  "common.search": { en: "Search", ne: "खोज्नुहोस्" },
+  "common.back": { en: "Back", ne: "पछाडि" },
+  "common.continue": { en: "Continue", ne: "अगाडि बढ्नुहोस्" },
+  "common.loading": { en: "Loading…", ne: "लोड हुँदैछ…" },
+  "common.processing": { en: "Processing…", ne: "प्रशोधन हुँदैछ…" },
+
+  // ── Header / nav ────────────────────────────────────────
+  "nav.services": { en: "Services", ne: "सेवाहरू" },
+  "nav.howItWorks": { en: "How it works", ne: "कसरी काम गर्छ" },
+  "nav.becomeAPro": { en: "Become a Pro", ne: "प्रोफेशनल बन्नुहोस्" },
+  "nav.location": { en: "Kathmandu", ne: "काठमाडौं" },
+  "nav.login": { en: "Log in", ne: "लग इन" },
+  "nav.signup": { en: "Sign up", ne: "साइन अप" },
+  "nav.logout": { en: "Log out", ne: "लग आउट" },
+  "nav.notifications": { en: "Notifications", ne: "सूचनाहरू" },
+  "nav.menu": { en: "Menu", ne: "मेनु" },
+  "nav.toggleLanguage": { en: "Toggle language", ne: "भाषा बदल्नुहोस्" },
+
+  // ── Footer ──────────────────────────────────────────────
+  "footer.tagline": {
+    en: "Trust infrastructure for Nepal's home services economy. Verified providers, escrow-protected payments.",
+    ne: "नेपालको घरायसी सेवा अर्थतन्त्रका लागि विश्वासको पूर्वाधार। प्रमाणित सेवा प्रदायक, एस्क्रो-सुरक्षित भुक्तानी।",
+  },
+  "footer.escrowProtected": { en: "Escrow-protected", ne: "एस्क्रो-सुरक्षित" },
+  "footer.customers": { en: "Customers", ne: "ग्राहकहरू" },
+  "footer.browseServices": { en: "Browse services", ne: "सेवाहरू हेर्नुहोस्" },
+  "footer.emergencyDispatch": { en: "Emergency dispatch", ne: "आपतकालीन सेवा" },
+  "footer.myBookings": { en: "My bookings", ne: "मेरो बुकिङहरू" },
+  "footer.providers": { en: "Providers", ne: "सेवा प्रदायकहरू" },
+  "footer.providerSignup": { en: "Provider sign-up", ne: "प्रदायक साइन-अप" },
+  "footer.kycVerification": { en: "KYC verification", ne: "केवाईसी प्रमाणीकरण" },
+  "footer.company": { en: "Company", ne: "कम्पनी" },
+  "footer.about": { en: "About", ne: "हाम्रोबारे" },
+  "footer.trustSafety": { en: "Trust & Safety", ne: "विश्वास र सुरक्षा" },
+  "footer.guarantee": { en: "Guarantee", ne: "ग्यारेन्टी" },
+  "footer.rights": {
+    en: "BishwasSetu Nepal. All rights reserved.",
+    ne: "बिश्वासेतु नेपाल। सर्वाधिकार सुरक्षित।",
+  },
+  "footer.madeInNepal": { en: "Made in Nepal", ne: "नेपालमा निर्मित" },
+
+  // ── Homepage hero ───────────────────────────────────────
+  "home.hero.badge": { en: "Nepal's most trusted marketplace", ne: "नेपालको सबैभन्दा विश्वसनीय बजार" },
+  "home.hero.title": {
+    en: "Hire verified local professionals with total confidence",
+    ne: "पूर्ण विश्वासका साथ प्रमाणित स्थानीय पेशेवरहरू भाडामा लिनुहोस्",
+  },
+  "home.hero.subtitle": {
+    en: "Every provider on BishwasSetu passes a 4-stage identity, skill and reference check. Book in minutes — backed by escrow and a service guarantee.",
+    ne: "बिश्वासेतुका सबै सेवा प्रदायकले ४-चरणको परिचय, सीप र सन्दर्भ जाँच पास गर्छन्। मिनेटमै बुक गर्नुहोस् — एस्क्रो र सेवा ग्यारेन्टीको सुरक्षासहित।",
+  },
+  "home.hero.popular": { en: "Popular:", ne: "लोकप्रिय:" },
+  "home.hero.aiSmartMatch": { en: "AI Smart Match", ne: "एआई स्मार्ट म्याच" },
+  "home.hero.emergencyCta": { en: "Find Me a Pro Now", ne: "अहिले नै प्रो खोज्नुहोस्" },
+  "home.hero.trust1": { en: "4-stage verification", ne: "४-चरण प्रमाणीकरण" },
+  "home.hero.trust2": { en: "Escrow-protected payments", ne: "एस्क्रो-सुरक्षित भुक्तानी" },
+  "home.hero.trust3": { en: "24/7 incident support", ne: "२४/७ घटना सहयोग" },
+  "home.hero.trust4": { en: "Damage cover up to NPR 1L", ne: "रु. १ लाखसम्मको क्षति कभर" },
+
+  // ── Homepage hero preview card (illustrative mock) ──────
+  "home.preview.responseTime": { en: "Response time", ne: "प्रतिक्रिया समय" },
+  "home.preview.bookingConfirmed": { en: "Booking confirmed", ne: "बुकिङ पुष्टि भयो" },
+  "home.preview.trustScore": { en: "Trust score", ne: "विश्वास स्कोर" },
+  "home.preview.identityVerified": { en: "Identity verified", ne: "परिचय प्रमाणित" },
+  "home.preview.skillTier": { en: "Skill Tier 2 Expert", ne: "सीप तह २ विशेषज्ञ" },
+  "home.preview.jobsDone": { en: "412+ jobs", ne: "४१२+ काम" },
+  "home.preview.rating": { en: "Rating", ne: "मूल्याङ्कन" },
+  "home.preview.jobs": { en: "Jobs", ne: "कामहरू" },
+  "home.preview.years": { en: "Years", ne: "वर्ष" },
+
+  // ── Homepage categories / sections ──────────────────────
+  "home.categories.heading": { en: "Browse by category", ne: "श्रेणी अनुसार हेर्नुहोस्" },
+  "home.categories.subtitle": {
+    en: "Every provider is identity-verified before they can take jobs.",
+    ne: "काम लिनुअघि हरेक सेवा प्रदायकको परिचय प्रमाणित गरिन्छ।",
+  },
+  "home.categories.allServices": { en: "All services", ne: "सबै सेवाहरू" },
+
+  // ── Search bar ──────────────────────────────────────────
+  "search.whatLabel": { en: "What you need", ne: "तपाईंलाई के चाहिन्छ" },
+  "search.whatPlaceholder": { en: "Electrician, plumber, tutor…", ne: "इलेक्ट्रिसियन, प्लम्बर, ट्युटर…" },
+  "search.whereLabel": { en: "Where", ne: "कहाँ" },
+  "search.wherePlaceholder": { en: "Your city or area", ne: "तपाईंको शहर वा क्षेत्र" },
+  "search.ariaWhat": { en: "What service do you need", ne: "तपाईंलाई कस्तो सेवा चाहिन्छ" },
+  "search.ariaWhere": { en: "Where do you need it", ne: "तपाईंलाई कहाँ चाहिन्छ" },
+
+  // ── Booking flow ────────────────────────────────────────
+  "booking.step.service": { en: "Service", ne: "सेवा" },
+  "booking.step.schedule": { en: "Schedule", ne: "समय तालिका" },
+  "booking.step.review": { en: "Review", ne: "समीक्षा" },
+  "booking.step.pay": { en: "Pay", ne: "भुक्तानी" },
+
+  "booking.step0.heading": { en: "What do you need done?", ne: "तपाईंलाई के काम गराउनु छ?" },
+  "booking.step0.serviceLabel": { en: "Service", ne: "सेवा" },
+  "booking.step0.generalService": { en: "General service booking.", ne: "सामान्य सेवा बुकिङ।" },
+  "booking.step0.describeLabel": { en: "Describe the job", ne: "काम वर्णन गर्नुहोस्" },
+  "booking.step0.describePlaceholder": {
+    en: "e.g. Kitchen tap has been dripping for a week and the pipe under the sink is leaking.",
+    ne: "जस्तै: भान्साको धारा एक हप्तादेखि चुहिरहेको छ र सिंकमुनिको पाइप पनि चुहिँदैछ।",
+  },
+  "booking.step0.errChooseService": { en: "Choose a service.", ne: "सेवा छान्नुहोस्।" },
+  "booking.step0.errDescribe": {
+    en: "Describe the job in at least 10 characters.",
+    ne: "कामलाई कम्तिमा १० अक्षरमा वर्णन गर्नुहोस्।",
+  },
+
+  "booking.step1.heading": { en: "When & where?", ne: "कहिले र कहाँ?" },
+  "booking.step1.dateLabel": { en: "Date", ne: "मिति" },
+  "booking.step1.timeLabel": { en: "Time", ne: "समय" },
+  "booking.step1.addressLabel": { en: "Service address", ne: "सेवा ठेगाना" },
+  "booking.step1.addressPlaceholder": {
+    en: "Maharajgunj, Kathmandu — house / landmark",
+    ne: "महाराजगंज, काठमाडौं — घर / ल्यान्डमार्क",
+  },
+  "booking.step1.manageAddresses": { en: "Manage saved addresses", ne: "सुरक्षित ठेगानाहरू व्यवस्थापन गर्नुहोस्" },
+  "booking.step1.errDateTime": { en: "Pick a date and time.", ne: "मिति र समय छान्नुहोस्।" },
+  "booking.step1.errFutureTime": { en: "Choose a time in the future.", ne: "भविष्यको समय छान्नुहोस्।" },
+  "booking.step1.errAddress": { en: "Enter the service address.", ne: "सेवा ठेगाना प्रविष्ट गर्नुहोस्।" },
+
+  "booking.step2.heading": { en: "Estimate & escrow", ne: "अनुमान र एस्क्रो" },
+  "booking.step2.priceLabel": { en: "Agreed price (NPR)", ne: "सहमत मूल्य (रु.)" },
+  "booking.step2.pricePlaceholder": { en: "e.g. 1500", ne: "जस्तै: १५००" },
+  "booking.step2.noFeeNote": {
+    en: "One all-inclusive price — no separate customer booking fee.",
+    ne: "एउटै सम्पूर्ण मूल्य — छुट्टै ग्राहक बुकिङ शुल्क छैन।",
+  },
+  "booking.step2.errPrice": { en: "Enter an amount of at least NPR 100.", ne: "कम्तिमा रु. १०० रकम प्रविष्ट गर्नुहोस्।" },
+  "booking.step2.youPay": { en: "You pay", ne: "तपाईंले तिर्ने" },
+  "booking.step2.providerReceives": { en: "Provider receives (after {pct}% fee)", ne: "प्रदायकले पाउने (रु. {pct}% शुल्क कटाएर)" },
+  "booking.step2.escrowExplainer": {
+    en: "Your money is held safely by BishwasSetu. The provider is paid only when you confirm the job is done.",
+    ne: "तपाईंको पैसा बिश्वासेतुले सुरक्षित राख्छ। काम सम्पन्न भएको पुष्टि गरेपछि मात्र प्रदायकले भुक्तानी पाउँछन्।",
+  },
+
+  "booking.step3.heading": { en: "Pay into escrow", ne: "एस्क्रोमा भुक्तानी गर्नुहोस्" },
+  "booking.step3.paymentMethodLabel": { en: "Payment method", ne: "भुक्तानी विधि" },
+  "booking.step3.heldNote": {
+    en: 'Held in escrow until you tap "Job Complete".',
+    ne: "तपाईंले “काम सम्पन्न” थिच्नेबित्तिकै एस्क्रोमा राखिन्छ।",
+  },
+  "booking.step3.pay": { en: "Pay {amount}", ne: "{amount} तिर्नुहोस्" },
+
+  "booking.notAvailable": { en: "This provider isn't available.", ne: "यो सेवा प्रदायक उपलब्ध छैन।" },
+  "booking.browseServices": { en: "Browse services", ne: "सेवाहरू हेर्नुहोस्" },
+  "booking.createdSuccess": {
+    en: "Booking created — payment held in escrow.",
+    ne: "बुकिङ सिर्जना भयो — भुक्तानी एस्क्रोमा राखियो।",
+  },
+  "booking.createdFailed": { en: "Couldn't create the booking.", ne: "बुकिङ सिर्जना गर्न सकिएन।" },
+
+  // ── AI assistant widget ─────────────────────────────────
+  "assistant.title": { en: "Setu Assistant", ne: "सेतु सहायक" },
+  "assistant.subtitle": { en: "Ask about bookings, trust & safety", ne: "बुकिङ, विश्वास र सुरक्षाबारे सोध्नुहोस्" },
+  "assistant.open": { en: "Open assistant", ne: "सहायक खोल्नुहोस्" },
+  "assistant.close": { en: "Close", ne: "बन्द गर्नुहोस्" },
+  "assistant.greeting": { en: "How can I help?", ne: "म कसरी मद्दत गर्न सक्छु?" },
+  "assistant.greetingSubtitle": {
+    en: "I can explain how BishwasSetu works — in English or नेपाली.",
+    ne: "बिश्वासेतु कसरी काम गर्छ भनेर म बताउन सक्छु — नेपाली वा अंग्रेजीमा।",
+  },
+  "assistant.signInHint": { en: "Sign in for help with your own bookings.", ne: "आफ्नो बुकिङबारे मद्दतका लागि साइन इन गर्नुहोस्।" },
+  "assistant.inputPlaceholder": { en: "Type your question…", ne: "आफ्नो प्रश्न लेख्नुहोस्…" },
+  "assistant.send": { en: "Send", ne: "पठाउनुहोस्" },
+  "assistant.message": { en: "Message", ne: "सन्देश" },
+
+  "assistant.guest1": { en: "What is BishwasSetu?", ne: "बिश्वासेतु के हो?" },
+  "assistant.guest2": { en: "How does it work?", ne: "यसले कसरी काम गर्छ?" },
+  "assistant.guest3": { en: "Is my payment safe?", ne: "के मेरो भुक्तानी सुरक्षित छ?" },
+  "assistant.customer1": { en: "How does escrow protect me?", ne: "एस्क्रोले मलाई कसरी सुरक्षा दिन्छ?" },
+  "assistant.customer2": { en: "What is a trust score?", ne: "विश्वास स्कोर के हो?" },
+  "assistant.customer3": { en: "How do I file a complaint?", ne: "म कसरी उजुरी दर्ता गर्न सक्छु?" },
+  "assistant.provider1": { en: "What's my trust score?", ne: "मेरो विश्वास स्कोर कति छ?" },
+  "assistant.provider2": { en: "How do credits work?", ne: "क्रेडिटले कसरी काम गर्छ?" },
+  "assistant.provider3": { en: "How do I get verified?", ne: "म कसरी प्रमाणित हुन सक्छु?" },
+} as const satisfies Record<string, { en: string; ne: string }>;
+
+export type StringKey = keyof typeof STRINGS;

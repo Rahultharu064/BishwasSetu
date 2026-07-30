@@ -16,6 +16,7 @@ import { apiRequest, api, ApiError } from "@/lib/api";
 import { useFetch } from "@/lib/use-fetch";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/context/toast-context";
+import { useLang } from "@/context/language-context";
 import { npr } from "@/lib/format";
 import { commissionRate } from "@/lib/commission";
 import type { Provider } from "@/lib/types";
@@ -27,8 +28,6 @@ interface ProfileResponse {
   provider: Provider;
 }
 
-const STEPS = ["Service", "Schedule", "Review", "Pay"];
-
 export default function BookingPage({
   params,
 }: {
@@ -38,6 +37,14 @@ export default function BookingPage({
   const router = useRouter();
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const { toast } = useToast();
+  const { tr } = useLang();
+
+  const STEPS = [
+    tr("booking.step.service"),
+    tr("booking.step.schedule"),
+    tr("booking.step.review"),
+    tr("booking.step.pay"),
+  ];
 
   const { data, loading } = useFetch<ProfileResponse>(
     () => apiRequest<ProfileResponse>(`/providers/${id}`),
@@ -118,18 +125,18 @@ export default function BookingPage({
   function validateStep(): boolean {
     const e: Record<string, string> = {};
     if (step === 0) {
-      if (!categoryId) e.categoryId = "Choose a service.";
+      if (!categoryId) e.categoryId = tr("booking.step0.errChooseService");
       if (description.trim().length < 10)
-        e.description = "Describe the job in at least 10 characters.";
+        e.description = tr("booking.step0.errDescribe");
     }
     if (step === 1) {
-      if (!date || !time) e.date = "Pick a date and time.";
+      if (!date || !time) e.date = tr("booking.step1.errDateTime");
       else if (new Date(`${date}T${time}`) <= new Date())
-        e.date = "Choose a time in the future.";
-      if (address.trim().length < 4) e.address = "Enter the service address.";
+        e.date = tr("booking.step1.errFutureTime");
+      if (address.trim().length < 4) e.address = tr("booking.step1.errAddress");
     }
     if (step === 2) {
-      if (priceNum < 100) e.price = "Enter an amount of at least NPR 100.";
+      if (priceNum < 100) e.price = tr("booking.step2.errPrice");
     }
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -153,11 +160,11 @@ export default function BookingPage({
         paymentMethod: method,
         neighborhood: address.split(",")[0]?.trim() || undefined,
       });
-      toast("Booking created — payment held in escrow.", "success");
+      toast(tr("booking.createdSuccess"), "success");
       router.push(`/bookings?created=${(booking as { id?: string })?.id ?? ""}`);
     } catch (err) {
       toast(
-        err instanceof ApiError ? err.message : "Couldn't create the booking.",
+        err instanceof ApiError ? err.message : tr("booking.createdFailed"),
         "error"
       );
     } finally {
@@ -173,16 +180,16 @@ export default function BookingPage({
   if (authLoading || loading)
     return (
       <div className="mx-auto max-w-lg px-4 py-10 text-center text-muted-foreground">
-        Loading…
+        {tr("common.loading")}
       </div>
     );
 
   if (!provider)
     return (
       <div className="mx-auto max-w-lg px-4 py-10 text-center">
-        <p className="text-muted-foreground">This provider isn&apos;t available.</p>
+        <p className="text-muted-foreground">{tr("booking.notAvailable")}</p>
         <Link href="/services" className="mt-3 inline-block text-primary underline">
-          Browse services
+          {tr("booking.browseServices")}
         </Link>
       </div>
     );
@@ -227,9 +234,9 @@ export default function BookingPage({
       {/* Step 0 — Service & details */}
       {step === 0 && (
         <div className="space-y-4">
-          <h1 className="text-xl font-bold">What do you need done?</h1>
+          <h1 className="text-xl font-bold">{tr("booking.step0.heading")}</h1>
           <div>
-            <Label>Service</Label>
+            <Label>{tr("booking.step0.serviceLabel")}</Label>
             {categories.length ? (
               <div className="flex flex-wrap gap-2">
                 {categories.map((c, i) => {
@@ -252,18 +259,18 @@ export default function BookingPage({
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">
-                General service booking.
+                {tr("booking.step0.generalService")}
               </p>
             )}
             <FieldError>{errors.categoryId}</FieldError>
           </div>
           <div>
-            <Label htmlFor="desc">Describe the job</Label>
+            <Label htmlFor="desc">{tr("booking.step0.describeLabel")}</Label>
             <Textarea
               id="desc"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="e.g. Kitchen tap has been dripping for a week and the pipe under the sink is leaking."
+              placeholder={tr("booking.step0.describePlaceholder")}
             />
             <FieldError>{errors.description}</FieldError>
           </div>
@@ -274,11 +281,11 @@ export default function BookingPage({
       {step === 1 && (
         <div className="space-y-4">
           <h1 className="flex items-center gap-2 text-xl font-bold">
-            <CalendarClock className="h-5 w-5 text-primary" /> When &amp; where?
+            <CalendarClock className="h-5 w-5 text-primary" /> {tr("booking.step1.heading")}
           </h1>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label htmlFor="date">Date</Label>
+              <Label htmlFor="date">{tr("booking.step1.dateLabel")}</Label>
               <Input
                 id="date"
                 type="date"
@@ -288,7 +295,7 @@ export default function BookingPage({
               />
             </div>
             <div>
-              <Label htmlFor="time">Time</Label>
+              <Label htmlFor="time">{tr("booking.step1.timeLabel")}</Label>
               <Input
                 id="time"
                 type="time"
@@ -299,7 +306,7 @@ export default function BookingPage({
           </div>
           <FieldError>{errors.date}</FieldError>
           <div>
-            <Label htmlFor="address">Service address</Label>
+            <Label htmlFor="address">{tr("booking.step1.addressLabel")}</Label>
             {savedAddresses.length > 0 && (
               <div className="no-scrollbar mb-2 flex gap-2 overflow-x-auto">
                 {savedAddresses.map((a) => (
@@ -324,14 +331,14 @@ export default function BookingPage({
                 setAddress(e.target.value);
                 setAddressTouched(true);
               }}
-              placeholder="Maharajgunj, Kathmandu — house / landmark"
+              placeholder={tr("booking.step1.addressPlaceholder")}
             />
             <FieldError>{errors.address}</FieldError>
             <Link
               href="/account/addresses"
               className="mt-1.5 inline-block text-xs font-medium text-primary hover:underline"
             >
-              Manage saved addresses
+              {tr("booking.step1.manageAddresses")}
             </Link>
           </div>
         </div>
@@ -340,31 +347,31 @@ export default function BookingPage({
       {/* Step 2 — Price & escrow explainer */}
       {step === 2 && (
         <div className="space-y-4">
-          <h1 className="text-xl font-bold">Estimate &amp; escrow</h1>
+          <h1 className="text-xl font-bold">{tr("booking.step2.heading")}</h1>
           <div>
-            <Label htmlFor="price">Agreed price (NPR)</Label>
+            <Label htmlFor="price">{tr("booking.step2.priceLabel")}</Label>
             <Input
               id="price"
               type="number"
               inputMode="numeric"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
-              placeholder="e.g. 1500"
+              placeholder={tr("booking.step2.pricePlaceholder")}
             />
             <FieldError>{errors.price}</FieldError>
             <p className="mt-1.5 text-xs text-muted-foreground">
-              One all-inclusive price — no separate customer booking fee.
+              {tr("booking.step2.noFeeNote")}
             </p>
           </div>
 
           {priceNum >= 100 && (
             <div className="rounded-xl border border-border bg-card p-4 text-sm">
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">You pay</span>
+                <span className="text-muted-foreground">{tr("booking.step2.youPay")}</span>
                 <span className="tabular font-semibold">{npr(priceNum)}</span>
               </div>
               <div className="mt-1.5 flex items-center justify-between text-muted-foreground">
-                <span>Provider receives (after {Math.round(rate * 100)}% fee)</span>
+                <span>{tr("booking.step2.providerReceives", { pct: Math.round(rate * 100) })}</span>
                 <span className="tabular">{npr(priceNum - providerCommission)}</span>
               </div>
             </div>
@@ -374,8 +381,7 @@ export default function BookingPage({
           <div className="flex items-start gap-3 rounded-xl bg-primary-soft p-4">
             <Lock className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
             <p className="text-sm text-foreground">
-              Your money is held safely by BishwasSetu. The provider is paid
-              only when you confirm the job is done.
+              {tr("booking.step2.escrowExplainer")}
             </p>
           </div>
         </div>
@@ -385,7 +391,7 @@ export default function BookingPage({
       {step === 3 && (
         <div className="space-y-4">
           <h1 className="flex items-center gap-2 text-xl font-bold">
-            <Wallet className="h-5 w-5 text-primary" /> Pay into escrow
+            <Wallet className="h-5 w-5 text-primary" /> {tr("booking.step3.heading")}
           </h1>
 
           <div className="rounded-xl border border-border bg-card p-4">
@@ -407,7 +413,7 @@ export default function BookingPage({
           </div>
 
           <div>
-            <Label>Payment method</Label>
+            <Label>{tr("booking.step3.paymentMethodLabel")}</Label>
             <div className="grid grid-cols-2 gap-3">
               {(["KHALTI", "ESEWA"] as const).map((m) => (
                 <button
@@ -430,8 +436,7 @@ export default function BookingPage({
           </div>
 
           <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-            <ShieldCheck className="h-4 w-4 text-primary" /> Held in escrow until
-            you tap “Job Complete”.
+            <ShieldCheck className="h-4 w-4 text-primary" /> {tr("booking.step3.heldNote")}
           </p>
         </div>
       )}
@@ -445,16 +450,16 @@ export default function BookingPage({
               onClick={() => setStep((s) => s - 1)}
               disabled={submitting}
             >
-              Back
+              {tr("common.back")}
             </Button>
           )}
           {step < STEPS.length - 1 ? (
             <Button full onClick={next}>
-              Continue
+              {tr("common.continue")}
             </Button>
           ) : (
             <Button full onClick={pay} disabled={submitting}>
-              {submitting ? "Processing…" : `Pay ${npr(priceNum)}`}
+              {submitting ? tr("common.processing") : tr("booking.step3.pay", { amount: npr(priceNum) })}
             </Button>
           )}
         </div>

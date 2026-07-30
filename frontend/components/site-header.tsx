@@ -8,16 +8,16 @@ import { useLang } from "@/context/language-context";
 import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
 
-const NAV = [
-  { href: "/services", label: "Services" },
-  { href: "/how-it-works", label: "How it works" },
-  { href: "/for-providers", label: "Become a Pro" },
-];
-
 export function SiteHeader() {
   const { user, isAuthenticated, logout } = useAuth();
-  const { lang, toggle } = useLang();
+  const { lang, toggle, tr } = useLang();
   const [open, setOpen] = useState(false);
+
+  const NAV = [
+    { href: "/services", label: tr("nav.services") },
+    { href: "/how-it-works", label: tr("nav.howItWorks") },
+    { href: "/for-providers", label: tr("nav.becomeAPro") },
+  ];
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur">
@@ -35,7 +35,7 @@ export function SiteHeader() {
         {/* Location (desktop) */}
         <button className="ml-2 hidden items-center gap-1 rounded-full border border-border px-3 py-1.5 text-sm text-muted-foreground hover:bg-secondary sm:inline-flex">
           <MapPin className="h-4 w-4 text-primary" />
-          Kathmandu
+          {tr("nav.location")}
         </button>
 
         <nav className="ml-4 hidden items-center gap-1 md:flex">
@@ -54,7 +54,7 @@ export function SiteHeader() {
           {/* Language toggle — persistent (ux.md §14) */}
           <button
             onClick={toggle}
-            aria-label="Toggle language"
+            aria-label={tr("nav.toggleLanguage")}
             className="rounded-full border border-border px-2.5 py-1.5 text-sm font-semibold hover:bg-secondary"
           >
             <span className={cn(lang === "ne" && "text-primary")}>ने</span>
@@ -66,7 +66,7 @@ export function SiteHeader() {
             <>
               <Link
                 href="/bookings"
-                aria-label="Notifications"
+                aria-label={tr("nav.notifications")}
                 className="hidden rounded-full p-2 hover:bg-secondary sm:inline-flex"
               >
                 <Bell className="h-5 w-5 text-muted-foreground" />
@@ -80,7 +80,7 @@ export function SiteHeader() {
               </Link>
               <button
                 onClick={() => logout()}
-                aria-label="Log out"
+                aria-label={tr("nav.logout")}
                 className="hidden rounded-full p-2 hover:bg-secondary sm:inline-flex"
               >
                 <LogOut className="h-5 w-5 text-muted-foreground" />
@@ -90,18 +90,18 @@ export function SiteHeader() {
             <div className="hidden items-center gap-2 sm:flex">
               <Link href="/login">
                 <Button variant="ghost" size="sm">
-                  Log in
+                  {tr("nav.login")}
                 </Button>
               </Link>
               <Link href="/register">
-                <Button size="sm">Sign up</Button>
+                <Button size="sm">{tr("nav.signup")}</Button>
               </Link>
             </div>
           )}
 
           <button
             className="rounded-lg p-2 hover:bg-secondary md:hidden"
-            aria-label="Menu"
+            aria-label={tr("nav.menu")}
             onClick={() => setOpen((v) => !v)}
           >
             {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -133,17 +133,17 @@ export function SiteHeader() {
                     setOpen(false);
                   }}
                 >
-                  Log out
+                  {tr("nav.logout")}
                 </Button>
               ) : (
                 <>
                   <Link href="/login" className="flex-1" onClick={() => setOpen(false)}>
                     <Button variant="outline" full>
-                      Log in
+                      {tr("nav.login")}
                     </Button>
                   </Link>
                   <Link href="/register" className="flex-1" onClick={() => setOpen(false)}>
-                    <Button full>Sign up</Button>
+                    <Button full>{tr("nav.signup")}</Button>
                   </Link>
                 </>
               )}

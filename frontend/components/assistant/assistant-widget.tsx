@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Sparkles, X, Send, Bot, User, WifiOff } from "lucide-react";
 import { streamAssistantChat } from "@/lib/api";
 import { useAuth } from "@/context/auth-context";
+import { useLang } from "@/context/language-context";
 import { cn } from "@/lib/utils";
 
 interface Msg {
@@ -13,22 +14,6 @@ interface Msg {
 }
 
 type ContextType = "booking" | "provider" | "complaint" | "credits" | "general";
-
-const GUEST_SUGGESTIONS = [
-  "What is BishwasSetu?",
-  "How does it work?",
-  "Is my payment safe?",
-];
-const CUSTOMER_SUGGESTIONS = [
-  "How does escrow protect me?",
-  "What is a trust score?",
-  "How do I file a complaint?",
-];
-const PROVIDER_SUGGESTIONS = [
-  "What's my trust score?",
-  "How do credits work?",
-  "How do I get verified?",
-];
 
 function newSessionId() {
   return `web_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -64,11 +49,12 @@ function contextForRoute(
 export function AssistantWidget() {
   const pathname = usePathname();
   const { user } = useAuth();
+  const { lang, tr } = useLang();
   const suggestions = !user
-    ? GUEST_SUGGESTIONS
+    ? [tr("assistant.guest1"), tr("assistant.guest2"), tr("assistant.guest3")]
     : user.role === "PROVIDER"
-      ? PROVIDER_SUGGESTIONS
-      : CUSTOMER_SUGGESTIONS;
+      ? [tr("assistant.provider1"), tr("assistant.provider2"), tr("assistant.provider3")]
+      : [tr("assistant.customer1"), tr("assistant.customer2"), tr("assistant.customer3")];
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
@@ -102,6 +88,7 @@ export function AssistantWidget() {
       {
         message: trimmed,
         sessionId: sessionId.current,
+        uiLang: lang,
         ...contextForRoute(pathname, user?.providerId),
       },
       {
@@ -136,7 +123,7 @@ export function AssistantWidget() {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          aria-label="Open assistant"
+          aria-label={tr("assistant.open")}
           className="fixed bottom-24 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-105 active:scale-95 md:bottom-6"
         >
           <Sparkles className="h-6 w-6" />
@@ -152,7 +139,7 @@ export function AssistantWidget() {
           />
           <div
             role="dialog"
-            aria-label="AI Assistant"
+            aria-label={tr("assistant.title")}
             className="relative flex h-[80vh] w-full flex-col rounded-t-2xl bg-card shadow-lg sm:h-[600px] sm:max-w-sm sm:rounded-2xl"
           >
             {/* Header */}
@@ -161,14 +148,14 @@ export function AssistantWidget() {
                 <Bot className="h-5 w-5" />
               </span>
               <div className="flex-1">
-                <p className="font-semibold leading-tight">Setu Assistant</p>
+                <p className="font-semibold leading-tight">{tr("assistant.title")}</p>
                 <p className="text-xs text-muted-foreground">
-                  Ask about bookings, trust &amp; safety
+                  {tr("assistant.subtitle")}
                 </p>
               </div>
               <button
                 onClick={() => setOpen(false)}
-                aria-label="Close"
+                aria-label={tr("assistant.close")}
                 className="rounded-full p-1.5 text-muted-foreground hover:bg-secondary"
               >
                 <X className="h-5 w-5" />
@@ -182,13 +169,13 @@ export function AssistantWidget() {
                   <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary-soft text-primary">
                     <Sparkles className="h-6 w-6" />
                   </span>
-                  <p className="mt-3 text-sm font-medium">How can I help?</p>
+                  <p className="mt-3 text-sm font-medium">{tr("assistant.greeting")}</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    I can explain how BishwasSetu works — in English or नेपाली.
+                    {tr("assistant.greetingSubtitle")}
                   </p>
                   {!user && (
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Sign in for help with your own bookings.
+                      {tr("assistant.signInHint")}
                     </p>
                   )}
                   <div className="mt-4 flex flex-col gap-2">
@@ -268,14 +255,14 @@ export function AssistantWidget() {
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Type your question…"
-                aria-label="Message"
+                placeholder={tr("assistant.inputPlaceholder")}
+                aria-label={tr("assistant.message")}
                 className="h-11 flex-1 rounded-full border border-input bg-background px-4 text-sm focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25"
               />
               <button
                 type="submit"
                 disabled={!input.trim() || streaming}
-                aria-label="Send"
+                aria-label={tr("assistant.send")}
                 className="flex h-11 w-11 items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-50"
               >
                 <Send className="h-5 w-5" />

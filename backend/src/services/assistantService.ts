@@ -77,7 +77,7 @@ export const streamChat = async (
   requester:  Requester | undefined,
   res:        Response
 ): Promise<void> => {
-  const { message, sessionId, contextType, contextId } = input
+  const { message, sessionId, contextType, contextId, uiLang } = input
   const userId = requester?.id
 
   // 1. Set SSE headers
@@ -91,7 +91,7 @@ export const streamChat = async (
     res.write(`data: ${JSON.stringify(data)}\n\n`)
   }
 
-  const lang = detectLanguage(message)
+  const lang = detectLanguage(message, uiLang)
 
   // Pilot scope (docs/MVP_SCOPE.md): Groq streaming is opt-in per
   // AI_ASSISTANT_ENABLED so a low-volume launch doesn't pay for AI infra

@@ -25,11 +25,16 @@ async function bootstrap() {
     await prisma.$connect()
     logger.info('Database connected')
 
-    // Connect to Redis only if available
+    // Connect to Redis only if available. Route-module imports (e.g.
+    // rateMiddleware.ts's RedisStore) run before this and already trigger
+    // ioredis's lazyConnect on their first command — calling `.connect()`
+    // again once it's past the 'wait' state throws "Redis is already
+    // connecting/connected", which isn't a real failure, just a race. Only
+    // call it when nothing has connected yet, and always log the true state.
     if (redis) {
       try {
-        await redis.connect()
-        logger.info('Redis connected')
+        if (redis.status === 'wait') await redis.connect()
+        logger.info('Redis status after bootstrap', { status: redis.status })
       } catch (redisError) {
         logger.warn('Redis connection failed, proceeding without Redis', { error: redisError })
       }

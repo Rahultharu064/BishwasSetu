@@ -1,13 +1,9 @@
 import Bull from 'bull'
 
-// Don't use Redis by default - only if explicitly configured to a non-localhost address
+// Enabled whenever REDIS_URI/REDIS_URL is configured, local or remote —
+// falls back to the mock queue below if Bull can't actually connect.
 const redisUrl = process.env.REDIS_URI || process.env.REDIS_URL
-const isRedisEnabled = !!(
-  redisUrl &&
-  !redisUrl.includes('localhost') &&
-  !redisUrl.includes('127.0.0.1') &&
-  !redisUrl.includes('::1')
-)
+const isRedisEnabled = !!redisUrl
 
 type JobHandler = (job: { data: any; progress: (n: number) => Promise<void> }) => Promise<any> | any
 
@@ -83,6 +79,13 @@ if (isRedisEnabled && redisUrl) {
     moderationQueue = new Bull('content-moderation', {
       redis: redisUrl,
     })
+
+    // Bull queues are EventEmitters — Node throws synchronously on an
+    // 'error' event with no listener, which would crash the whole process
+    // on a transient Redis blip (same crash class the rate-limiter hit).
+    for (const [name, q] of [['kyc-pipeline', kycQueue], ['trust-recompute', trustQueue], ['content-moderation', moderationQueue]] as const) {
+      q.on('error', (err: Error) => console.error(`❌ Queue "${name}" error:`, err.message))
+    }
   } catch (err) {
     console.error('❌ Failed to initialize Bull queues, using mock queues:', err)
     kycQueue = createMockQueue('kyc-pipeline')

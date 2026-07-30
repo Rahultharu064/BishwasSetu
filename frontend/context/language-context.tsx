@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { STRINGS, type StringKey } from "@/lib/i18n";
 
 export type Lang = "en" | "ne";
 
@@ -15,6 +16,13 @@ interface LangState {
   toggle: () => void;
   /** Pick the English or Nepali variant of a bilingual field. */
   t: (en: string, ne?: string | null) => string;
+  /**
+   * Look up a static UI string from lib/i18n.ts's dictionary. Optional
+   * `vars` fills `{placeholder}` tokens in the translated string (e.g.
+   * "Pay {amount}"). Falls back to the English copy if a key is missing —
+   * never throws, so partially-translated pages still render.
+   */
+  tr: (key: StringKey, vars?: Record<string, string | number>) => string;
 }
 
 const LangContext = createContext<LangState | undefined>(undefined);
@@ -43,8 +51,19 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const t = (en: string, ne?: string | null) =>
     lang === "ne" && ne ? ne : en;
 
+  const tr = (key: StringKey, vars?: Record<string, string | number>) => {
+    const entry = STRINGS[key];
+    let str: string = entry ? (lang === "ne" ? entry.ne : entry.en) : key;
+    if (vars) {
+      for (const [k, v] of Object.entries(vars)) {
+        str = str.replaceAll(`{${k}}`, String(v));
+      }
+    }
+    return str;
+  };
+
   return (
-    <LangContext.Provider value={{ lang, toggle, t }}>
+    <LangContext.Provider value={{ lang, toggle, t, tr }}>
       {children}
     </LangContext.Provider>
   );

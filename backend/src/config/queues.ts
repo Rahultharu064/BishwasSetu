@@ -50,9 +50,15 @@ function createMockQueue(name: string) {
 
 function createQueue(name: string) {
   if (isRedisEnabled && redisUrl) {
-    return new Queue(name, redisUrl, {
+    const queue = new Queue(name, redisUrl, {
       defaultJobOptions: { removeOnComplete: 500, removeOnFail: 1000 },
     });
+    // Bull queues are EventEmitters — Node throws synchronously on an
+    // 'error' event with no listener, which would crash the whole process
+    // on a transient Redis blip (the same crash class the rate-limiter hit
+    // — see rateMiddleware.ts). Log and move on instead.
+    queue.on("error", (err) => console.error(`❌ Queue "${name}" error:`, err.message));
+    return queue;
   }
   return createMockQueue(name) as unknown as Queue.Queue;
 }
