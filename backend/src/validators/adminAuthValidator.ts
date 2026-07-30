@@ -9,3 +9,16 @@ export const AdminLoginSchema = z.object({
 })
 
 export type AdminLoginInput = z.infer<typeof AdminLoginSchema>
+
+export const AdminUpdateProfileSchema = z.object({
+  name: z.string().min(2).max(100).trim(),
+})
+
+export type AdminUpdateProfileInput = z.infer<typeof AdminUpdateProfileSchema>
+
+export const AdminChangePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword:     z.string().min(8).max(72),
+})
+
+export type AdminChangePasswordInput = z.infer<typeof AdminChangePasswordSchema>

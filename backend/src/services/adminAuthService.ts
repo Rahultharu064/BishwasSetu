@@ -1,7 +1,11 @@
 import { prisma } from '../config/db'
-import { comparePassword } from '../utils/hash'
+import { comparePassword, hashPassword } from '../utils/hash'
 import { signAccessToken, signRefreshToken, saveRefreshToken } from '../utils/jwt'
-import type { AdminLoginInput } from '../validators/adminAuthValidator'
+import type {
+  AdminLoginInput,
+  AdminUpdateProfileInput,
+  AdminChangePasswordInput,
+} from '../validators/adminAuthValidator'
 
 // Deliberately separate from services/authService.ts's customer/provider
 // login: staff accounts are provisioned directly by an existing admin (or a
@@ -54,4 +58,46 @@ export const loginAdmin = async (input: AdminLoginInput) => {
       role: user.role,
     },
   }
+}
+
+// ── Self-service: update own name ─────────────────────────────
+// Deliberately just `name` — email/phone double as login credentials, so
+// changing them here would need the same re-verification rigor as the
+// public account flow. Out of scope for a "settings" convenience form.
+
+export const updateAdminProfile = async (
+  userId: string,
+  input:  AdminUpdateProfileInput
+) => {
+  return prisma.user.update({
+    where:  { id: userId },
+    data:   { name: input.name },
+    select: { id: true, name: true, role: true },
+  })
+}
+
+// ── Self-service: change own password ──────────────────────────
+
+export const changeAdminPassword = async (
+  userId: string,
+  input:  AdminChangePasswordInput
+) => {
+  const user = await prisma.user.findUnique({
+    where:  { id: userId },
+    select: { passwordHash: true },
+  })
+
+  if (!user?.passwordHash) {
+    throw { code: 'INVALID_CREDENTIALS', message: 'Account has no password set', status: 400 }
+  }
+
+  const match = await comparePassword(input.currentPassword, user.passwordHash)
+  if (!match) {
+    throw { code: 'INVALID_CREDENTIALS', message: 'Current password is incorrect', status: 401 }
+  }
+
+  const passwordHash = await hashPassword(input.newPassword)
+  await prisma.user.update({ where: { id: userId }, data: { passwordHash } })
+
+  return { message: 'Password updated' }
 }

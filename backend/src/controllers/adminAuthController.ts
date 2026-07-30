@@ -32,3 +32,39 @@ export const login = async (
     next(err)
   }
 }
+
+// PATCH /api/v1/admin-auth/me — self-service profile update (name only).
+export const updateProfile = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const result = await AdminAuthService.updateAdminProfile(req.user!.id, req.body)
+    sendSuccess(res, result, 'Profile updated.')
+  } catch (err: any) {
+    if (err.code) {
+      sendError(res, err.message, err.code, err.status)
+      return
+    }
+    next(err)
+  }
+}
+
+// PATCH /api/v1/admin-auth/change-password
+export const changePassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const result = await AdminAuthService.changeAdminPassword(req.user!.id, req.body)
+    sendSuccess(res, result, result.message)
+  } catch (err: any) {
+    if (err.code) {
+      sendError(res, err.message, err.code, err.status)
+      return
+    }
+    next(err)
+  }
+}

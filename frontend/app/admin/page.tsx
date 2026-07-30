@@ -10,7 +10,11 @@ import {
   Coins,
   ArrowRight,
   TrendingUp,
+  BadgeCheck,
+  Flag,
+  Layers,
 } from "lucide-react";
+import { useAuth } from "@/context/auth-context";
 import { api } from "@/lib/api";
 import { useFetch } from "@/lib/use-fetch";
 import { npr } from "@/lib/format";
@@ -19,14 +23,26 @@ import type {
   RevenueAnalytics,
   BookingTrendPoint,
 } from "@/lib/admin-types";
+import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/ui/states";
 import { Badge } from "@/components/ui/badge";
 import { BarChart, type BarChartDatum } from "@/components/ui/bar-chart";
+import { SectionCard } from "@/components/ui/section-card";
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
+const QUICK_ACTIONS = [
+  { href: "/admin/kyc", label: "Verification queue", icon: ClipboardCheck },
+  { href: "/admin/skill-evidence", label: "Skill evidence", icon: BadgeCheck },
+  { href: "/admin/complaints", label: "Complaints", icon: MessageSquareWarning },
+  { href: "/admin/fraud", label: "Trust & fraud", icon: Flag },
+  { href: "/admin/services", label: "Services", icon: Layers },
+];
+
 export default function AdminDashboardPage() {
+  const { user } = useAuth();
+
   const { data, loading, error, reload } = useFetch<AdminDashboard>(
     () => api.adminDashboard() as Promise<AdminDashboard>,
     []
@@ -63,21 +79,48 @@ export default function AdminDashboardPage() {
       ]
     : [];
 
+  const today = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
+
   return (
     <div>
-      <h1 className="text-2xl font-bold tracking-tight">Overview</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Platform health at a glance.
-      </p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {user?.name ? `Welcome back, ${user.name.split(" ")[0]}` : "Overview"}
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">{today} · Platform health at a glance.</p>
+        </div>
+      </div>
+
+      {/* Quick actions */}
+      <div className="no-scrollbar mt-4 flex gap-2 overflow-x-auto">
+        {QUICK_ACTIONS.map((a) => {
+          const Icon = a.icon;
+          return (
+            <Link
+              key={a.href}
+              href={a.href}
+              className="inline-flex shrink-0 items-center gap-2 rounded-full border border-border bg-card px-3.5 py-2 text-sm font-medium text-foreground shadow-sm transition-colors hover:border-primary/40 hover:bg-primary-soft hover:text-primary"
+            >
+              <Icon className="h-3.5 w-3.5" />
+              {a.label}
+            </Link>
+          );
+        })}
+      </div>
 
       {loading ? (
-        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 8 }).map((_, i) => (
             <Skeleton key={i} className="h-28 rounded-xl" />
           ))}
         </div>
       ) : error || !data ? (
-        <div className="mt-6">
+        <div className="mt-5">
           <ErrorState message={error ?? "Couldn't load the dashboard."} onRetry={reload} />
         </div>
       ) : (
@@ -85,13 +128,13 @@ export default function AdminDashboardPage() {
           {/* Priority: pending verifications (ux.md §12.1) */}
           <Link
             href="/admin/kyc"
-            className="mt-6 flex items-center gap-4 rounded-2xl border border-primary/30 bg-primary-soft/50 p-5 transition-colors hover:bg-primary-soft"
+            className="mt-5 flex items-center gap-4 rounded-2xl border border-primary/30 bg-gradient-to-r from-primary-soft to-primary-soft/40 p-5 shadow-sm transition-colors hover:from-primary-soft hover:to-primary-soft"
           >
-            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
               <ClipboardCheck className="h-6 w-6" />
             </span>
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
                 <p className="font-semibold">Verification queue</p>
                 {data.providers.pendingKycReview > 0 && (
                   <Badge variant="warning" size="sm">
@@ -103,99 +146,93 @@ export default function AdminDashboardPage() {
                 Review provider KYC — median target &lt; 4 hours
               </p>
             </div>
-            <ArrowRight className="h-5 w-5 text-primary" />
+            <ArrowRight className="h-5 w-5 shrink-0 text-primary" />
           </Link>
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <Stat
+              tone="primary"
               icon={<Users className="h-5 w-5" />}
               label="Active users"
               value={data.users.total.toLocaleString()}
               sub={`+${data.users.newThisWeek} this week`}
             />
             <Stat
+              tone="skilled"
               icon={<ShieldCheck className="h-5 w-5" />}
               label="Verified providers"
               value={data.providers.verified.toLocaleString()}
               sub={`of ${data.providers.total} total`}
             />
             <Stat
+              tone="primary"
               icon={<TrendingUp className="h-5 w-5" />}
               label="Avg trust score"
               value={String(data.providers.avgTrustScore)}
               sub="verified providers"
             />
             <Stat
+              tone="skilled"
               icon={<CalendarCheck className="h-5 w-5" />}
               label="Bookings (30d)"
               value={data.bookings.thisMonth.toLocaleString()}
               sub={`${data.bookings.completed} completed all-time`}
             />
             <Stat
+              tone="primary"
               icon={<Coins className="h-5 w-5" />}
               label="Commission (30d)"
               value={npr(data.revenue.monthlyCommissionNpr)}
               sub={`${data.revenue.monthlyBookings} paid bookings`}
             />
             <Stat
+              tone="primary"
               icon={<Coins className="h-5 w-5" />}
               label="Commission (all-time)"
               value={npr(data.revenue.totalCommissionNpr)}
             />
             <Stat
+              tone={data.complaints.critical > 0 ? "urgent" : "neutral"}
               icon={<MessageSquareWarning className="h-5 w-5" />}
               label="Open complaints"
               value={String(data.complaints.open)}
               sub={data.complaints.critical > 0 ? `${data.complaints.critical} critical` : "none critical"}
-              alert={data.complaints.critical > 0}
             />
             <Stat
+              tone={data.providers.pendingKycReview > 0 ? "warning" : "neutral"}
               icon={<ClipboardCheck className="h-5 w-5" />}
               label="Pending KYC"
               value={String(data.providers.pendingKycReview)}
-              alert={data.providers.pendingKycReview > 0}
             />
           </div>
         </>
       )}
 
       {/* Charts */}
-      <div className="mt-8 grid gap-5 lg:grid-cols-2">
+      <div className="mt-6 grid gap-5 lg:grid-cols-2">
         {/* Bookings trend (last 14 days) */}
-        <div className="rounded-2xl border border-border bg-card p-5">
-          <div className="flex items-baseline justify-between">
-            <h2 className="text-lg font-bold tracking-tight">Bookings</h2>
-            <span className="text-xs text-muted-foreground">last 14 days</span>
-          </div>
-          <div className="mt-4">
-            {trend.loading ? (
-              <Skeleton className="h-40 rounded-xl" />
-            ) : trend.error ? (
-              <ErrorState message={trend.error} onRetry={trend.reload} />
-            ) : (
-              <BarChart data={trendChartData} height={160} />
-            )}
-          </div>
-        </div>
+        <SectionCard title="Bookings" subtitle="Last 14 days">
+          {trend.loading ? (
+            <Skeleton className="h-40 rounded-xl" />
+          ) : trend.error ? (
+            <ErrorState message={trend.error} onRetry={trend.reload} />
+          ) : (
+            <BarChart data={trendChartData} height={160} />
+          )}
+        </SectionCard>
 
         {/* Revenue breakdown (last 30 days) */}
-        <div className="rounded-2xl border border-border bg-card p-5">
-          <div className="flex items-baseline justify-between">
-            <h2 className="text-lg font-bold tracking-tight">Revenue streams</h2>
-            <span className="text-xs text-muted-foreground">last 30 days</span>
-          </div>
+        <SectionCard title="Revenue streams" subtitle="Last 30 days">
           {revenue.loading ? (
-            <Skeleton className="mt-4 h-40 rounded-xl" />
+            <Skeleton className="h-40 rounded-xl" />
           ) : revenue.error || !revenue.data ? (
-            <div className="mt-4">
-              <ErrorState
-                message={revenue.error ?? "Couldn't load revenue."}
-                onRetry={revenue.reload}
-              />
-            </div>
+            <ErrorState
+              message={revenue.error ?? "Couldn't load revenue."}
+              onRetry={revenue.reload}
+            />
           ) : (
             <>
-              <p className="mt-4 text-sm font-medium text-muted-foreground">
+              <p className="text-sm font-medium text-muted-foreground">
                 Total revenue
               </p>
               <p className="tabular text-3xl font-bold text-primary">
@@ -227,7 +264,7 @@ export default function AdminDashboardPage() {
               </div>
             </>
           )}
-        </div>
+        </SectionCard>
       </div>
     </div>
   );
@@ -251,32 +288,37 @@ function RevenueStream({
   );
 }
 
+const STAT_TONE = {
+  primary: "bg-primary-soft text-primary",
+  skilled: "bg-skilled-soft text-skilled",
+  warning: "bg-warning-soft text-warning",
+  urgent: "bg-urgent-soft text-urgent",
+  neutral: "bg-secondary text-secondary-foreground",
+} as const;
+
 function Stat({
   icon,
   label,
   value,
   sub,
-  alert,
+  tone = "neutral",
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
   sub?: string;
-  alert?: boolean;
+  tone?: keyof typeof STAT_TONE;
 }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <div className="flex items-center justify-between">
-        <span
-          className={
-            alert
-              ? "flex h-9 w-9 items-center justify-center rounded-full bg-urgent-soft text-urgent"
-              : "flex h-9 w-9 items-center justify-center rounded-full bg-primary-soft text-primary"
-          }
-        >
-          {icon}
-        </span>
-      </div>
+    <div className="rounded-xl border border-border bg-card p-4 shadow-sm transition-shadow hover:shadow-md">
+      <span
+        className={cn(
+          "flex h-9 w-9 items-center justify-center rounded-full",
+          STAT_TONE[tone]
+        )}
+      >
+        {icon}
+      </span>
       <p className="tabular mt-3 text-2xl font-bold">{value}</p>
       <p className="text-sm font-medium text-muted-foreground">{label}</p>
       {sub && <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>}

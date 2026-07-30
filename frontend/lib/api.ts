@@ -181,6 +181,18 @@ export const api = {
       "/admin-auth/login",
       { method: "POST", body }
     ),
+  adminUpdateProfile: (body: { name: string }) =>
+    apiRequest<{ id: string; name: string; role: string }>("/admin-auth/me", {
+      method: "PATCH",
+      body,
+      auth: true,
+    }),
+  adminChangePassword: (body: { currentPassword: string; newPassword: string }) =>
+    apiRequest<{ message: string }>("/admin-auth/change-password", {
+      method: "PATCH",
+      body,
+      auth: true,
+    }),
 
   // Services / categories
   categories: () => apiRequest<import("./types").Category[]>("/services"),

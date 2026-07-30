@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import type { LucideIcon } from "lucide-react";
 import {
   ShieldAlert,
   ClipboardCheck,
@@ -13,6 +14,7 @@ import {
   Flag,
   Award,
   Layers,
+  Settings,
   ExternalLink,
   LogOut,
   ChevronDown,
@@ -21,17 +23,51 @@ import { useAuth } from "@/context/auth-context";
 import { cn } from "@/lib/utils";
 import { initials } from "@/lib/format";
 
-const NAV = [
-  { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { href: "/admin/kyc", label: "Verification Queue", icon: ClipboardCheck },
-  { href: "/admin/skill-evidence", label: "Skill Evidence", icon: BadgeCheck },
-  { href: "/admin/badges", label: "Trust Badges", icon: Award },
-  { href: "/admin/providers", label: "Providers", icon: Users },
-  { href: "/admin/services", label: "Services", icon: Layers },
-  { href: "/admin/users", label: "Users", icon: Users },
-  { href: "/admin/complaints", label: "Complaints", icon: MessageSquareWarning },
-  { href: "/admin/fraud", label: "Trust & Fraud", icon: Flag },
+interface NavItem {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  exact?: boolean;
+}
+
+// Grouped like a product sidebar (Overview / Verification / Catalog & people
+// / Trust & safety) rather than one flat list — reads better once there are
+// this many destinations.
+const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
+  {
+    title: "Overview",
+    items: [{ href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true }],
+  },
+  {
+    title: "Verification",
+    items: [
+      { href: "/admin/kyc", label: "Verification Queue", icon: ClipboardCheck },
+      { href: "/admin/skill-evidence", label: "Skill Evidence", icon: BadgeCheck },
+      { href: "/admin/badges", label: "Trust Badges", icon: Award },
+    ],
+  },
+  {
+    title: "Catalog & people",
+    items: [
+      { href: "/admin/providers", label: "Providers", icon: Users },
+      { href: "/admin/services", label: "Services", icon: Layers },
+      { href: "/admin/users", label: "Users", icon: Users },
+    ],
+  },
+  {
+    title: "Trust & safety",
+    items: [
+      { href: "/admin/complaints", label: "Complaints", icon: MessageSquareWarning },
+      { href: "/admin/fraud", label: "Trust & Fraud", icon: Flag },
+    ],
+  },
 ];
+
+const NAV_FOOTER: NavItem[] = [
+  { href: "/admin/settings", label: "Settings", icon: Settings },
+];
+
+const NAV_FLAT = [...NAV_GROUPS.flatMap((g) => g.items), ...NAV_FOOTER];
 
 export default function AdminLayout({
   children,
@@ -151,22 +187,49 @@ export default function AdminLayout({
 
       <div className="mx-auto flex w-full max-w-6xl flex-1 gap-6 px-4 py-6">
         {/* Sidebar (ux.md §4.3) */}
-        <aside className="sticky top-[4.5rem] hidden h-fit w-56 shrink-0 md:block">
-          <nav className="space-y-1">
-            {NAV.map((n) => {
-              const active = n.exact
-                ? pathname === n.href
-                : pathname.startsWith(n.href);
+        <aside className="sticky top-[4.5rem] hidden h-fit w-56 shrink-0 flex-col gap-5 md:flex">
+          {NAV_GROUPS.map((group) => (
+            <nav key={group.title} className="space-y-0.5">
+              <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                {group.title}
+              </p>
+              {group.items.map((n) => {
+                const active = n.exact
+                  ? pathname === n.href
+                  : pathname.startsWith(n.href);
+                const Icon = n.icon;
+                return (
+                  <Link
+                    key={n.href}
+                    href={n.href}
+                    className={cn(
+                      "flex items-center gap-2.5 rounded-lg border-l-2 px-2.5 py-2 text-sm font-medium transition-colors",
+                      active
+                        ? "border-primary bg-primary-soft text-primary"
+                        : "border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground"
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {n.label}
+                  </Link>
+                );
+              })}
+            </nav>
+          ))}
+
+          <nav className="space-y-0.5 border-t border-border pt-3">
+            {NAV_FOOTER.map((n) => {
+              const active = pathname.startsWith(n.href);
               const Icon = n.icon;
               return (
                 <Link
                   key={n.href}
                   href={n.href}
                   className={cn(
-                    "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                    "flex items-center gap-2.5 rounded-lg border-l-2 px-2.5 py-2 text-sm font-medium transition-colors",
                     active
-                      ? "bg-primary-soft text-primary"
-                      : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                      ? "border-primary bg-primary-soft text-primary"
+                      : "border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground"
                   )}
                 >
                   <Icon className="h-4 w-4" />
@@ -180,7 +243,7 @@ export default function AdminLayout({
         {/* Mobile top tabs */}
         <main className="w-full min-w-0">
           <nav className="no-scrollbar mb-4 flex gap-2 overflow-x-auto md:hidden">
-            {NAV.map((n) => {
+            {NAV_FLAT.map((n) => {
               const active = n.exact
                 ? pathname === n.href
                 : pathname.startsWith(n.href);
