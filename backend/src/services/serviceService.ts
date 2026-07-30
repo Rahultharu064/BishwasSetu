@@ -139,6 +139,26 @@ export const getProvidersByCategory = async (
   }
 }
 
+// Admin: full hierarchy including inactive rows — getAllCategories/getCategoryBySlug
+// above filter isActive:true (they back the public catalog), so they can't be used
+// to manage a category after it's been toggled off. This is the one call the admin
+// services page needs to render and edit the whole tree.
+export const getAdminCategoryTree = async () => {
+  return prisma.category.findMany({
+    orderBy: { sortOrder: 'asc' },
+    include: {
+      subCategories: {
+        orderBy: { sortOrder: 'asc' },
+        include: {
+          services: { orderBy: { sortOrder: 'asc' } },
+          _count:   { select: { services: true } },
+        },
+      },
+      _count: { select: { providers: true } },
+    },
+  })
+}
+
 // Admin: create category
 export const createCategory = async (input: CreateCategoryInput) => {
   const exists = await prisma.category.findUnique({ where: { slug: input.slug } })
@@ -235,6 +255,11 @@ export const updateSubCategory = async (
   input: Partial<CreateSubCategoryInput>
 ) => {
   return prisma.subCategory.update({ where: { id }, data: input })
+}
+
+// Admin: toggle active
+export const toggleSubCategory = async (id: string, isActive: boolean) => {
+  return prisma.subCategory.update({ where: { id }, data: { isActive } })
 }
 
 // ═══════════════════════════════════════════

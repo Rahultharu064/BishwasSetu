@@ -158,3 +158,60 @@ export interface RevenueAnalytics {
   };
   totalRevenueNpr: number;
 }
+
+// ── Bookings trend (GET /admin/analytics/bookings-trend) ──────
+export interface BookingTrendPoint {
+  date: string; // YYYY-MM-DD
+  total: number;
+  completed: number;
+}
+
+// ── Service catalog management (GET /services/admin/tree) ─────
+// Distinct names from lib/types.ts's public Category/Service — this is the
+// admin CRUD shape (includes inactive rows + nested sub-categories/services
+// in one call), not the public catalog shape.
+export interface AdminServiceRow {
+  id: string;
+  subCategoryId: string;
+  name: string;
+  nameNp: string;
+  description?: string | null;
+  descriptionNp?: string | null;
+  slug: string;
+  pricingType: "fixed" | "range" | "quote";
+  priceMin?: number | null;
+  priceMax?: number | null;
+  priceFixed?: number | null;
+  priceUnit?: string | null;
+  estimatedMinutes?: number | null;
+  isActive: boolean;
+  sortOrder: number;
+}
+
+export interface AdminSubCategoryRow {
+  id: string;
+  categoryId: string;
+  name: string;
+  nameNp: string;
+  description?: string | null;
+  descriptionNp?: string | null;
+  slug: string;
+  isActive: boolean;
+  sortOrder: number;
+  services: AdminServiceRow[];
+  _count: { services: number };
+}
+
+export interface AdminCategoryRow {
+  id: string;
+  name: string;
+  nameNp: string;
+  icon?: string | null;
+  description?: string | null;
+  descriptionNp?: string | null;
+  slug: string;
+  isActive: boolean;
+  sortOrder: number;
+  subCategories: AdminSubCategoryRow[];
+  _count: { providers: number };
+}

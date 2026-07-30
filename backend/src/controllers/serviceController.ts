@@ -43,6 +43,17 @@ export const getProvidersByCategory = async (
   }
 }
 
+export const getAdminCategoryTree = async (
+  req: Request, res: Response, next: NextFunction
+): Promise<void> => {
+  try {
+    const data = await ServiceModule.getAdminCategoryTree()
+    sendSuccess(res, data)
+  } catch (err: any) {
+    err.code ? sendError(res, err.message, err.code, err.status) : next(err)
+  }
+}
+
 export const createCategory = async (
   req: Request, res: Response, next: NextFunction
 ): Promise<void> => {
@@ -123,6 +134,20 @@ export const updateSubCategory = async (
   try {
     const data = await ServiceModule.updateSubCategory(requireString(req.params.id, "id"), req.body)
     sendSuccess(res, data, 'Sub-category updated')
+  } catch (err: any) {
+    err.code ? sendError(res, err.message, err.code, err.status) : next(err)
+  }
+}
+
+export const toggleSubCategory = async (
+  req: Request, res: Response, next: NextFunction
+): Promise<void> => {
+  try {
+    const data = await ServiceModule.toggleSubCategory(
+      requireString(req.params.id, "id"),
+      req.body.isActive
+    )
+    sendSuccess(res, data)
   } catch (err: any) {
     err.code ? sendError(res, err.message, err.code, err.status) : next(err)
   }

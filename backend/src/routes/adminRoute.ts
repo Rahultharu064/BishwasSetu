@@ -10,8 +10,9 @@ const router = Router()
 router.use(protect, restrictTo('ADMIN', 'MODERATOR'))
 
 // ── Dashboard & Analytics ──────────────────────────────────────
-router.get('/dashboard',         AdminController.getDashboard)
-router.get('/analytics/revenue', AdminController.getRevenue)
+router.get('/dashboard',                AdminController.getDashboard)
+router.get('/analytics/revenue',        AdminController.getRevenue)
+router.get('/analytics/bookings-trend', AdminController.getBookingsTrend)
 
 // ── Users ──────────────────────────────────────────────────────
 router.get('/users',               AdminController.getUsers)

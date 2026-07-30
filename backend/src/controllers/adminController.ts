@@ -29,6 +29,17 @@ export const getRevenue = async (
   }
 }
 
+export const getBookingsTrend = async (
+  req: Request, res: Response, next: NextFunction
+): Promise<void> => {
+  try {
+    const data = await AdminService.getBookingsTrend(Number(req.query.days ?? 14))
+    sendSuccess(res, data)
+  } catch (err: any) {
+    err.code ? sendError(res, err.message, err.code, err.status) : next(err)
+  }
+}
+
 export const getUsers = async (
   req: Request, res: Response, next: NextFunction
 ): Promise<void> => {

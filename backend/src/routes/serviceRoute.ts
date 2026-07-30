@@ -36,6 +36,14 @@ router.get(
 
 // ── Admin routes ───────────────────────────────────────────────
 
+// Full category → sub-category → service tree, inactive rows included —
+// the read side of admin service management (see getAdminCategoryTree).
+router.get(
+  '/admin/tree',
+  protect, restrictTo('ADMIN'),
+  ServiceController.getAdminCategoryTree
+)
+
 // Categories
 router.post(
   '/',
@@ -65,6 +73,11 @@ router.put(
   '/sub/:id',
   protect, restrictTo('ADMIN'),
   ServiceController.updateSubCategory
+)
+router.patch(
+  '/sub/:id/toggle',
+  protect, restrictTo('ADMIN'),
+  ServiceController.toggleSubCategory
 )
 
 // Services

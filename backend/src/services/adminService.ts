@@ -143,6 +143,47 @@ export const getRevenueAnalytics = async (params: {
   }
 }
 
+// ── BOOKINGS TREND (for dashboard bar chart) ──────────────────
+// Daily booking volume for the last N days, zero-filled so the chart never
+// has gaps. Raw SQL because Prisma's groupBy can't truncate a DateTime to a
+// calendar day — DATE_FORMAT is MySQL-specific, consistent with the rest of
+// this app's DB layer.
+
+export const getBookingsTrend = async (days: number) => {
+  const span = Math.min(Math.max(Math.trunc(days) || 14, 1), 90)
+
+  const since = new Date()
+  since.setUTCHours(0, 0, 0, 0)
+  since.setUTCDate(since.getUTCDate() - (span - 1))
+
+  const rows = await prisma.$queryRaw<{ day: string; total: bigint; completed: bigint }[]>`
+    SELECT DATE_FORMAT(createdAt, '%Y-%m-%d') AS day,
+           COUNT(*) AS total,
+           SUM(CASE WHEN status = 'COMPLETED' THEN 1 ELSE 0 END) AS completed
+    FROM bookings
+    WHERE createdAt >= ${since}
+    GROUP BY day
+    ORDER BY day ASC
+  `
+
+  const byDay = new Map(rows.map((r) => [r.day, r]))
+
+  const points: { date: string; total: number; completed: number }[] = []
+  for (let i = 0; i < span; i++) {
+    const d = new Date(since)
+    d.setUTCDate(since.getUTCDate() + i)
+    const key = d.toISOString().slice(0, 10)
+    const row = byDay.get(key)
+    points.push({
+      date:      key,
+      total:     row ? Number(row.total) : 0,
+      completed: row ? Number(row.completed) : 0,
+    })
+  }
+
+  return points
+}
+
 // ── USER MANAGEMENT ───────────────────────────────────────────
 
 export const getUsers = async (params: {

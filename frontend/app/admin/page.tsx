@@ -14,10 +14,15 @@ import {
 import { api } from "@/lib/api";
 import { useFetch } from "@/lib/use-fetch";
 import { npr } from "@/lib/format";
-import type { AdminDashboard, RevenueAnalytics } from "@/lib/admin-types";
+import type {
+  AdminDashboard,
+  RevenueAnalytics,
+  BookingTrendPoint,
+} from "@/lib/admin-types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/ui/states";
 import { Badge } from "@/components/ui/badge";
+import { BarChart, type BarChartDatum } from "@/components/ui/bar-chart";
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -35,6 +40,28 @@ export default function AdminDashboardPage() {
       }) as Promise<RevenueAnalytics>,
     []
   );
+
+  const trend = useFetch<BookingTrendPoint[]>(
+    () => api.adminBookingsTrend(14),
+    []
+  );
+
+  const trendChartData: BarChartDatum[] = (trend.data ?? []).map((p) => ({
+    label: new Date(p.date).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    }),
+    value: p.total,
+    detail: `${p.completed} completed`,
+  }));
+
+  const revenueChartData: BarChartDatum[] = revenue.data
+    ? [
+        { label: "Commission", value: revenue.data.streams.commission.totalNpr },
+        { label: "Credit packs", value: revenue.data.streams.credits.totalNpr },
+        { label: "Boost badges", value: revenue.data.streams.badges.totalNpr },
+      ]
+    : [];
 
   return (
     <div>
@@ -132,48 +159,75 @@ export default function AdminDashboardPage() {
         </>
       )}
 
-      {/* Revenue breakdown (last 30 days) */}
-      <div className="mt-8">
-        <div className="flex items-baseline justify-between">
-          <h2 className="text-lg font-bold tracking-tight">Revenue streams</h2>
-          <span className="text-xs text-muted-foreground">last 30 days</span>
-        </div>
-        {revenue.loading ? (
-          <Skeleton className="mt-3 h-28 rounded-xl" />
-        ) : revenue.error || !revenue.data ? (
-          <div className="mt-3">
-            <ErrorState
-              message={revenue.error ?? "Couldn't load revenue."}
-              onRetry={revenue.reload}
-            />
+      {/* Charts */}
+      <div className="mt-8 grid gap-5 lg:grid-cols-2">
+        {/* Bookings trend (last 14 days) */}
+        <div className="rounded-2xl border border-border bg-card p-5">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-lg font-bold tracking-tight">Bookings</h2>
+            <span className="text-xs text-muted-foreground">last 14 days</span>
           </div>
-        ) : (
-          <div className="mt-3 rounded-2xl border border-border bg-card p-5">
-            <p className="text-sm font-medium text-muted-foreground">
-              Total revenue
-            </p>
-            <p className="tabular mt-0.5 text-3xl font-bold text-primary">
-              {npr(revenue.data.totalRevenueNpr)}
-            </p>
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">
-              <RevenueStream
-                label="Commission"
-                value={npr(revenue.data.streams.commission.totalNpr)}
-                sub={`${revenue.data.streams.commission.bookingsCount} bookings`}
-              />
-              <RevenueStream
-                label="Credit packs"
-                value={npr(revenue.data.streams.credits.totalNpr)}
-                sub={`${revenue.data.streams.credits.purchasesCount} purchases`}
-              />
-              <RevenueStream
-                label="Boost badges"
-                value={npr(revenue.data.streams.badges.totalNpr)}
-                sub={`${revenue.data.streams.badges.badgesCount} badges`}
+          <div className="mt-4">
+            {trend.loading ? (
+              <Skeleton className="h-40 rounded-xl" />
+            ) : trend.error ? (
+              <ErrorState message={trend.error} onRetry={trend.reload} />
+            ) : (
+              <BarChart data={trendChartData} height={160} />
+            )}
+          </div>
+        </div>
+
+        {/* Revenue breakdown (last 30 days) */}
+        <div className="rounded-2xl border border-border bg-card p-5">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-lg font-bold tracking-tight">Revenue streams</h2>
+            <span className="text-xs text-muted-foreground">last 30 days</span>
+          </div>
+          {revenue.loading ? (
+            <Skeleton className="mt-4 h-40 rounded-xl" />
+          ) : revenue.error || !revenue.data ? (
+            <div className="mt-4">
+              <ErrorState
+                message={revenue.error ?? "Couldn't load revenue."}
+                onRetry={revenue.reload}
               />
             </div>
-          </div>
-        )}
+          ) : (
+            <>
+              <p className="mt-4 text-sm font-medium text-muted-foreground">
+                Total revenue
+              </p>
+              <p className="tabular text-3xl font-bold text-primary">
+                {npr(revenue.data.totalRevenueNpr)}
+              </p>
+              <div className="mt-4">
+                <BarChart
+                  data={revenueChartData}
+                  valueFormatter={(v) => npr(v)}
+                  height={120}
+                />
+              </div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                <RevenueStream
+                  label="Commission"
+                  value={npr(revenue.data.streams.commission.totalNpr)}
+                  sub={`${revenue.data.streams.commission.bookingsCount} bookings`}
+                />
+                <RevenueStream
+                  label="Credit packs"
+                  value={npr(revenue.data.streams.credits.totalNpr)}
+                  sub={`${revenue.data.streams.credits.purchasesCount} purchases`}
+                />
+                <RevenueStream
+                  label="Boost badges"
+                  value={npr(revenue.data.streams.badges.totalNpr)}
+                  sub={`${revenue.data.streams.badges.badgesCount} badges`}
+                />
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

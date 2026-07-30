@@ -4,10 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/context/auth-context";
 import { LanguageProvider } from "@/context/language-context";
 import { ToastProvider } from "@/context/toast-context";
-import { SiteHeader } from "@/components/site-header";
-import { SiteFooter } from "@/components/site-footer";
-import { BottomNav } from "@/components/bottom-nav";
-import { AssistantWidget } from "@/components/assistant/assistant-widget";
+import { SiteChrome } from "@/components/site-chrome";
 
 // Single font family — reduces payload on 3G (ux.md §2.2)
 const mukta = Mukta({
@@ -45,13 +42,7 @@ export default function RootLayout({
         <ToastProvider>
           <LanguageProvider>
             <AuthProvider>
-              <div className="flex min-h-dvh flex-col">
-                <SiteHeader />
-                <main className="flex-1 pb-20 md:pb-0">{children}</main>
-                <SiteFooter />
-              </div>
-              <BottomNav />
-              <AssistantWidget />
+              <SiteChrome>{children}</SiteChrome>
             </AuthProvider>
           </LanguageProvider>
         </ToastProvider>

@@ -193,6 +193,121 @@ export const api = {
   searchServices: (q: string) =>
     apiRequest<unknown>("/services/search", { query: { q } }),
 
+  // Services / categories — admin management (full tree incl. inactive rows)
+  adminServiceTree: () =>
+    apiRequest<import("./admin-types").AdminCategoryRow[]>(
+      "/services/admin/tree",
+      { auth: true }
+    ),
+  adminCreateCategory: (body: {
+    name: string;
+    nameNp: string;
+    slug: string;
+    icon?: string;
+    description?: string;
+    descriptionNp?: string;
+    sortOrder?: number;
+  }) => apiRequest<unknown>("/services", { method: "POST", body, auth: true }),
+  adminUpdateCategory: (
+    id: string,
+    body: Partial<{
+      name: string;
+      nameNp: string;
+      slug: string;
+      icon: string;
+      description: string;
+      descriptionNp: string;
+      sortOrder: number;
+    }>
+  ) =>
+    apiRequest<unknown>(`/services/${id}`, { method: "PUT", body, auth: true }),
+  adminToggleCategory: (id: string, isActive: boolean) =>
+    apiRequest<unknown>(`/services/${id}/toggle`, {
+      method: "PATCH",
+      body: { isActive },
+      auth: true,
+    }),
+  adminCreateSubCategory: (body: {
+    categoryId: string;
+    name: string;
+    nameNp: string;
+    slug: string;
+    description?: string;
+    descriptionNp?: string;
+    sortOrder?: number;
+  }) =>
+    apiRequest<unknown>("/services/sub", { method: "POST", body, auth: true }),
+  adminUpdateSubCategory: (
+    id: string,
+    body: Partial<{
+      name: string;
+      nameNp: string;
+      slug: string;
+      description: string;
+      descriptionNp: string;
+      sortOrder: number;
+    }>
+  ) =>
+    apiRequest<unknown>(`/services/sub/${id}`, {
+      method: "PUT",
+      body,
+      auth: true,
+    }),
+  adminToggleSubCategory: (id: string, isActive: boolean) =>
+    apiRequest<unknown>(`/services/sub/${id}/toggle`, {
+      method: "PATCH",
+      body: { isActive },
+      auth: true,
+    }),
+  adminCreateService: (body: {
+    subCategoryId: string;
+    name: string;
+    nameNp: string;
+    slug: string;
+    description?: string;
+    descriptionNp?: string;
+    pricingType: "fixed" | "range" | "quote";
+    priceMin?: number;
+    priceMax?: number;
+    priceFixed?: number;
+    priceUnit?: string;
+    estimatedMinutes?: number;
+    sortOrder?: number;
+  }) =>
+    apiRequest<unknown>("/services/service", {
+      method: "POST",
+      body,
+      auth: true,
+    }),
+  adminUpdateService: (
+    id: string,
+    body: Partial<{
+      name: string;
+      nameNp: string;
+      slug: string;
+      description: string;
+      descriptionNp: string;
+      pricingType: "fixed" | "range" | "quote";
+      priceMin: number;
+      priceMax: number;
+      priceFixed: number;
+      priceUnit: string;
+      estimatedMinutes: number;
+      sortOrder: number;
+    }>
+  ) =>
+    apiRequest<unknown>(`/services/service/${id}`, {
+      method: "PUT",
+      body,
+      auth: true,
+    }),
+  adminToggleService: (id: string, isActive: boolean) =>
+    apiRequest<unknown>(`/services/service/${id}/toggle`, {
+      method: "PATCH",
+      body: { isActive },
+      auth: true,
+    }),
+
   // AI Smart Match — nearest providers for a category (customer, auth)
   smartMatch: (body: {
     categoryId?: string;
@@ -289,6 +404,11 @@ export const api = {
 
   // Admin
   adminDashboard: () => apiRequest<unknown>("/admin/dashboard", { auth: true }),
+  adminBookingsTrend: (days = 14) =>
+    apiRequest<import("./admin-types").BookingTrendPoint[]>(
+      "/admin/analytics/bookings-trend",
+      { query: { days }, auth: true }
+    ),
   adminKycQueue: (query?: Record<string, string | number | undefined>) =>
     apiRequest<unknown>("/admin/kyc", { query, auth: true }),
   adminKycDocuments: (providerId: string) =>
