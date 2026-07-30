@@ -31,6 +31,7 @@ import { errorHandler } from './middlewares/errorMiddleware'
 
 // ── Route modules ─────────────────────────────────────────────
 import authRoutes      from './routes/authRoute'
+import adminAuthRoutes from './routes/adminAuthRoute'
 import providerRoutes  from './routes/providerRoute'
 import kycRoutes       from './routes/kycRoute'
 import bookingRoutes   from './routes/bookingRoute'
@@ -92,6 +93,13 @@ app.use(`${v1}/auth/login`,      authLimiter)
 app.use(`${v1}/auth/verify-otp`, otpLimiter)
 app.use(`${v1}/auth/resend-otp`, otpLimiter)
 app.use(`${v1}/auth`,            authRoutes)
+
+// Staff login — deliberately a separate mount from both `/auth` (public,
+// OTP-gated) and `/admin` (already-authenticated resource API below) so
+// there's no path-prefix ambiguity with adminRoutes' router-wide
+// protect+restrictTo gate.
+app.use(`${v1}/admin-auth/login`, authLimiter)
+app.use(`${v1}/admin-auth`,       adminAuthRoutes)
 
 // Resource-specific limits
 app.use(`${v1}/providers/search`, searchLimiter)

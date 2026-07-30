@@ -72,7 +72,13 @@ export function SiteHeader() {
                 <Bell className="h-5 w-5 text-muted-foreground" />
               </Link>
               <Link
-                href={user?.role === "PROVIDER" ? "/provider" : "/account"}
+                href={
+                  user?.role === "PROVIDER"
+                    ? "/provider"
+                    : user?.role === "ADMIN" || user?.role === "MODERATOR"
+                      ? "/admin"
+                      : "/account"
+                }
                 className="hidden items-center gap-1.5 rounded-full border border-border py-1.5 pl-1.5 pr-3 text-sm font-medium hover:bg-secondary sm:inline-flex"
               >
                 <UserCircle2 className="h-5 w-5 text-primary" />

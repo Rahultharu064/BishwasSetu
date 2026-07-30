@@ -42,7 +42,7 @@ export default function AdminLayout({
   useEffect(() => {
     if (loading) return;
     if (!isAuthenticated) {
-      router.replace("/login?next=/admin");
+      router.replace("/admin-login");
     } else if (!isAdmin) {
       router.replace("/");
     }

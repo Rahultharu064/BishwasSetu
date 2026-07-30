@@ -174,6 +174,14 @@ export const api = {
 
   logout: () => apiRequest<null>("/auth/logout", { method: "POST" }),
 
+  // Staff login — separate endpoint from the public auth/* flow above (no
+  // registration, no OTP step; see backend routes/adminAuthRoute.ts).
+  adminLogin: (body: { email: string; password: string }) =>
+    apiRequest<{ accessToken: string; user: import("./types").User }>(
+      "/admin-auth/login",
+      { method: "POST", body }
+    ),
+
   // Services / categories
   categories: () => apiRequest<import("./types").Category[]>("/services"),
   categoryBySlug: (slug: string) =>
