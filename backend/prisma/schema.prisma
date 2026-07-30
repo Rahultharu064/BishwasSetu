@@ -647,7 +647,7 @@ model ModerationLog {
 // ─────────────────────────────────────────────
 
 // FULLTEXT index applied via raw SQL migration
-// See: prisma/migrations/add_fulltext_index.sql
+// See: prisma/migrations/20260730080953_add_kb_articles_fulltext_index
 model KbArticle {
   id        String   @id @default(uuid()) @db.Char(36)
   category  String   @db.VarChar(50) // 'policy'|'faq'|'provider_info'|'booking_guide'|'credits'

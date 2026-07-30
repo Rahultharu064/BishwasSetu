@@ -14,10 +14,20 @@ interface Msg {
 
 type ContextType = "booking" | "provider" | "complaint" | "credits" | "general";
 
-const SUGGESTIONS = [
+const GUEST_SUGGESTIONS = [
+  "What is BishwasSetu?",
+  "How does it work?",
+  "Is my payment safe?",
+];
+const CUSTOMER_SUGGESTIONS = [
   "How does escrow protect me?",
   "What is a trust score?",
-  "How do I become a provider?",
+  "How do I file a complaint?",
+];
+const PROVIDER_SUGGESTIONS = [
+  "What's my trust score?",
+  "How do credits work?",
+  "How do I get verified?",
 ];
 
 function newSessionId() {
@@ -54,6 +64,11 @@ function contextForRoute(
 export function AssistantWidget() {
   const pathname = usePathname();
   const { user } = useAuth();
+  const suggestions = !user
+    ? GUEST_SUGGESTIONS
+    : user.role === "PROVIDER"
+      ? PROVIDER_SUGGESTIONS
+      : CUSTOMER_SUGGESTIONS;
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
@@ -171,8 +186,13 @@ export function AssistantWidget() {
                   <p className="mt-1 text-xs text-muted-foreground">
                     I can explain how BishwasSetu works — in English or नेपाली.
                   </p>
+                  {!user && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Sign in for help with your own bookings.
+                    </p>
+                  )}
                   <div className="mt-4 flex flex-col gap-2">
-                    {SUGGESTIONS.map((s) => (
+                    {suggestions.map((s) => (
                       <button
                         key={s}
                         onClick={() => send(s)}

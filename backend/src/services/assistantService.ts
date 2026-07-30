@@ -113,12 +113,14 @@ export const streamChat = async (
     const liveContextObj = await fetchContext(contextType, contextId, requester ?? {})
     const liveContext    = liveContextObj?.summary ?? null
 
-    // 6. Build system prompt
+    // 6. Build system prompt — tailored to who's actually asking
+    const audience = resolveAudience(requester)
     const systemPrompt = buildSystemPrompt({
       lang,
       intent,
       retrievedChunks: chunks,
       liveContext,
+      audience,
     })
 
     // 7. Build message history for Groq
@@ -290,15 +292,65 @@ export const listKbArticles = async (params: {
 }
 
 
-// Inside assistant.service.ts — defined here for clarity
+// ── Audience resolution ────────────────────────────────────────
+// Who's actually asking decides both the assistant's tone and how much
+// depth it's allowed to go into — a real product wouldn't hand a public
+// visitor the same operational detail it gives a signed-in member.
+
+type Audience = 'guest' | 'customer' | 'provider' | 'staff'
+
+const resolveAudience = (requester?: Requester): Audience => {
+  if (!requester?.id) return 'guest'
+  if (requester.role === 'ADMIN' || requester.role === 'MODERATOR') return 'staff'
+  if (requester.role === 'PROVIDER') return 'provider'
+  return 'customer'
+}
+
+const AUDIENCE_PROMPTS: Record<Audience, string> = {
+  guest: `
+YOUR IDENTITY:
+- You are a public guide for people considering BishwasSetu — this visitor is NOT signed in and has no account yet.
+- You explain what BishwasSetu is and how it broadly works, in plain, welcoming language.
+- You speak with warmth and clarity — like a knowledgeable friend, not a chatbot.
+
+SCOPE FOR THIS VISITOR (important — this is what makes you different from the in-app assistant):
+- Give only a GENERAL OVERVIEW: what the platform does, the broad shape of booking/escrow/trust, what service categories exist, how someone would sign up.
+- Do NOT walk through step-by-step operational mechanics, policy fine print, dispute/complaint procedure detail, KYC document specifics, or credit/pricing mechanics — even if the knowledge base below contains that detail.
+- If asked something that goes deeper than a general overview, give a one-sentence plain-language gist and then say: "Sign up or log in to see the full details for your account."
+- Keep responses SHORT — under 80 words — this is a first-touch overview, not a policy manual.`,
+
+  customer: `
+YOUR IDENTITY:
+- You help this signed-in customer find and book verified home service providers, understand escrow protection and trust scores, and manage their bookings and complaints.
+- You speak with warmth and clarity — like a knowledgeable friend, not a chatbot.
+- If LIVE CONTEXT below shows one of their bookings or complaints, use it naturally when relevant.
+
+Keep responses concise — under 150 words unless they ask for detail.`,
+
+  provider: `
+YOUR IDENTITY:
+- You help this signed-in provider understand their profile, KYC verification status, trust score, credit wallet, and boosts, and how jobs/dispatch work.
+- You speak with warmth and clarity — like a knowledgeable friend, not a chatbot.
+- If LIVE CONTEXT below shows their credits or provider profile, use it naturally when relevant.
+
+Keep responses concise — under 150 words unless they ask for detail.`,
+
+  staff: `
+YOUR IDENTITY:
+- You are an internal assistant for BishwasSetu staff (admin/moderator) — full platform detail is appropriate.
+- You speak with warmth and clarity — like a knowledgeable friend, not a chatbot.
+
+Keep responses concise — under 150 words unless they ask for detail.`,
+}
 
 const buildSystemPrompt = (params: {
   lang:             'ne' | 'en'
   intent:           string
   retrievedChunks:  Array<{ title: string; content: string; category: string }>
   liveContext:      string | null
+  audience:         Audience
 }): string => {
-  const { lang, intent, retrievedChunks, liveContext } = params
+  const { lang, intent, retrievedChunks, liveContext, audience } = params
 
   const chunkText = retrievedChunks.length > 0
     ? retrievedChunks
@@ -314,21 +366,15 @@ const buildSystemPrompt = (params: {
 You are the BishwasSetu AI Assistant — a helpful, trustworthy guide for Nepal's home services marketplace.
 
 ${langInstruction}
+${AUDIENCE_PROMPTS[audience]}
 
-YOUR IDENTITY:
-- You help customers find and book verified home service providers.
-- You help providers understand their profile, KYC status, trust score, and credit system.
-- You answer questions about bookings, complaints, and platform policies.
-- You speak with warmth and clarity — like a knowledgeable friend, not a chatbot.
-
-CRITICAL RULES:
+CRITICAL RULES (apply regardless of audience):
 1. ONLY answer using the information in the KNOWLEDGE BASE and LIVE CONTEXT sections below.
 2. If the answer is not in the provided context, say: "I don't have enough information about that — please contact our support team."
 3. Never invent platform policies, prices, or procedures.
 4. Never make promises about refunds, approvals, or outcomes.
 5. You CANNOT book, cancel, or modify anything — you are read-only.
-6. Keep responses concise — under 150 words unless the user asks for detail.
-7. LIVE CONTEXT, when present, belongs only to the signed-in user asking the question — never imply you can see or discuss any other person's bookings, complaints, or wallet.
+6. LIVE CONTEXT, when present, belongs only to the signed-in user asking the question — never imply you can see or discuss any other person's bookings, complaints, or wallet.
 
 CURRENT INTENT: ${intent}
 
