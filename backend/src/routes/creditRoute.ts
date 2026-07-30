@@ -26,7 +26,11 @@ router.post(
   CreditsController.activateBoost
 )
 
-// Internal service-to-service (booking service calls this on booking accepted)
+// Not currently called over HTTP — `deductCredits` is invoked as a direct
+// function import from paymentService.ts. This route sits behind the same
+// PROVIDER-JWT gate as the rest of this router (line above), so it is NOT
+// a no-auth internal endpoint; don't build a service-to-service caller
+// against it without adding real internal auth first.
 router.post('/internal/deduct', CreditsController.deductCredits)
 
 export default router

@@ -40,12 +40,12 @@ export const khaltiReturn = async (
 
     // Redirect to frontend with result
     const redirectUrl = result.success
-      ? `${process.env.CLIENT_URL}/credits/success?message=${encodeURIComponent(result.message)}`
-      : `${process.env.CLIENT_URL}/credits/failed?message=${encodeURIComponent(result.message)}`
+      ? `${process.env.FRONTEND_URL}/credits/success?message=${encodeURIComponent(result.message)}`
+      : `${process.env.FRONTEND_URL}/credits/failed?message=${encodeURIComponent(result.message)}`
 
     res.redirect(redirectUrl)
   } catch (err) {
-    res.redirect(`${process.env.CLIENT_URL}/credits/failed`)
+    res.redirect(`${process.env.FRONTEND_URL}/credits/failed`)
   }
 }
 
@@ -59,12 +59,12 @@ export const esewaSuccess = async (
     const result      = await PaymentService.handleEsewaReturn(encodedData)
 
     const redirectUrl = result.success
-      ? `${process.env.CLIENT_URL}/credits/success`
-      : `${process.env.CLIENT_URL}/credits/failed`
+      ? `${process.env.FRONTEND_URL}/credits/success`
+      : `${process.env.FRONTEND_URL}/credits/failed`
 
     res.redirect(redirectUrl)
   } catch {
-    res.redirect(`${process.env.CLIENT_URL}/credits/failed`)
+    res.redirect(`${process.env.FRONTEND_URL}/credits/failed`)
   }
 }
 
@@ -73,7 +73,7 @@ export const esewaSuccess = async (
 export const esewaFailure = async (
   req: Request, res: Response
 ): Promise<void> => {
-  res.redirect(`${process.env.CLIENT_URL}/credits/failed?reason=payment_cancelled`)
+  res.redirect(`${process.env.FRONTEND_URL}/credits/failed?reason=payment_cancelled`)
 }
 
 // ── Booking escrow payment initiation (PRD §5.1) ─────────────

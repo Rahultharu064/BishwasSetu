@@ -20,7 +20,7 @@ export const initiateKhaltiPayment = async (params: {
     'https://a.khalti.com/api/v2/epayment/initiate/',
     {
       return_url:   returnUrl,
-      website_url:  process.env.CLIENT_URL,
+      website_url:  process.env.FRONTEND_URL,
       amount:       amount * 100,   // Khalti uses paisa
       purchase_order_id:   orderId,
       purchase_order_name: orderName,
@@ -316,7 +316,7 @@ export const initiateCreditPurchase = async (params: {
     product_service_charge: 0,
     product_delivery_charge: 0,
     success_url:      returnUrl,
-    failure_url:      `${process.env.CLIENT_URL}/credits/failed`,
+    failure_url:      `${process.env.FRONTEND_URL}/credits/failed`,
     signed_field_names: 'total_amount,transaction_uuid,product_code',
   }
 
@@ -417,7 +417,7 @@ export const initiateBookingPayment = async (params: {
     product_service_charge:  0,
     product_delivery_charge: 0,
     success_url:             returnUrl,
-    failure_url:             `${process.env.CLIENT_URL}/bookings/${bookingId}/payment-failed`,
+    failure_url:             `${process.env.FRONTEND_URL}/bookings/${bookingId}/payment-failed`,
     signed_field_names:      'total_amount,transaction_uuid,product_code',
   }
 

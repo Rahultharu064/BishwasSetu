@@ -1,6 +1,7 @@
 import { prisma }               from '../config/db'
 import { verifyKhaltiPayment, verifyEsewaPayment } from '../utils/payment'
 import { sendPushNotification } from '../utils/firebase'
+import { features }             from '../config/features'
 import type { PurchaseCreditsInput, ActivateBoostInput } from '../validators/creditsValidator'
 
 // Cost in credits per placement type
@@ -67,6 +68,12 @@ export const purchaseCredits = async (
   providerId: string,
   input:      PurchaseCreditsInput
 ) => {
+  // Pilot scope (docs/MVP_SCOPE.md): paid ranking is meaningless before
+  // there is competition for visibility — off until CREDITS_ENABLED.
+  if (!features.credits) {
+    throw { code: 'CREDITS_DISABLED', message: 'Credit packs are not available yet', status: 403 }
+  }
+
   const { packId, paymentMethod, paymentRef, orderId } = input
 
   // 1. Fetch pack
@@ -160,6 +167,12 @@ export const activateBoost = async (
   providerId: string,
   input:      ActivateBoostInput
 ) => {
+  // Pilot scope (docs/MVP_SCOPE.md): paid ranking is meaningless before
+  // there is competition for visibility — off until CREDITS_ENABLED.
+  if (!features.credits) {
+    throw { code: 'CREDITS_DISABLED', message: 'Credit boosts are not available yet', status: 403 }
+  }
+
   const { placementType, durationSlots, bookingId } = input
   const costPerSlot = BOOST_COSTS[placementType] ?? 5
   const totalCost   = durationSlots * costPerSlot

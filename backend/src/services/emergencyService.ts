@@ -13,6 +13,7 @@ import type {
   ProviderCandidate,
 } from "../types/antiDisinterminationTypes";
 import { ApiError } from "../utils/apierror";
+import { features } from "../config/features";
 
 const DISPATCH_WINDOW_MIN = 10; // total window before request expires
 const FAST_RESPONDER_MIN = 5; // accept within 5 min → badge progress
@@ -30,6 +31,14 @@ export async function createEmergencyRequest(
   customerId: string,
   input: EmergencyRequestInput
 ) {
+  // Pilot scope (docs/MVP_SCOPE.md): emergency dispatch needs provider
+  // density to work — off until EMERGENCY_DISPATCH_ENABLED is flipped on.
+  if (!features.emergencyDispatch)
+    throw new ApiError(
+      403,
+      "Emergency dispatch isn't available in your area yet — please book a provider directly."
+    );
+
   if (!isInsideNepal(input.latitude, input.longitude))
     throw new ApiError(400, "Location must be inside Nepal");
 

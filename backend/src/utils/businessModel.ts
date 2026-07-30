@@ -15,6 +15,7 @@
  */
 import { prisma } from '../config/db'
 import { redis } from '../config/redis'
+import { features } from '../config/features'
 
 export type BusinessTier = 'PRIORITY' | 'MEMBER' | 'NONE'
 
@@ -36,6 +37,14 @@ export async function getBusinessTiers(
 ): Promise<Map<string, BusinessTier>> {
   const result = new Map<string, BusinessTier>()
   if (providerIds.length === 0) return result
+
+  // Pilot scope (docs/MVP_SCOPE.md): paid ranking is meaningless before
+  // there is competition for visibility — while CREDITS_ENABLED is off,
+  // nobody gets a boost, even from stale/test wallet data.
+  if (!features.credits) {
+    for (const id of providerIds) result.set(id, 'NONE')
+    return result
+  }
 
   // Wallet balances (DB) — a provider who ever bought a pack has a wallet.
   const wallets = await prisma.creditWallet.findMany({

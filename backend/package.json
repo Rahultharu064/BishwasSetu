@@ -8,7 +8,8 @@
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",
-    "db:seed": "ts-node src/database/seed.ts"
+    "db:seed": "ts-node src/database/seed.ts",
+    "test": "vitest run"
   },
   "devDependencies": {
     "@prisma/engines": "^6.0.0",
@@ -29,7 +30,8 @@
     "prisma": "^6.19.3",
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.10"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",

@@ -26,12 +26,17 @@ function createMockQueue(name: string) {
       data: unknown,
       opts?: { delay?: number; attempts?: number; backoff?: unknown }
     ) => {
-      const handler = handlers.get(jobName);
-      if (!handler) {
-        console.log(`ℹ️ Mock queue "${name}" ignoring unknown job "${jobName}"`);
-        return { id: "mock-job" };
-      }
+      // Resolve the handler at execution time, not at add() time —
+      // maintenanceJob.ts schedules repeatable jobs at module load before
+      // its own `.process()` registration further down the same file, same
+      // as real Bull tolerates since a processor can attach any time before
+      // a queued job actually runs.
       const run = () => {
+        const handler = handlers.get(jobName);
+        if (!handler) {
+          console.log(`ℹ️ Mock queue "${name}" ignoring unknown job "${jobName}"`);
+          return;
+        }
         void Promise.resolve(handler({ data })).catch((err) => {
           console.error(`Mock queue "${name}" job "${jobName}" failed:`, err);
         });

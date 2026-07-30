@@ -4,6 +4,7 @@ import { prisma }   from './config/db'
 import { redis }    from './config/redis'
 import { logger }   from './utils/logger'
 import { trustQueue, kycQueue, moderationQueue } from './jobs/queue'
+import { escrowQueue, dispatchQueue, maintenanceQueue } from './config/queues'
 import { purgeExpiredKycDocuments } from './jobs/kycRetentionJob'
 import cron         from 'node-cron'
 
@@ -11,6 +12,9 @@ import cron         from 'node-cron'
 import './jobs/kycJob'
 import './jobs/trustJob'
 import './jobs/moderationJob'
+import './jobs/escrowReleasedJob'
+import './jobs/emergencyDispatchJob'
+import './jobs/maintenanceJob'
 
 const PORT = Number(process.env.PORT ?? 4000)
 
@@ -73,6 +77,9 @@ async function shutdown(code = 0) {
         trustQueue.close(),
         kycQueue.close(),
         moderationQueue.close(),
+        escrowQueue.close(),
+        dispatchQueue.close(),
+        maintenanceQueue.close(),
       ])
 
       await prisma.$disconnect()

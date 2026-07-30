@@ -6,6 +6,7 @@
 import { prisma } from "../config/db";
 import { isWithinGeofence } from "../utils/geo";
 import { ApiError } from "../utils/apierror";
+import { features } from "../config/features";
 import type { NeighborhoodStat } from "../types/antiDisinterminationTypes";
 
 /**
@@ -47,6 +48,11 @@ export async function recordCompletion(params: {
 export async function getProviderNeighborhoodStats(
   providerId: string
 ): Promise<NeighborhoodStat[]> {
+  // Pilot scope (docs/MVP_SCOPE.md): "worked N homes in X" needs booking
+  // volume to look credible — off until NEIGHBORHOOD_TAGS_ENABLED. Degrade
+  // to an empty list (no tags shown) rather than erroring the profile page.
+  if (!features.neighborhoodTags) return [];
+
   const monthStart = new Date();
   monthStart.setDate(1);
   monthStart.setHours(0, 0, 0, 0);
