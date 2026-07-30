@@ -61,20 +61,29 @@ export default function HomePage() {
     <div>
       {/* ── Hero ─────────────────────────────────────────── */}
       <section className="relative overflow-hidden border-b border-border bg-gradient-to-br from-primary-soft/60 via-background to-warning-soft/40">
+        {/* subtle textured depth, fading toward the edges */}
+        <div
+          aria-hidden
+          className="bg-dot-grid pointer-events-none absolute inset-0 opacity-[0.4] [mask-image:radial-gradient(85%_65%_at_50%_0%,black,transparent_75%)]"
+        />
         {/* soft decorative glows */}
         <div
           aria-hidden
-          className="pointer-events-none absolute -left-32 -top-24 h-80 w-80 rounded-full bg-primary/10 blur-3xl"
+          className="pointer-events-none absolute -left-32 -top-24 h-96 w-96 rounded-full bg-primary/15 blur-[100px]"
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute -right-24 top-10 h-72 w-72 rounded-full bg-warning/10 blur-3xl"
+          className="pointer-events-none absolute -right-24 top-0 h-80 w-80 rounded-full bg-warning/15 blur-[100px]"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute bottom-0 left-1/3 h-64 w-64 rounded-full bg-skilled/10 blur-[100px]"
         />
 
         <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-4 py-12 md:py-16 lg:grid-cols-2 lg:gap-8">
           {/* Left — copy + search */}
           <div>
-            <span className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-card px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-primary shadow-sm">
+            <span className="animate-in fade-in slide-in-from-bottom-2 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-card px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-primary shadow-sm duration-700">
               <span className="relative flex h-1.5 w-1.5">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
@@ -82,27 +91,27 @@ export default function HomePage() {
               {tr("home.hero.badge")}
             </span>
 
-            <h1 className="mt-5 text-[2.5rem] font-bold leading-[1.05] tracking-tight text-foreground sm:text-5xl lg:text-[3.5rem]">
+            <h1 className="animate-in fade-in slide-in-from-bottom-4 mt-5 text-[2.5rem] font-bold leading-[1.05] tracking-tight text-balance text-foreground delay-100 duration-700 fill-mode-both sm:text-5xl lg:text-[3.5rem]">
               {tr("home.hero.title")}
               <span className="text-primary">.</span>
             </h1>
 
-            <p className="mt-5 max-w-md text-base text-muted-foreground md:text-lg">
+            <p className="animate-in fade-in slide-in-from-bottom-4 mt-5 max-w-md text-base text-muted-foreground delay-200 duration-700 fill-mode-both md:text-lg">
               {tr("home.hero.subtitle")}
             </p>
 
-            <div className="mt-7 max-w-xl">
+            <div className="animate-in fade-in slide-in-from-bottom-4 mt-7 max-w-xl delay-300 duration-700 fill-mode-both">
               <HeroSearch />
             </div>
 
             {/* Popular categories */}
-            <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
+            <div className="animate-in fade-in mt-4 flex flex-wrap items-center gap-2 text-sm delay-500 duration-700 fill-mode-both">
               <span className="text-muted-foreground">{tr("home.hero.popular")}</span>
               {POPULAR.map((p) => (
                 <Link
                   key={p}
                   href={`/search?q=${encodeURIComponent(p)}`}
-                  className="rounded-full border border-border bg-card px-3 py-1 font-medium text-foreground transition-colors hover:border-primary/40 hover:text-primary"
+                  className="rounded-full border border-border bg-card px-3 py-1 font-medium text-foreground transition-colors hover:border-primary/40 hover:text-primary hover:shadow-sm"
                 >
                   {p}
                 </Link>
@@ -110,9 +119,9 @@ export default function HomePage() {
             </div>
 
             {/* Secondary actions */}
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="animate-in fade-in slide-in-from-bottom-4 mt-6 flex flex-wrap gap-3 delay-500 duration-700 fill-mode-both">
               <Link href="/match">
-                <Button variant="soft">
+                <Button variant="soft" className="shadow-sm transition-shadow hover:shadow-md">
                   <Sparkles className="h-4 w-4" /> {tr("home.hero.aiSmartMatch")}
                 </Button>
               </Link>
@@ -121,7 +130,7 @@ export default function HomePage() {
           </div>
 
           {/* Right — provider preview */}
-          <div className="mx-auto w-full max-w-md lg:mx-0 lg:ml-auto">
+          <div className="animate-in fade-in slide-in-from-right-6 mx-auto w-full max-w-md delay-200 duration-1000 fill-mode-both lg:mx-0 lg:ml-auto">
             <HeroPreviewCard />
           </div>
         </div>
@@ -132,8 +141,8 @@ export default function HomePage() {
             {HERO_TRUST.map((t) => {
               const Icon = t.icon;
               return (
-                <div key={t.label} className="flex items-center gap-2.5">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary">
+                <div key={t.label} className="group flex items-center gap-2.5">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary transition-transform group-hover:scale-105">
                     <Icon className="h-4 w-4" />
                   </span>
                   <span className="text-sm font-medium text-foreground">

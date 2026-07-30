@@ -153,6 +153,16 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  /* Subtle textured backdrop for hero/feature surfaces — a faint grid that
+     reads as depth, not decoration. Pair with a radial mask so it fades at
+     the edges instead of hard-cutting. */
+  .bg-dot-grid {
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
 }
 
 /* Emergency button subtle pulse (ux.md §3) — respects reduced motion */

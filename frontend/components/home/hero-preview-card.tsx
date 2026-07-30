@@ -13,7 +13,7 @@ export function HeroPreviewCard() {
   return (
     <div className="relative">
       {/* Floating: response time */}
-      <div className="absolute -right-2 top-6 z-10 rounded-2xl border border-border bg-card px-4 py-2.5 shadow-lg shadow-black/10 sm:-right-4">
+      <div className="animate-in fade-in slide-in-from-top-2 absolute -right-2 top-6 z-10 rounded-2xl border border-border bg-card px-4 py-2.5 shadow-lg shadow-black/[0.08] delay-700 duration-700 fill-mode-both sm:-right-4">
         <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
           {tr("home.preview.responseTime")}
         </p>
@@ -23,7 +23,7 @@ export function HeroPreviewCard() {
       </div>
 
       {/* Floating: booking confirmed */}
-      <div className="absolute -bottom-4 -left-2 z-10 flex items-center gap-2.5 rounded-2xl border border-border bg-card px-4 py-3 shadow-lg shadow-black/10 sm:-left-4">
+      <div className="animate-in fade-in slide-in-from-bottom-2 absolute -bottom-4 -left-2 z-10 flex items-center gap-2.5 rounded-2xl border border-border bg-card px-4 py-3 shadow-lg shadow-black/[0.08] delay-1000 duration-700 fill-mode-both sm:-left-4">
         <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-soft text-primary">
           <CheckCircle2 className="h-5 w-5" />
         </span>
@@ -36,22 +36,20 @@ export function HeroPreviewCard() {
       </div>
 
       {/* Card */}
-      <div className="relative overflow-hidden rounded-3xl border border-border bg-card p-7 shadow-xl shadow-black/5">
+      <div className="relative overflow-hidden rounded-3xl border border-border bg-card p-7 shadow-2xl shadow-black/[0.07] ring-1 ring-black/[0.02]">
         {/* subtle grid texture */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-[0.5] [mask-image:radial-gradient(120%_100%_at_50%_0%,black,transparent_75%)]"
-          style={{
-            backgroundImage:
-              "linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px)",
-            backgroundSize: "24px 24px",
-          }}
+          className="bg-dot-grid pointer-events-none absolute inset-0 opacity-[0.5] [mask-image:radial-gradient(120%_100%_at_50%_0%,black,transparent_75%)]"
         />
 
         <div className="relative flex flex-col items-center text-center">
           {/* Avatar */}
-          <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-skilled-soft text-2xl font-bold text-skilled">
+          <div className="relative flex h-20 w-20 items-center justify-center rounded-2xl bg-skilled-soft text-2xl font-bold text-skilled">
             AP
+            <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-card bg-primary">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary-foreground" />
+            </span>
           </div>
           <p className="mt-4 text-lg font-bold text-foreground">
             Anish Prajapati

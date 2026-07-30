@@ -27,7 +27,7 @@ export function HeroSearch() {
   return (
     <form
       onSubmit={submit}
-      className="flex flex-col gap-2 rounded-2xl border border-border bg-card p-2 shadow-lg shadow-black/5 sm:flex-row sm:items-center sm:rounded-full sm:pl-4"
+      className="flex flex-col gap-2 rounded-2xl border border-border bg-card p-2 shadow-xl shadow-black/[0.06] transition-shadow focus-within:border-primary/30 focus-within:shadow-2xl focus-within:shadow-primary/10 sm:flex-row sm:items-center sm:rounded-full sm:pl-4"
     >
       <label className="flex flex-1 items-center gap-3 px-2 py-1.5">
         <Search className="h-5 w-5 shrink-0 text-muted-foreground" />
@@ -65,7 +65,7 @@ export function HeroSearch() {
 
       <button
         type="submit"
-        className="flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-foreground px-6 text-sm font-semibold text-background transition-colors hover:bg-foreground/90 sm:rounded-full"
+        className="flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-foreground px-6 text-sm font-semibold text-background shadow-sm transition-all hover:bg-foreground/90 hover:shadow-md active:scale-[0.98] sm:rounded-full"
       >
         <Search className="h-4 w-4" /> {tr("common.search")}
       </button>
