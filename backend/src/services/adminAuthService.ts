@@ -28,6 +28,8 @@ export const loginAdmin = async (input: AdminLoginInput) => {
     select: {
       id:           true,
       name:         true,
+      email:        true,
+      phone:        true,
       role:         true,
       passwordHash: true,
     },
@@ -53,9 +55,11 @@ export const loginAdmin = async (input: AdminLoginInput) => {
     accessToken,
     refreshToken,
     user: {
-      id:   user.id,
-      name: user.name,
-      role: user.role,
+      id:    user.id,
+      name:  user.name,
+      email: user.email,
+      phone: user.phone,
+      role:  user.role,
     },
   }
 }

@@ -80,6 +80,21 @@ async function refreshToken(): Promise<boolean> {
   }
 }
 
+export interface SystemHealth {
+  status: string;
+  timestamp: string;
+  uptime: number;
+  env: string;
+}
+
+/** GET /health — outside the /api/v1 prefix and not envelope-wrapped, unlike everything else here. */
+export async function fetchSystemHealth(): Promise<SystemHealth> {
+  const base = API_BASE.replace(/\/api\/v1\/?$/, "");
+  const res = await fetch(`${base}/health`);
+  if (!res.ok) throw new ApiError("Health check failed.", "HEALTH_CHECK_FAILED", res.status);
+  return res.json() as Promise<SystemHealth>;
+}
+
 export async function apiRequest<T>(
   path: string,
   opts: RequestOptions = {}
@@ -193,6 +208,7 @@ export const api = {
       body,
       auth: true,
     }),
+  systemHealth: fetchSystemHealth,
 
   // Services / categories
   categories: () => apiRequest<import("./types").Category[]>("/services"),
