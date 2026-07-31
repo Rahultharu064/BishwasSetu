@@ -8,6 +8,19 @@ import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/context/toast-context";
 import { Button } from "@/components/ui/button";
 
+const RESEND_COOLDOWN_SECONDS = 30;
+
+function cooldownKey(userId: string) {
+  return `bs_otp_cooldown_${userId}`;
+}
+
+/** Deadline persisted in sessionStorage — a page refresh shouldn't reset
+ *  the throttle, otherwise it's not a throttle. */
+function armCooldown(userId: string, seconds: number) {
+  if (typeof window === "undefined" || !userId) return;
+  sessionStorage.setItem(cooldownKey(userId), String(Date.now() + seconds * 1000));
+}
+
 function VerifyInner() {
   const router = useRouter();
   const params = useSearchParams();
@@ -21,7 +34,8 @@ function VerifyInner() {
   const [digits, setDigits] = useState<string[]>(Array(6).fill(""));
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [cooldown, setCooldown] = useState(30);
+  const [resending, setResending] = useState(false);
+  const [cooldown, setCooldown] = useState(RESEND_COOLDOWN_SECONDS);
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
@@ -33,6 +47,21 @@ function VerifyInner() {
   useEffect(() => {
     if (!userId) router.replace("/login");
   }, [userId, router]);
+
+  // Restore (or start) the cooldown deadline once we know who this is —
+  // reflects a still-active throttle across refresh instead of granting a
+  // fresh 30s every time the page reloads.
+  useEffect(() => {
+    if (!userId) return;
+    const stored = Number(sessionStorage.getItem(cooldownKey(userId)) ?? 0);
+    const remaining = Math.ceil((stored - Date.now()) / 1000);
+    if (remaining > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCooldown(remaining);
+    } else {
+      armCooldown(userId, RESEND_COOLDOWN_SECONDS);
+    }
+  }, [userId]);
 
   function setDigit(i: number, val: string) {
     const clean = val.replace(/\D/g, "");
@@ -77,12 +106,20 @@ function VerifyInner() {
   }
 
   async function resend() {
+    if (resending || cooldown > 0) return;
+    setResending(true);
+    setError(null);
     try {
       await api.resendOtp({ userId });
-      setCooldown(30);
+      setDigits(Array(6).fill(""));
+      inputs.current[0]?.focus();
+      armCooldown(userId, RESEND_COOLDOWN_SECONDS);
+      setCooldown(RESEND_COOLDOWN_SECONDS);
       toast("A new code is on its way.", "info");
     } catch (err) {
-      toast(err instanceof ApiError ? err.message : "Couldn't resend.", "error");
+      toast(err instanceof ApiError ? err.message : "Couldn't resend. Try again shortly.", "error");
+    } finally {
+      setResending(false);
     }
   }
 
@@ -133,9 +170,10 @@ function VerifyInner() {
         ) : (
           <button
             onClick={resend}
-            className="font-semibold text-primary hover:underline"
+            disabled={resending}
+            className="font-semibold text-primary hover:underline disabled:pointer-events-none disabled:opacity-60"
           >
-            Resend code
+            {resending ? "Sending…" : "Resend code"}
           </button>
         )}
       </div>

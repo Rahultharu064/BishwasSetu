@@ -7,7 +7,7 @@ import { ShieldCheck, Lock, MapPin, LocateFixed } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { useToast } from "@/context/toast-context";
 import { Button } from "@/components/ui/button";
-import { Input, Label, FieldError } from "@/components/ui/input";
+import { Input, PasswordInput, Label, FieldError } from "@/components/ui/input";
 
 function RegisterInner() {
   const router = useRouter();
@@ -162,9 +162,8 @@ function RegisterInner() {
         </div>
         <div>
           <Label htmlFor="password">Password</Label>
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
             placeholder="At least 8 characters"

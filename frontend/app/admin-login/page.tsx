@@ -6,7 +6,7 @@ import { ShieldAlert } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/context/auth-context";
 import { Button } from "@/components/ui/button";
-import { Input, Label, FieldError } from "@/components/ui/input";
+import { Input, PasswordInput, Label, FieldError } from "@/components/ui/input";
 
 // Deliberately separate from /login: staff accounts are never publicly
 // registered and don't go through OTP 2FA (see backend adminAuthRoute.ts) —
@@ -77,9 +77,8 @@ function AdminLoginInner() {
         </div>
         <div>
           <Label htmlFor="password">Password</Label>
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Your password"

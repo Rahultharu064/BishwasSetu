@@ -19,7 +19,7 @@ import { useFetch } from "@/lib/use-fetch";
 import { initials } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Input, Label, FieldError } from "@/components/ui/input";
+import { Input, PasswordInput, Label, FieldError } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/ui/states";
@@ -213,9 +213,8 @@ function SecurityTab() {
       <form onSubmit={submit} className="space-y-4" noValidate>
         <div>
           <Label htmlFor="pw-current">Current password</Label>
-          <Input
+          <PasswordInput
             id="pw-current"
-            type="password"
             value={current}
             onChange={(e) => setCurrent(e.target.value)}
             autoComplete="current-password"
@@ -223,9 +222,8 @@ function SecurityTab() {
         </div>
         <div>
           <Label htmlFor="pw-new">New password</Label>
-          <Input
+          <PasswordInput
             id="pw-new"
-            type="password"
             value={next}
             onChange={(e) => setNext(e.target.value)}
             placeholder="At least 8 characters"
@@ -234,9 +232,8 @@ function SecurityTab() {
         </div>
         <div>
           <Label htmlFor="pw-confirm">Confirm new password</Label>
-          <Input
+          <PasswordInput
             id="pw-confirm"
-            type="password"
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
             autoComplete="new-password"

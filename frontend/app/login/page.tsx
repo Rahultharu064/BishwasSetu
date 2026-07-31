@@ -7,7 +7,7 @@ import { ShieldCheck } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { useToast } from "@/context/toast-context";
 import { Button } from "@/components/ui/button";
-import { Input, Label, FieldError } from "@/components/ui/input";
+import { Input, PasswordInput, Label, FieldError } from "@/components/ui/input";
 
 function LoginInner() {
   const router = useRouter();
@@ -73,9 +73,8 @@ function LoginInner() {
         </div>
         <div>
           <Label htmlFor="password">Password</Label>
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Your password"

@@ -18,6 +18,8 @@ import {
   ExternalLink,
   LogOut,
   ChevronDown,
+  Menu,
+  X,
 } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { api } from "@/lib/api";
@@ -116,6 +118,64 @@ function StatusIndicator() {
   );
 }
 
+// Shared nav body — rendered once inside the fixed desktop sidebar and once
+// inside the mobile drawer, so both stay in lockstep instead of drifting.
+// `onNavigate` is only passed by the drawer, to close itself on tap.
+function SidebarNav({
+  pathname,
+  onNavigate,
+}: {
+  pathname: string;
+  onNavigate?: () => void;
+}) {
+  const linkClass = (active: boolean) =>
+    cn(
+      "flex items-center gap-2.5 rounded-lg border-l-2 px-2.5 py-2 text-sm transition-all active:scale-[0.99]",
+      active
+        ? "border-primary bg-primary-soft font-semibold text-primary shadow-sm"
+        : "border-transparent font-medium text-muted-foreground hover:border-border hover:bg-secondary hover:text-foreground"
+    );
+
+  return (
+    <>
+      <div className="flex-1 space-y-4 overflow-y-auto p-3">
+        {NAV_GROUPS.map((group) => (
+          <nav key={group.title} className="space-y-0.5">
+            <p className="px-2.5 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+              {group.title}
+            </p>
+            {group.items.map((n) => {
+              const active = n.exact
+                ? pathname === n.href
+                : pathname.startsWith(n.href);
+              const Icon = n.icon;
+              return (
+                <Link key={n.href} href={n.href} onClick={onNavigate} className={linkClass(active)}>
+                  <Icon className="h-4 w-4 shrink-0" />
+                  {n.label}
+                </Link>
+              );
+            })}
+          </nav>
+        ))}
+      </div>
+
+      <nav className="shrink-0 space-y-0.5 border-t border-border p-3">
+        {NAV_FOOTER.map((n) => {
+          const active = pathname.startsWith(n.href);
+          const Icon = n.icon;
+          return (
+            <Link key={n.href} href={n.href} onClick={onNavigate} className={linkClass(active)}>
+              <Icon className="h-4 w-4 shrink-0" />
+              {n.label}
+            </Link>
+          );
+        })}
+      </nav>
+    </>
+  );
+}
+
 export default function AdminLayout({
   children,
 }: {
@@ -125,6 +185,7 @@ export default function AdminLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const isAdmin =
     user?.role === "ADMIN" || user?.role === "MODERATOR";
@@ -137,6 +198,26 @@ export default function AdminLayout({
       router.replace("/");
     }
   }, [loading, isAuthenticated, isAdmin, router]);
+
+  // Close the drawer whenever the route changes (tapping a link already
+  // closes it via onNavigate, but this also covers back/forward nav).
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSidebarOpen(false);
+  }, [pathname]);
+
+  // Lock page scroll and support Escape while the drawer is open — same
+  // pattern as components/ui/sheet.tsx's modal.
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setSidebarOpen(false);
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [sidebarOpen]);
 
   if (loading || !isAuthenticated || !isAdmin)
     return (
@@ -171,65 +252,68 @@ export default function AdminLayout({
           </span>
         </Link>
 
-        <div className="flex-1 space-y-4 overflow-y-auto p-3">
-          {NAV_GROUPS.map((group) => (
-            <nav key={group.title} className="space-y-0.5">
-              <p className="px-2.5 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
-                {group.title}
-              </p>
-              {group.items.map((n) => {
-                const active = n.exact
-                  ? pathname === n.href
-                  : pathname.startsWith(n.href);
-                const Icon = n.icon;
-                return (
-                  <Link
-                    key={n.href}
-                    href={n.href}
-                    className={cn(
-                      "flex items-center gap-2.5 rounded-lg border-l-2 px-2.5 py-2 text-sm transition-all active:scale-[0.99]",
-                      active
-                        ? "border-primary bg-primary-soft font-semibold text-primary shadow-sm"
-                        : "border-transparent font-medium text-muted-foreground hover:border-border hover:bg-secondary hover:text-foreground"
-                    )}
-                  >
-                    <Icon className="h-4 w-4 shrink-0" />
-                    {n.label}
-                  </Link>
-                );
-              })}
-            </nav>
-          ))}
-        </div>
+        <SidebarNav pathname={pathname} />
+      </aside>
 
-        <nav className="shrink-0 space-y-0.5 border-t border-border p-3">
-          {NAV_FOOTER.map((n) => {
-            const active = pathname.startsWith(n.href);
-            const Icon = n.icon;
-            return (
-              <Link
-                key={n.href}
-                href={n.href}
-                className={cn(
-                  "flex items-center gap-2.5 rounded-lg border-l-2 px-2.5 py-2 text-sm transition-all active:scale-[0.99]",
-                  active
-                    ? "border-primary bg-primary-soft font-semibold text-primary shadow-sm"
-                    : "border-transparent font-medium text-muted-foreground hover:border-border hover:bg-secondary hover:text-foreground"
-                )}
-              >
-                <Icon className="h-4 w-4 shrink-0" />
-                {n.label}
-              </Link>
-            );
-          })}
-        </nav>
+      {/* Mobile drawer — icon-triggered open/close, full viewport height,
+          replaces the old horizontal scrolling tab row so small screens get
+          the same grouped sidebar as desktop instead of a flattened list. */}
+      <div
+        className={cn(
+          "fixed inset-0 z-40 bg-foreground/40 backdrop-blur-sm transition-opacity md:hidden",
+          sidebarOpen ? "opacity-100" : "pointer-events-none opacity-0"
+        )}
+        onClick={() => setSidebarOpen(false)}
+        aria-hidden
+      />
+      <aside
+        className="fixed inset-y-0 left-0 z-50 flex w-72 max-w-[80vw] flex-col border-r border-border bg-card shadow-xl transition-transform duration-300 ease-in-out md:hidden"
+        // Inline transform, not translate-x-0/-translate-x-full utility
+        // classes — both compile to the same `--tw-translate-x` custom
+        // property and raced in dev-mode Tailwind v4's layer ordering,
+        // leaving the drawer stuck off-screen. An inline style always wins
+        // the cascade, so it can't lose that race.
+        style={{ transform: sidebarOpen ? "translateX(0)" : "translateX(-100%)" }}
+        aria-hidden={!sidebarOpen}
+      >
+        <div className="flex h-16 shrink-0 items-center justify-between border-b border-border px-4">
+          <Link
+            href="/admin"
+            onClick={() => setSidebarOpen(false)}
+            className="flex items-center gap-2 font-bold"
+          >
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground text-background">
+              <ShieldAlert className="h-4 w-4" />
+            </span>
+            <span className="text-sm">
+              Bishwas<span className="text-primary">Setu</span>{" "}
+              <span className="text-muted-foreground">Admin</span>
+            </span>
+          </Link>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            aria-label="Close menu"
+            className="rounded-full p-1.5 text-muted-foreground hover:bg-secondary"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <SidebarNav pathname={pathname} onNavigate={() => setSidebarOpen(false)} />
       </aside>
 
       {/* Content column — offset by the fixed sidebar's width on desktop */}
       <div className="flex min-h-dvh flex-col md:pl-64">
         <header className="sticky top-0 z-30 border-b border-border bg-background/95 shadow-sm backdrop-blur">
           <div className="flex h-16 items-center gap-3 px-4">
-            {/* Brand shown here only when the fixed sidebar is hidden (mobile) */}
+            {/* Hamburger + brand shown here only when the fixed sidebar is
+                hidden (mobile) — opens the slide-in drawer above. */}
+            <button
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Open menu"
+              className="-ml-1.5 rounded-lg p-2 text-muted-foreground hover:bg-secondary md:hidden"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
             <Link href="/admin" className="flex items-center gap-2 font-bold md:hidden">
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground text-background">
                 <ShieldAlert className="h-4 w-4" />
@@ -309,28 +393,6 @@ export default function AdminLayout({
         </header>
 
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
-          {/* Mobile top tabs — the fixed sidebar replaces this from md up */}
-          <nav className="no-scrollbar mb-4 flex gap-2 overflow-x-auto md:hidden">
-            {NAV_FLAT.map((n) => {
-              const active = n.exact
-                ? pathname === n.href
-                : pathname.startsWith(n.href);
-              return (
-                <Link
-                  key={n.href}
-                  href={n.href}
-                  className={cn(
-                    "whitespace-nowrap rounded-full border px-3 py-1.5 text-sm font-medium",
-                    active
-                      ? "border-primary bg-primary-soft text-primary"
-                      : "border-border text-muted-foreground"
-                  )}
-                >
-                  {n.label}
-                </Link>
-              );
-            })}
-          </nav>
           {children}
         </main>
       </div>
