@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import { MapPin, Bell, Menu, X, ShieldCheck, LogOut, UserCircle2 } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
@@ -21,36 +22,46 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4">
-        {/* Brand */}
-        <Link href="/" className="flex items-center gap-2 font-bold">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <ShieldCheck className="h-5 w-5" />
-          </span>
-          <span className="text-lg tracking-tight">
-            Bishwas<span className="text-primary">Setu</span>
-          </span>
+      <div className="mx-auto flex h-24 max-w-6xl items-center justify-between relative px-4">
+        <Link href="/" className="flex items-center gap-3 transition-opacity hover:opacity-90">
+          <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden">
+            <Image
+              src="/LOGO.png"
+              alt="BishwasSetu Icon"
+              width={100}
+              height={100}
+              className="h-full w-full object-contain mix-blend-multiply drop-shadow-sm"
+              priority
+            />
+          </div>
+          <div className="flex flex-col justify-center">
+            <h1 className="text-3xl font-bold tracking-tight leading-none">
+              <span className="text-[#0E7C5B]">Bishwas</span><span className="text-[#F15A24]">Setu</span>
+            </h1>
+            <div className="flex items-center justify-center gap-2 mt-1.5">
+              <div className="h-[1.5px] w-4 bg-slate-400 dark:bg-slate-500"></div>
+              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">
+                Bridge of Trust
+              </span>
+              <div className="h-[1.5px] w-4 bg-slate-400 dark:bg-slate-500"></div>
+            </div>
+          </div>
         </Link>
 
-        {/* Location (desktop) */}
-        <button className="ml-2 hidden items-center gap-1 rounded-full border border-border px-3 py-1.5 text-sm text-muted-foreground hover:bg-secondary sm:inline-flex">
-          <MapPin className="h-4 w-4 text-primary" />
-          {tr("nav.location")}
-        </button>
-
-        <nav className="ml-4 hidden items-center gap-1 md:flex">
+        {/* Center Nav */}
+        <nav className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-2 md:flex">
           {NAV.map((n) => (
             <Link
               key={n.href}
               href={n.href}
-              className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+              className="rounded-lg px-4 py-2 text-[15px] font-medium text-muted-foreground transition-all hover:bg-secondary/60 hover:text-foreground"
             >
               {n.label}
             </Link>
           ))}
         </nav>
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {/* Language toggle — persistent (ux.md §14) */}
           <button
             onClick={toggle}

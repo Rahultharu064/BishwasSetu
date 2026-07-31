@@ -2,12 +2,11 @@
 
 import { Suspense, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ShieldCheck } from "lucide-react";
+import { Mail, Lock, ArrowRight, UserPlus, Eye, EyeOff, Phone } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { useToast } from "@/context/toast-context";
-import { Button } from "@/components/ui/button";
-import { Input, PasswordInput, Label, FieldError } from "@/components/ui/input";
 
 function LoginInner() {
   const router = useRouter();
@@ -17,6 +16,7 @@ function LoginInner() {
 
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -49,50 +49,172 @@ function LoginInner() {
   }
 
   return (
-    <div className="mx-auto flex max-w-md flex-col px-4 py-10">
-      <div className="mb-6 text-center">
-        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-          <ShieldCheck className="h-6 w-6" />
-        </div>
-        <h1 className="text-2xl font-bold tracking-tight">Welcome back</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Log in to manage your bookings and account.
-        </p>
+    <div className="min-h-screen flex items-center justify-center bg-[#fafaf7] px-4 py-12">
+      {/* Subtle decorative background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-[#0E7C5B]/5 blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-[#F15A24]/5 blur-3xl" />
       </div>
 
-      <form onSubmit={submit} className="space-y-4" noValidate>
-        <div>
-          <Label htmlFor="identifier">Email or phone</Label>
-          <Input
-            id="identifier"
-            value={identifier}
-            onChange={(e) => setIdentifier(e.target.value)}
-            placeholder="you@example.com or 98XXXXXXXX"
-            autoComplete="username"
-          />
-        </div>
-        <div>
-          <Label htmlFor="password">Password</Label>
-          <PasswordInput
-            id="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Your password"
-            autoComplete="current-password"
-          />
-        </div>
-        <FieldError>{error}</FieldError>
-        <Button type="submit" full size="lg" disabled={loading}>
-          {loading ? "Sending code…" : "Continue"}
-        </Button>
-      </form>
+      <div className="relative w-full max-w-sm">
+        {/* Card */}
+        <div className="rounded-2xl border border-[#e7e7e1] bg-white shadow-2xl shadow-black/8 overflow-hidden">
 
-      <p className="mt-6 text-center text-sm text-muted-foreground">
-        New to BishwasSetu?{" "}
-        <Link href="/register" className="font-semibold text-primary hover:underline">
-          Create an account
-        </Link>
-      </p>
+          {/* Card top accent bar */}
+          <div className="h-1 w-full bg-gradient-to-r from-[#0E7C5B] via-[#16a57a] to-[#F15A24]" />
+
+          <div className="px-8 py-8">
+            {/* Brand lockup inside card */}
+            <div className="flex flex-col items-center mb-7">
+              <div className="relative h-16 w-16 mb-3">
+                <div className="absolute inset-0 rounded-full bg-[#0E7C5B]/10 blur-sm" />
+                <Image
+                  src="/LOGO.png"
+                  alt="BishwasSetu"
+                  width={64}
+                  height={64}
+                  className="relative h-full w-full object-contain"
+                  priority
+                />
+              </div>
+              <h1 className="text-2xl font-extrabold tracking-tight leading-none">
+                <span className="text-[#0E7C5B]">Bishwas</span>
+                <span className="text-[#F15A24]">Setu</span>
+              </h1>
+              <div className="flex items-center gap-2 mt-1.5">
+                <div className="h-px w-6 bg-[#e7e7e1]" />
+                <span className="text-[9px] font-bold text-[#9ca39f] uppercase tracking-[0.25em]">
+                  Bridge of Trust
+                </span>
+                <div className="h-px w-6 bg-[#e7e7e1]" />
+              </div>
+            </div>
+
+            {/* Heading */}
+            <div className="mb-6 text-center">
+              <h2 className="text-xl font-bold text-[#1a1d1c]">Welcome Back</h2>
+              <p className="mt-1 text-sm text-[#6b7280]">Sign in to your account</p>
+            </div>
+
+            <form onSubmit={submit} className="space-y-4" noValidate>
+
+              {/* Email / Phone field */}
+              <div>
+                <label
+                  htmlFor="identifier"
+                  className="block text-sm font-semibold text-[#1a1d1c] mb-1.5"
+                >
+                  Email Address
+                </label>
+                <div
+                  className="flex items-center overflow-hidden rounded-xl border border-[#e7e7e1] bg-[#fafaf7] transition-all duration-200 focus-within:border-[#0E7C5B] focus-within:ring-2 focus-within:ring-[#0E7C5B]/15 focus-within:bg-white"
+                >
+                  <div className="flex items-center justify-center w-11 shrink-0 border-r border-[#e7e7e1]">
+                    <Mail className="h-4 w-4 text-[#0E7C5B]" />
+                  </div>
+                  <input
+                    id="identifier"
+                    type="text"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                    placeholder="Enter your email"
+                    autoComplete="username"
+                    className="flex-1 bg-transparent px-3 py-3 text-sm text-[#1a1d1c] placeholder:text-[#9ca39f] outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Password field */}
+              <div>
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-semibold text-[#1a1d1c] mb-1.5"
+                >
+                  Password
+                </label>
+                <div
+                  className="flex items-center overflow-hidden rounded-xl border border-[#e7e7e1] bg-[#fafaf7] transition-all duration-200 focus-within:border-[#0E7C5B] focus-within:ring-2 focus-within:ring-[#0E7C5B]/15 focus-within:bg-white"
+                >
+                  <div className="flex items-center justify-center w-11 shrink-0 border-r border-[#e7e7e1]">
+                    <Lock className="h-4 w-4 text-[#0E7C5B]" />
+                  </div>
+                  <input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    autoComplete="current-password"
+                    className="flex-1 bg-transparent px-3 py-3 text-sm text-[#1a1d1c] placeholder:text-[#9ca39f] outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="px-3 text-[#9ca39f] hover:text-[#0E7C5B] transition-colors"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Error message */}
+              {error && (
+                <div className="rounded-lg bg-[#fdece7] border border-[#F15A24]/20 px-3 py-2.5">
+                  <p className="text-sm text-[#e8542f] font-medium">{error}</p>
+                </div>
+              )}
+
+              {/* Sign In Button */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="group w-full flex items-center justify-center gap-2.5 rounded-xl bg-[#0E7C5B] hover:bg-[#0b6a4d] active:scale-[0.98] text-white font-semibold py-3.5 text-sm transition-all duration-200 shadow-lg shadow-[#0E7C5B]/25 hover:shadow-xl hover:shadow-[#0E7C5B]/30 disabled:opacity-60 disabled:cursor-not-allowed mt-2"
+              >
+                <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+                {loading ? "Sending code…" : "Sign In"}
+              </button>
+            </form>
+
+            {/* Forgot password */}
+            <div className="mt-4 text-center">
+              <Link
+                href="/forgot-password"
+                className="text-sm text-[#0E7C5B] hover:text-[#0b6a4d] font-medium hover:underline underline-offset-2 transition-colors"
+              >
+                Forgot your password?
+              </Link>
+            </div>
+
+            {/* Divider */}
+            <div className="mt-5 flex items-center gap-3">
+              <div className="flex-1 h-px bg-[#e7e7e1]" />
+              <span className="text-xs text-[#9ca39f] whitespace-nowrap">
+                Don&apos;t have an account?
+              </span>
+              <div className="flex-1 h-px bg-[#e7e7e1]" />
+            </div>
+
+            {/* Create Account Button */}
+            <Link
+              href="/register"
+              className="mt-4 w-full flex items-center justify-center gap-2.5 rounded-xl border-2 border-[#0E7C5B] text-[#0E7C5B] hover:bg-[#0E7C5B]/5 active:scale-[0.98] font-semibold py-3 text-sm transition-all duration-200"
+            >
+              <UserPlus className="h-4 w-4" />
+              Create Account
+            </Link>
+          </div>
+        </div>
+
+        {/* Footer note */}
+        <p className="mt-5 text-center text-xs text-[#9ca39f]">
+          Nepal&apos;s trusted home services platform
+        </p>
+      </div>
     </div>
   );
 }

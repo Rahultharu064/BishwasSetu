@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { ShieldCheck, Lock } from "lucide-react";
 import { useLang } from "@/context/language-context";
 
@@ -12,13 +13,28 @@ export function SiteFooter() {
       <div className="mx-auto max-w-6xl px-4">
         <div className="grid gap-8 md:grid-cols-4">
           <div>
-            <Link href="/" className="flex items-center gap-2 font-bold">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <ShieldCheck className="h-5 w-5" />
-              </span>
-              <span className="text-lg">
-                Bishwas<span className="text-primary">Setu</span>
-              </span>
+            <Link href="/" className="flex items-center gap-3 transition-opacity hover:opacity-90 mb-5">
+              <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden grayscale transition-all hover:grayscale-0">
+                <Image
+                  src="/LOGO.png"
+                  alt="BishwasSetu Icon"
+                  width={100}
+                  height={100}
+                  className="h-full w-full object-contain mix-blend-multiply drop-shadow-sm"
+                />
+              </div>
+              <div className="flex flex-col justify-center">
+                <h2 className="text-3xl font-bold tracking-tight leading-none">
+                  <span className="text-[#0E7C5B]">Bishwas</span><span className="text-[#F15A24]">Setu</span>
+                </h2>
+                <div className="flex items-center justify-center gap-2 mt-1.5">
+                  <div className="h-[1.5px] w-4 bg-slate-400 dark:bg-slate-500"></div>
+                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">
+                    Bridge of Trust
+                  </span>
+                  <div className="h-[1.5px] w-4 bg-slate-400 dark:bg-slate-500"></div>
+                </div>
+              </div>
             </Link>
             <p className="mt-3 max-w-xs text-sm text-muted-foreground">
               {tr("footer.tagline")}
