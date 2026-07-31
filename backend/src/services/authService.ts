@@ -10,7 +10,7 @@ import {
   verifyRefreshToken,
 } from '../utils/jwt'
 import { sendSms } from '../utils/sms'
-import { sendEmail } from '../utils/email'
+import { sendOtpEmail } from '../utils/email'
 import type { RegisterInput, LoginInput } from '../validators/authValidator'
 
 // ── REGISTER ─────────────────────────────────
@@ -67,7 +67,7 @@ export const registerUser = async (input: RegisterInput) => {
   if (phone) {
     await sendSms(phone, `Your BishwasSetu OTP is: ${otp}. Valid for ${process.env.OTP_EXPIRES_MINUTES} minutes.`)
   } else if (email) {
-    await sendEmail(email, 'Verify your BishwasSetu account', `Your OTP is: ${otp}`)
+    await sendOtpEmail(email, otp, process.env.OTP_EXPIRES_MINUTES ?? '5', 'register')
   }
 
   return {
@@ -165,7 +165,7 @@ export const loginUser = async (input: LoginInput) => {
   if (phone) {
     await sendSms(phone, `Your BishwasSetu login OTP is: ${otp}. Valid for ${process.env.OTP_EXPIRES_MINUTES} minutes.`)
   } else if (email) {
-    await sendEmail(email, 'BishwasSetu login OTP', `Your login OTP is: ${otp}`)
+    await sendOtpEmail(email, otp, process.env.OTP_EXPIRES_MINUTES ?? '5', 'login')
   }
 
   return {
@@ -235,7 +235,7 @@ export const resendOtp = async (userId: string) => {
   if (user.phone) {
     await sendSms(user.phone, `Your BishwasSetu OTP is: ${otp}. Valid for ${process.env.OTP_EXPIRES_MINUTES} minutes.`)
   } else if (user.email) {
-    await sendEmail(user.email, 'BishwasSetu OTP', `Your OTP is: ${otp}`)
+    await sendOtpEmail(user.email, otp, process.env.OTP_EXPIRES_MINUTES ?? '5', 'resend')
   }
 
   return { message: `OTP resent to ${user.phone || user.email}` }

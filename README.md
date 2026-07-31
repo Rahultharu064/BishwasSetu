@@ -9,7 +9,7 @@ BishwasSetu is a trust-based home services marketplace for Nepal, connecting cus
 
 ### 🔐 Authentication & Access Control
 - JWT access + refresh tokens (rotating refresh tokens, HttpOnly cookie), with silent refresh-and-retry on the frontend.
-- Email **or** phone registration/login with OTP 2FA (email via Nodemailer, SMS via Sparrow SMS, dev-mode console fallback).
+- Email **or** phone registration/login with OTP 2FA (branded HTML email via Resend, SMS via Sparrow SMS, dev-mode console fallback).
 - Four roles with RBAC: **Customer**, **Provider**, **Moderator**, **Admin**.
 - Separate direct-credential **Admin Console login** (`/admin-auth`) for staff accounts — no public registration, no OTP step, own rate limiter.
 
@@ -99,7 +99,7 @@ BishwasSetu is a trust-based home services marketplace for Nepal, connecting cus
 - **AI**: Groq SDK (RAG-based assistant), heuristic KYC document scoring
 - **Payments**: Khalti & eSewa ePay v2
 - **Media**: Cloudinary (KYC documents, badge evidence)
-- **Notifications**: Nodemailer (email), Sparrow SMS, Firebase Admin (FCM push)
+- **Notifications**: Resend (email), Sparrow SMS, Firebase Admin (FCM push)
 - **Security**: Helmet, CORS, HPP, express-rate-limit (+ `rate-limit-redis`), Winston logging
 - **Testing**: Vitest
 
@@ -146,8 +146,8 @@ JWT_REFRESH_SECRET=
 JWT_ACCESS_EXPIRES=
 JWT_REFRESH_EXPIRES=
 REDIS_URL=
-EMAIL_USER=
-EMAIL_PASS=
+RESEND_API_KEY=
+EMAIL_FROM=
 SPARROW_SMS_TOKEN=
 SPARROW_SMS_FROM=
 CLOUDINARY_CLOUD_NAME=
