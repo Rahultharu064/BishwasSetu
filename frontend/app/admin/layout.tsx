@@ -20,6 +20,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
+import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { initials } from "@/lib/format";
 
@@ -69,6 +70,52 @@ const NAV_FOOTER: NavItem[] = [
 
 const NAV_FLAT = [...NAV_GROUPS.flatMap((g) => g.items), ...NAV_FOOTER];
 
+function currentPageTitle(pathname: string): string {
+  if (pathname === "/admin") return "Dashboard";
+  // Longest-prefix match so nested routes (e.g. a future /admin/kyc/:id)
+  // still resolve to their parent nav item's label.
+  const match = NAV_FLAT.filter((n) => pathname.startsWith(n.href)).sort(
+    (a, b) => b.href.length - a.href.length
+  )[0];
+  return match?.label ?? "Admin";
+}
+
+// Real signal, not decoration — pings the same /health route the Settings →
+// Platform tab reads, once on mount. A dot instead of a poller: good enough
+// to catch "API is down" without hammering the endpoint every few seconds.
+function StatusIndicator() {
+  const [status, setStatus] = useState<"checking" | "ok" | "down">("checking");
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .systemHealth()
+      .then((h) => !cancelled && setStatus(h.status === "ok" ? "ok" : "down"))
+      .catch(() => !cancelled && setStatus("down"));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (status === "checking") return null;
+
+  return (
+    <span
+      className="hidden items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground sm:inline-flex"
+      title={status === "ok" ? "API is operational" : "API is unreachable"}
+    >
+      <span
+        className={cn(
+          "h-1.5 w-1.5 rounded-full",
+          status === "ok" ? "bg-primary" : "bg-urgent"
+        )}
+        aria-hidden
+      />
+      {status === "ok" ? "Operational" : "API unreachable"}
+    </span>
+  );
+}
+
 export default function AdminLayout({
   children,
 }: {
@@ -104,93 +151,30 @@ export default function AdminLayout({
     );
 
   return (
-    <div className="flex min-h-dvh flex-col bg-secondary/40">
-      {/* Admin top bar — own shell, deliberately not the public SiteHeader
-          (see components/site-chrome.tsx) so the console reads as a
-          dedicated back-office surface, not a page wrapped in the site. */}
-      <header className="sticky top-0 z-40 border-b border-border bg-background">
-        <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4">
-          <Link href="/admin" className="flex items-center gap-2 font-bold">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground text-background">
-              <ShieldAlert className="h-4 w-4" />
-            </span>
-            <span className="hidden text-sm sm:inline">
-              Bishwas<span className="text-primary">Setu</span>{" "}
-              <span className="text-muted-foreground">Admin</span>
-            </span>
-          </Link>
+    <div className="min-h-dvh bg-secondary/40">
+      {/* Full-height sidebar (Linear/Vercel/Stripe-style shell) — fixed to
+          the viewport edge-to-edge top-to-bottom, not sticky-within-content,
+          so it reads as a permanent surface rather than page furniture that
+          happens to follow the scroll. Desktop only; mobile keeps the
+          horizontal tab bar in the content flow below. */}
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-border bg-card md:flex">
+        <Link
+          href="/admin"
+          className="flex h-16 shrink-0 items-center gap-2 border-b border-border px-4 font-bold"
+        >
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground text-background">
+            <ShieldAlert className="h-4 w-4" />
+          </span>
+          <span className="text-sm">
+            Bishwas<span className="text-primary">Setu</span>{" "}
+            <span className="text-muted-foreground">Admin</span>
+          </span>
+        </Link>
 
-          <Link
-            href="/"
-            target="_blank"
-            className="ml-auto hidden items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground sm:inline-flex"
-          >
-            View site <ExternalLink className="h-3.5 w-3.5" />
-          </Link>
-
-          <div className="relative ml-2 sm:ml-0">
-            <button
-              onClick={() => setMenuOpen((v) => !v)}
-              className="flex items-center gap-2 rounded-full py-1 pl-1 pr-2 hover:bg-secondary"
-            >
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-soft text-xs font-bold text-primary">
-                {initials(user?.name ?? "Admin")}
-              </span>
-              <span className="hidden text-left leading-tight md:block">
-                <span className="block text-sm font-semibold">
-                  {user?.name}
-                </span>
-                <span className="block text-xs capitalize text-muted-foreground">
-                  {user?.role?.toLowerCase()}
-                </span>
-              </span>
-              <ChevronDown className="hidden h-4 w-4 text-muted-foreground md:block" />
-            </button>
-
-            {menuOpen && (
-              <>
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setMenuOpen(false)}
-                  aria-hidden
-                />
-                <div className="absolute right-0 z-20 mt-2 w-48 rounded-xl border border-border bg-card p-1.5 shadow-lg">
-                  <div className="px-2.5 py-2 sm:hidden">
-                    <p className="text-sm font-semibold">{user?.name}</p>
-                    <p className="text-xs capitalize text-muted-foreground">
-                      {user?.role?.toLowerCase()}
-                    </p>
-                  </div>
-                  <Link
-                    href="/"
-                    target="_blank"
-                    className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium text-foreground hover:bg-secondary sm:hidden"
-                    onClick={() => setMenuOpen(false)}
-                  >
-                    <ExternalLink className="h-4 w-4" /> View site
-                  </Link>
-                  <button
-                    onClick={() => {
-                      setMenuOpen(false);
-                      logout();
-                    }}
-                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm font-medium text-urgent hover:bg-urgent-soft"
-                  >
-                    <LogOut className="h-4 w-4" /> Log out
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
-
-      <div className="mx-auto flex w-full max-w-6xl flex-1 gap-6 px-4 py-6">
-        {/* Sidebar (ux.md §4.3) */}
-        <aside className="sticky top-[4.5rem] hidden h-fit w-56 shrink-0 flex-col gap-5 md:flex">
+        <div className="flex-1 space-y-4 overflow-y-auto p-3">
           {NAV_GROUPS.map((group) => (
             <nav key={group.title} className="space-y-0.5">
-              <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+              <p className="px-2.5 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
                 {group.title}
               </p>
               {group.items.map((n) => {
@@ -203,45 +187,129 @@ export default function AdminLayout({
                     key={n.href}
                     href={n.href}
                     className={cn(
-                      "flex items-center gap-2.5 rounded-lg border-l-2 px-2.5 py-2 text-sm font-medium transition-colors",
+                      "flex items-center gap-2.5 rounded-lg border-l-2 px-2.5 py-2 text-sm transition-all active:scale-[0.99]",
                       active
-                        ? "border-primary bg-primary-soft text-primary"
-                        : "border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground"
+                        ? "border-primary bg-primary-soft font-semibold text-primary shadow-sm"
+                        : "border-transparent font-medium text-muted-foreground hover:border-border hover:bg-secondary hover:text-foreground"
                     )}
                   >
-                    <Icon className="h-4 w-4" />
+                    <Icon className="h-4 w-4 shrink-0" />
                     {n.label}
                   </Link>
                 );
               })}
             </nav>
           ))}
+        </div>
 
-          <nav className="space-y-0.5 border-t border-border pt-3">
-            {NAV_FOOTER.map((n) => {
-              const active = pathname.startsWith(n.href);
-              const Icon = n.icon;
-              return (
-                <Link
-                  key={n.href}
-                  href={n.href}
-                  className={cn(
-                    "flex items-center gap-2.5 rounded-lg border-l-2 px-2.5 py-2 text-sm font-medium transition-colors",
-                    active
-                      ? "border-primary bg-primary-soft text-primary"
-                      : "border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground"
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  {n.label}
-                </Link>
-              );
-            })}
-          </nav>
-        </aside>
+        <nav className="shrink-0 space-y-0.5 border-t border-border p-3">
+          {NAV_FOOTER.map((n) => {
+            const active = pathname.startsWith(n.href);
+            const Icon = n.icon;
+            return (
+              <Link
+                key={n.href}
+                href={n.href}
+                className={cn(
+                  "flex items-center gap-2.5 rounded-lg border-l-2 px-2.5 py-2 text-sm transition-all active:scale-[0.99]",
+                  active
+                    ? "border-primary bg-primary-soft font-semibold text-primary shadow-sm"
+                    : "border-transparent font-medium text-muted-foreground hover:border-border hover:bg-secondary hover:text-foreground"
+                )}
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                {n.label}
+              </Link>
+            );
+          })}
+        </nav>
+      </aside>
 
-        {/* Mobile top tabs */}
-        <main className="w-full min-w-0">
+      {/* Content column — offset by the fixed sidebar's width on desktop */}
+      <div className="flex min-h-dvh flex-col md:pl-64">
+        <header className="sticky top-0 z-30 border-b border-border bg-background/95 shadow-sm backdrop-blur">
+          <div className="flex h-16 items-center gap-3 px-4">
+            {/* Brand shown here only when the fixed sidebar is hidden (mobile) */}
+            <Link href="/admin" className="flex items-center gap-2 font-bold md:hidden">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground text-background">
+                <ShieldAlert className="h-4 w-4" />
+              </span>
+            </Link>
+
+            <h1 className="truncate text-sm font-semibold text-foreground">
+              {currentPageTitle(pathname)}
+            </h1>
+
+            <div className="ml-auto flex items-center gap-2">
+              <StatusIndicator />
+              <Link
+                href="/"
+                target="_blank"
+                className="hidden items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground sm:inline-flex"
+              >
+                View site <ExternalLink className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+
+            <div className="relative">
+              <button
+                onClick={() => setMenuOpen((v) => !v)}
+                className="flex items-center gap-2 rounded-full py-1 pl-1 pr-2 hover:bg-secondary"
+              >
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-soft text-xs font-bold text-primary">
+                  {initials(user?.name ?? "Admin")}
+                </span>
+                <span className="hidden text-left leading-tight md:block">
+                  <span className="block text-sm font-semibold">
+                    {user?.name}
+                  </span>
+                  <span className="block text-xs capitalize text-muted-foreground">
+                    {user?.role?.toLowerCase()}
+                  </span>
+                </span>
+                <ChevronDown className="hidden h-4 w-4 text-muted-foreground md:block" />
+              </button>
+
+              {menuOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setMenuOpen(false)}
+                    aria-hidden
+                  />
+                  <div className="absolute right-0 z-20 mt-2 w-48 rounded-xl border border-border bg-card p-1.5 shadow-lg">
+                    <div className="px-2.5 py-2 sm:hidden">
+                      <p className="text-sm font-semibold">{user?.name}</p>
+                      <p className="text-xs capitalize text-muted-foreground">
+                        {user?.role?.toLowerCase()}
+                      </p>
+                    </div>
+                    <Link
+                      href="/"
+                      target="_blank"
+                      className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium text-foreground hover:bg-secondary sm:hidden"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      <ExternalLink className="h-4 w-4" /> View site
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setMenuOpen(false);
+                        logout();
+                      }}
+                      className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm font-medium text-urgent hover:bg-urgent-soft"
+                    >
+                      <LogOut className="h-4 w-4" /> Log out
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </header>
+
+        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
+          {/* Mobile top tabs — the fixed sidebar replaces this from md up */}
           <nav className="no-scrollbar mb-4 flex gap-2 overflow-x-auto md:hidden">
             {NAV_FLAT.map((n) => {
               const active = n.exact
