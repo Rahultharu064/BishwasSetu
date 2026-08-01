@@ -22,6 +22,7 @@ import {
 import { api, ApiError } from "@/lib/api";
 import { useToast } from "@/context/toast-context";
 import { FieldError } from "@/components/ui/input";
+import { GoogleLoginButton } from "@/components/auth/google-login-button";
 
 function RegisterInner() {
   const router = useRouter();
@@ -178,6 +179,17 @@ function RegisterInner() {
                   {r === "CUSTOMER" ? "Need a service" : "I'm a provider"}
                 </button>
               ))}
+            </div>
+
+            {/* Google Sign In */}
+            <GoogleLoginButton next={role === "PROVIDER" ? "/provider/onboarding" : "/"} />
+
+            <div className="mt-5 mb-5 flex items-center gap-3">
+              <div className="flex-1 h-px bg-[#e7e7e1]" />
+              <span className="text-[10px] font-bold text-[#9ca39f] uppercase tracking-wider">
+                Or register with
+              </span>
+              <div className="flex-1 h-px bg-[#e7e7e1]" />
             </div>
 
             <form onSubmit={submit} className="space-y-3.5" noValidate>

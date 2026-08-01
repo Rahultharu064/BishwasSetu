@@ -9,12 +9,18 @@ export interface ApiResponse<T = any> {
 
 declare global {
   namespace Express {
+    interface User {
+      id:          string
+      role:        Role
+      name?:       string
+      providerId?: string
+      provider?:   { id: string; identityStatus: string } | null
+      isActive?:   boolean
+      deletedAt?:  Date | null
+    }
+
     interface Request {
-      user?: {
-        id:         string
-        role:       Role
-        providerId?: string
-      }
+      user?: User
     }
   }
 }

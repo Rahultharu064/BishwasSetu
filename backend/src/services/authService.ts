@@ -174,6 +174,8 @@ export const loginUser = async (input: LoginInput) => {
   }
 }
 
+
+
 // ── REFRESH TOKEN ─────────────────────────────
 
 export const refreshAccessToken = async (oldToken: string) => {
@@ -194,6 +196,22 @@ export const refreshAccessToken = async (oldToken: string) => {
     throw { code: 'REFRESH_TOKEN_EXPIRED', message: 'Session expired. Please login again', status: 401 }
   }
 
+  // Fetch user object to return
+  const user = await prisma.user.findUnique({
+    where: { id: payload.id },
+    select: {
+      id: true,
+      name: true,
+      role: true,
+      preferredPaymentMethod: true,
+      provider: { select: { id: true, identityStatus: true } },
+    }
+  })
+
+  if (!user) {
+    throw { code: 'USER_NOT_FOUND', message: 'User not found', status: 404 }
+  }
+
   // Rotate — revoke old, issue new
   const newRefreshToken = await rotateRefreshToken(oldToken, {
     id:         payload.id,
@@ -207,7 +225,18 @@ export const refreshAccessToken = async (oldToken: string) => {
     providerId: payload.providerId,
   })
 
-  return { accessToken: newAccessToken, refreshToken: newRefreshToken }
+  return { 
+    accessToken: newAccessToken, 
+    refreshToken: newRefreshToken,
+    user: {
+      id:                     user.id,
+      name:                   user.name,
+      role:                   user.role,
+      preferredPaymentMethod: user.preferredPaymentMethod,
+      providerId:             user.provider?.id,
+      kycStatus:              user.provider?.identityStatus,
+    }
+  }
 }
 
 // ── LOGOUT ────────────────────────────────────

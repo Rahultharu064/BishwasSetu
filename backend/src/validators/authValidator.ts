@@ -42,6 +42,6 @@ export const RefreshTokenSchema = z.object({
   refreshToken: z.string().min(1),
 })
 
-export type RegisterInput  = z.infer<typeof RegisterSchema>
-export type LoginInput     = z.infer<typeof LoginSchema>
-export type VerifyOtpInput = z.infer<typeof VerifyOtpSchema>
+export type RegisterInput     = z.infer<typeof RegisterSchema>
+export type LoginInput        = z.infer<typeof LoginSchema>
+export type VerifyOtpInput    = z.infer<typeof VerifyOtpSchema>

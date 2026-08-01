@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Mail, Lock, ArrowRight, UserPlus, Eye, EyeOff, Phone } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { useToast } from "@/context/toast-context";
+import { GoogleLoginButton } from "@/components/auth/google-login-button";
 
 function LoginInner() {
   const router = useRouter();
@@ -94,6 +95,17 @@ function LoginInner() {
             <div className="mb-6 text-center">
               <h2 className="text-xl font-bold text-[#1a1d1c]">Welcome Back</h2>
               <p className="mt-1 text-sm text-[#6b7280]">Sign in to your account</p>
+            </div>
+
+            {/* Google Sign In */}
+            <GoogleLoginButton next={next} />
+
+            <div className="mt-5 mb-5 flex items-center gap-3">
+              <div className="flex-1 h-px bg-[#e7e7e1]" />
+              <span className="text-[10px] font-bold text-[#9ca39f] uppercase tracking-wider">
+                Or continue with
+              </span>
+              <div className="flex-1 h-px bg-[#e7e7e1]" />
             </div>
 
             <form onSubmit={submit} className="space-y-4" noValidate>

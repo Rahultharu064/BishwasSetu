@@ -4,6 +4,7 @@ import helmet         from 'helmet'
 import cookieParser   from 'cookie-parser'
 import compression    from 'compression'
 import dotenv         from 'dotenv'
+import passport       from './config/passport'
 
 dotenv.config()
 
@@ -66,6 +67,7 @@ app.use(helmet(helmetConfig))
 app.use(cors(corsConfig))
 app.use(cookieParser())
 app.use(compression())
+app.use(passport.initialize())
 app.use(express.json(requestSizeLimits.json))
 app.use(express.urlencoded(requestSizeLimits.urlencoded))
 app.use(sanitizeInput)

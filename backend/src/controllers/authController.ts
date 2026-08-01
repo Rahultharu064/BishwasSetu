@@ -72,6 +72,53 @@ export const login = async (
   }
 }
 
+// ── GET /api/v1/auth/google/callback ──────────
+
+export const googleCallback = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const user = req.user as any
+
+    if (!user) {
+      throw { code: 'UNAUTHORIZED', message: 'Authentication failed', status: 401 }
+    }
+
+    // Generate tokens
+    const tokenPayload = {
+      id:         user.id,
+      role:       user.role,
+      providerId: user.provider?.id,
+    }
+
+    const { signAccessToken, signRefreshToken, saveRefreshToken } = await import('../utils/jwt')
+    
+    const accessToken  = signAccessToken(tokenPayload)
+    const refreshToken = signRefreshToken(tokenPayload)
+    await saveRefreshToken(user.id, refreshToken)
+
+    // Set refresh token in HttpOnly cookie
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure:   process.env.NODE_ENV === 'production',
+      sameSite: 'lax', // Must be lax to allow redirect to frontend with cookie attached
+      maxAge:   7 * 24 * 60 * 60 * 1000, // 7 days
+    })
+
+    // Retrieve state (redirect URL) passed from the frontend
+    const state = req.query.state ? String(req.query.state) : '/'
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000'
+    
+    // Redirect to frontend callback page
+    res.redirect(`${frontendUrl}/auth/callback?state=${encodeURIComponent(state)}`)
+  } catch (err: any) {
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000'
+    res.redirect(`${frontendUrl}/auth/callback?error=true`)
+  }
+}
+
 // ── POST /api/v1/auth/refresh ─────────────────
 
 export const refresh = async (
@@ -99,7 +146,7 @@ export const refresh = async (
       maxAge:   7 * 24 * 60 * 60 * 1000,
     })
 
-    sendSuccess(res, { accessToken: result.accessToken }, 'Token refreshed')
+    sendSuccess(res, { accessToken: result.accessToken, user: result.user }, 'Token refreshed')
   } catch (err: any) {
     if (err.code) {
       sendError(res, err.message, err.code, err.status)
