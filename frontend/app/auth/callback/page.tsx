@@ -13,7 +13,7 @@ function AuthCallbackInner() {
   const { setSession } = useAuth();
   const { toast } = useToast();
 
-  const stateParam = searchParams.get("state") || "/";
+  const nextParam  = searchParams.get("next") || "/";
   const errorParam = searchParams.get("error");
 
   const attempted = useRef(false);
@@ -41,8 +41,8 @@ function AuthCallbackInner() {
           setSession(res.accessToken, res.user);
           toast("Signed in with Google! Welcome.", "success");
 
-          if (stateParam && stateParam !== "/") {
-            router.replace(stateParam);
+          if (nextParam && nextParam !== "/") {
+            router.replace(nextParam);
           } else if (res.user.role === "PROVIDER") {
             router.replace("/provider/dashboard");
           } else if (
@@ -63,7 +63,7 @@ function AuthCallbackInner() {
     }
 
     handleAuth();
-  }, [router, searchParams, setSession, toast, errorParam, stateParam]);
+  }, [router, searchParams, setSession, toast, errorParam, nextParam]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#fafaf7] px-4">

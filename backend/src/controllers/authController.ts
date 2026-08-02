@@ -77,45 +77,53 @@ export const login = async (
 export const googleCallback = async (
   req: Request,
   res: Response,
-  next: NextFunction
 ): Promise<void> => {
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000'
+
   try {
     const user = req.user as any
 
     if (!user) {
-      throw { code: 'UNAUTHORIZED', message: 'Authentication failed', status: 401 }
+      res.redirect(`${frontendUrl}/login?error=google_failed`)
+      return
+    }
+
+    // Decode the next-URL from the base64-encoded state param
+    let redirectTo = '/'
+    try {
+      const rawState = typeof req.query.state === 'string' ? req.query.state : ''
+      if (rawState) {
+        redirectTo = Buffer.from(rawState, 'base64').toString('utf8') || '/'
+      }
+    } catch {
+      redirectTo = '/'
     }
 
     // Generate tokens
     const tokenPayload = {
-      id:         user.id,
-      role:       user.role,
-      providerId: user.provider?.id,
+      id:         user.id as string,
+      role:       user.role as string,
+      providerId: user.provider?.id as string | undefined,
     }
 
     const { signAccessToken, signRefreshToken, saveRefreshToken } = await import('../utils/jwt')
-    
+
     const accessToken  = signAccessToken(tokenPayload)
     const refreshToken = signRefreshToken(tokenPayload)
     await saveRefreshToken(user.id, refreshToken)
 
-    // Set refresh token in HttpOnly cookie
+    // Set refresh token in HttpOnly cookie (sameSite: lax for cross-origin redirects)
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure:   process.env.NODE_ENV === 'production',
-      sameSite: 'lax', // Must be lax to allow redirect to frontend with cookie attached
+      sameSite: 'lax',
       maxAge:   7 * 24 * 60 * 60 * 1000, // 7 days
     })
 
-    // Retrieve state (redirect URL) passed from the frontend
-    const state = req.query.state ? String(req.query.state) : '/'
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000'
-    
-    // Redirect to frontend callback page
-    res.redirect(`${frontendUrl}/auth/callback?state=${encodeURIComponent(state)}`)
-  } catch (err: any) {
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000'
-    res.redirect(`${frontendUrl}/auth/callback?error=true`)
+    // Redirect browser to the frontend callback page
+    res.redirect(`${frontendUrl}/auth/callback?next=${encodeURIComponent(redirectTo)}`)
+  } catch {
+    res.redirect(`${frontendUrl}/login?error=google_failed`)
   }
 }
 

@@ -3,8 +3,8 @@
 import { API_BASE } from "@/lib/api";
 
 export function GoogleLoginButton({ next = "/" }: { next?: string }) {
-  // Construct the backend URL with the next redirect embedded if needed
-  const googleAuthUrl = `${API_BASE}/auth/google${next && next !== "/" ? `?state=${encodeURIComponent(next)}` : ""}`;
+  // Construct the backend Google OAuth initiation URL with the next redirect
+  const googleAuthUrl = `${API_BASE}/auth/google${next && next !== "/" ? `?next=${encodeURIComponent(next)}` : ""}`;
 
   return (
     <a

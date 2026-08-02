@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import passport from 'passport'
 import * as AuthController from '../controllers/authController'
 import { validate } from '../middlewares/validateMiddleware'
 import {
@@ -9,24 +10,32 @@ import {
 
 const router = Router()
 
-import passport from 'passport'
-
 // Public routes
 router.post('/register', validate(RegisterSchema), AuthController.register)
 router.post('/login', validate(LoginSchema), AuthController.login)
 
-// Google OAuth routes
-router.get(
-  '/google',
-  (req, res, next) => {
-    const state = req.query.state ? String(req.query.state) : '/'
-    passport.authenticate('google', { scope: ['profile', 'email'], session: false, state })(req, res, next)
-  }
-)
+// ── Google OAuth2 (Passport) ──────────────────────────────────
+// Step 1: Browser navigates here → Passport redirects to Google
+router.get('/google', (req, res, next) => {
+  // Encode the intended redirect URL in the OAuth state parameter
+  const redirectTo = typeof req.query.next === 'string' ? req.query.next : '/'
+  passport.authenticate('google', {
+    scope:   ['profile', 'email'],
+    session: false,
+    state:   Buffer.from(redirectTo).toString('base64'),   // base64-encode next URL
+  })(req, res, next)
+})
 
+// Step 2: Google redirects back here after user grants access
 router.get(
   '/google/callback',
-  passport.authenticate('google', { session: false, failureRedirect: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=GoogleAuthFailed` }),
+  (req, res, next) => {
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000'
+    passport.authenticate('google', {
+      session:         false,
+      failureRedirect: `${frontendUrl}/login?error=google_failed`,
+    })(req, res, next)
+  },
   AuthController.googleCallback
 )
 
