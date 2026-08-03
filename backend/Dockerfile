@@ -12,7 +12,7 @@ RUN npm run build
 RUN npx prisma generate
 
 # ── Production image ───────────────────────────────────────────
-FROM node:20-alpine AS production
+FFROM node:22-alpine AS production
 
 WORKDIR /app
 
