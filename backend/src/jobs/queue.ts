@@ -47,11 +47,6 @@ const createMockQueue = (name: string) => {
   } as any
 }
 
-// Parse the URL once and build a shared options object so every Bull
-// queue's internal connections (client/subscriber/bclient) get the same
-// keepAlive + retry + TLS tuning — passing a bare string leaves Bull's
-// ioredis instances on defaults, which Upstash's idle-connection resets
-// don't tolerate well.
 const buildRedisOptions = (url: string) => {
   const parsed = new URL(url)
   return {
@@ -70,11 +65,21 @@ const buildRedisOptions = (url: string) => {
   }
 }
 
-// Declare all three up front so both the success path and the catch/fallback
-// path (and the final export) refer to the same variables.
 let kycQueue: any
 let trustQueue: any
 let moderationQueue: any
+let escrowQueue: any
+let emergencyQueue: any
+let maintenanceQueue: any
+
+const queueNames = [
+  'kyc-pipeline',
+  'trust-recompute',
+  'content-moderation',
+  'escrow',
+  'emergency-dispatch',
+  'maintenance',
+] as const
 
 if (isRedisEnabled && redisUrl) {
   try {
@@ -82,16 +87,27 @@ if (isRedisEnabled && redisUrl) {
 
     kycQueue = new Bull('kyc-pipeline', {
       redis: redisOptions,
-      defaultJobOptions: {
-        removeOnComplete: 50,
-        removeOnFail: 100,
-      },
+      defaultJobOptions: { removeOnComplete: 50, removeOnFail: 100 },
     })
-
     trustQueue = new Bull('trust-recompute', { redis: redisOptions })
     moderationQueue = new Bull('content-moderation', { redis: redisOptions })
+    escrowQueue = new Bull('escrow', {
+      redis: redisOptions,
+      defaultJobOptions: { removeOnComplete: 50, removeOnFail: 100 },
+    })
+    emergencyQueue = new Bull('emergency-dispatch', { redis: redisOptions })
+    maintenanceQueue = new Bull('maintenance', { redis: redisOptions })
 
-    for (const [name, q] of [['kyc-pipeline', kycQueue], ['trust-recompute', trustQueue], ['content-moderation', moderationQueue]] as const) {
+    const queues = [
+      ['kyc-pipeline', kycQueue],
+      ['trust-recompute', trustQueue],
+      ['content-moderation', moderationQueue],
+      ['escrow', escrowQueue],
+      ['emergency-dispatch', emergencyQueue],
+      ['maintenance', maintenanceQueue],
+    ] as const
+
+    for (const [name, q] of queues) {
       q.on('error', (err: Error) => console.error(`❌ Queue "${name}" error:`, err.message))
     }
   } catch (err) {
@@ -99,11 +115,17 @@ if (isRedisEnabled && redisUrl) {
     kycQueue = createMockQueue('kyc-pipeline')
     trustQueue = createMockQueue('trust-recompute')
     moderationQueue = createMockQueue('content-moderation')
+    escrowQueue = createMockQueue('escrow')
+    emergencyQueue = createMockQueue('emergency-dispatch')
+    maintenanceQueue = createMockQueue('maintenance')
   }
 } else {
   kycQueue = createMockQueue('kyc-pipeline')
   trustQueue = createMockQueue('trust-recompute')
   moderationQueue = createMockQueue('content-moderation')
+  escrowQueue = createMockQueue('escrow')
+  emergencyQueue = createMockQueue('emergency-dispatch')
+  maintenanceQueue = createMockQueue('maintenance')
 }
 
-export { kycQueue, trustQueue, moderationQueue }
+export { kycQueue, trustQueue, moderationQueue, escrowQueue, emergencyQueue, maintenanceQueue }
