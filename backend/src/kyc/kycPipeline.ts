@@ -3,6 +3,7 @@ import { getSignedUrl }    from '../utils/cloudinary'
 import { extractIdFields, OcrResult } from './kycOcr'
 import { compareFaces }    from './kycFaceMatch'
 import { detectForgery }   from './kycForgery'
+import { checkDuplicateIdentity } from './kycDuplicateCheck'
 import axios               from 'axios'
 import { Prisma } from '@prisma/client'
 
@@ -137,6 +138,14 @@ export const runKycPipeline = async (
     provider.legalName
   )
 
+  // 5b. Duplicate-identity check — catches a rejected/blacklisted provider
+  // re-registering under a new phone number with the same government ID.
+  // Only ever compares hashes (see kycDuplicateCheck.ts); the plaintext ID
+  // is never persisted outside the KYC images themselves.
+  const duplicateCheck = ocrResult.idNumber
+    ? await checkDuplicateIdentity(providerId, ocrResult.idNumber)
+    : null
+
   // 6. Compute overall confidence
   const confidence = computeConfidence({
     ocrConfidence:   ocrResult.confidence,
@@ -151,6 +160,12 @@ export const runKycPipeline = async (
     ...forgeryResult.flags,
     ...mismatchFields,
     ...(!faceMatchResult.passed ? [`Face match failed: similarity ${(faceMatchResult.similarity * 100).toFixed(0)}%`] : []),
+    // A duplicate ID is a hard stop, never just a confidence penalty — it
+    // always forces HUMAN_QUEUE below regardless of how confident the rest
+    // of the pipeline is.
+    ...(duplicateCheck?.matchedProviderId
+      ? [`Government ID already registered to another provider account (${duplicateCheck.matchedProviderId})`]
+      : []),
   ]
 
   // 8. Decision
@@ -159,7 +174,9 @@ export const runKycPipeline = async (
       ? 'AUTO_APPROVE'
       : 'HUMAN_QUEUE'
 
-  // 9. Save AI decision log
+  // 9. Save AI decision log — including *why*, not just the scores, so an
+  // admin reviewing the HUMAN_QUEUE case doesn't have to re-derive the
+  // reasoning the AI already computed.
  await prisma.kycAiDecision.create({
   data: {
     providerId,
@@ -169,18 +186,30 @@ export const runKycPipeline = async (
     confidence,
     decision,
     modelVer: 'groq-llama-3.2-90b-vision-preview-v1',
+    flags:            flags as unknown as Prisma.InputJsonValue,
+    faceReasoning:    faceMatchResult.reasoning,
+    forgeryReasoning: forgeryResult.aiReasoning,
   },
 })
 
-  // 10. Apply decision
+  // 10. Apply decision — always persist the ID hash (if we have one), even
+  // on HUMAN_QUEUE, so a *future* submission from a different account can
+  // be caught against it regardless of how this one is resolved.
+  const idHashUpdate: Prisma.ProviderUpdateInput = duplicateCheck?.hash
+    ? { idNumberHash: duplicateCheck.hash }
+    : {}
+
   if (decision === 'AUTO_APPROVE') {
     await prisma.provider.update({
       where: { id: providerId },
-      data: { identityStatus: 'VERIFIED' },
+      data: { ...idHashUpdate, identityStatus: 'VERIFIED' },
     })
     console.log(`✅ Identity KYC AUTO-APPROVED: provider ${providerId} (confidence: ${(confidence * 100).toFixed(1)}%)`)
   } else {
     // Leave status as UNDER_REVIEW — admin sees it in the queue
+    if (Object.keys(idHashUpdate).length > 0) {
+      await prisma.provider.update({ where: { id: providerId }, data: idHashUpdate })
+    }
     console.log(`🔶 Identity KYC HUMAN_QUEUE: provider ${providerId} (confidence: ${(confidence * 100).toFixed(1)}%, flags: ${flags.length})`)
   }
 

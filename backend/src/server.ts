@@ -10,6 +10,7 @@ import cron         from 'node-cron'
 
 // Import workers
 import './jobs/kycJob'
+import './jobs/skillEvidencePrecheckJob'
 import './jobs/trustJob'
 import './jobs/moderationJob'
 import './jobs/escrowReleasedJob'

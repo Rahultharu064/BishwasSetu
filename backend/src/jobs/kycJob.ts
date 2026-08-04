@@ -27,13 +27,18 @@ kycQueue.process('run-pipeline', 3, async (job: Job) => {
   return result
 })
 
+// kycQueue is shared with skill-evidence pre-check jobs (see
+// skillEvidencePrecheckJob.ts) — filter by job name so their failures
+// aren't logged here as "provider undefined".
 kycQueue.on('completed', (job: Job, result: any) => {
+  if (job.name !== 'run-pipeline') return
   console.log(
     `✅ KYC job done: provider=${job.data.providerId} decision=${result.decision}`
   )
 })
 
 kycQueue.on('failed', (job: Job, err: Error) => {
+  if (job.name !== 'run-pipeline') return
   console.error(`❌ KYC job failed for provider ${job.data.providerId}:`, err.message)
 })
 

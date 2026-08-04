@@ -20,9 +20,16 @@ export interface AdminDashboard {
 export interface KycAiDecision {
   confidence?: number | null;
   faceScore?: number | null;
-  forgeryRisk?: number | null;
+  // Backend stores this as a categorical risk level, not a 0-1 score —
+  // see backend/src/kyc/kycForgery.ts (ForgeryRisk type).
+  forgeryRisk?: "low" | "medium" | "high" | null;
   decision?: string | null;
   ocrResult?: unknown;
+  // The *why* behind the scores — specific issues found, plus each check's
+  // own one-line reasoning.
+  flags?: string[] | null;
+  faceReasoning?: string | null;
+  forgeryReasoning?: string | null;
 }
 
 export interface KycQueueItem {

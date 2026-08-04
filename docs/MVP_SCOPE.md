@@ -18,6 +18,7 @@ Everything not directly testing that sentence is deferred.
 | Flag | Env var | Pilot default | Effect |
 |---|---|---|---|
 | Manual KYC review | `KYC_MANUAL_REVIEW` | **on** | KYC skips the paid AI pipeline (OCR + AWS Rekognition + Groq-vision) and goes straight to the human admin queue. Zero per-signup AI cost. |
+| Skill evidence AI pre-check | `SKILL_EVIDENCE_AI_PRECHECK_ENABLED` | off | Duplicate/stock-photo/AI-generated flags + certificate OCR for skill-evidence submissions. Skill evidence is always human-reviewed regardless; this only adds AI-assist on top. |
 | AI assistant | `AI_ASSISTANT_ENABLED` | off | RAG/Groq streaming assistant disabled — use phone/WhatsApp support at pilot volume. See `docs/AI_ASSISTANT.md`. |
 | AI assistant semantic search | `AI_SEMANTIC_SEARCH_ENABLED` | off | Optional Pinecone embeddings retrieval on top of the AI assistant; falls back to MySQL FULLTEXT when off/unconfigured. |
 | Emergency dispatch | `EMERGENCY_DISPATCH_ENABLED` | off | "Find Me a Pro Now" needs provider density to work; enable after supply is dense. |

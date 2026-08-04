@@ -2,6 +2,7 @@ import { prisma } from '../config/db'
 import { uploadToCloudinary, getSignedUrl } from '../utils/cloudinary'
 import { kycQueue } from '../jobs/queue'
 import { features } from '../config/features'
+import { hashFileBuffer } from '../kyc/fileHash'
 
 // ── Upload KYC documents ──────────────────────────────────────
 
@@ -207,19 +208,28 @@ export const submitSkillEvidence = async (
   const uploaded = await Promise.all(
     files.map(async (file) => {
       const filename = `skill_${providerId}_${type}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
-      return uploadToCloudinary(file.buffer, 'bishwassetu/skill-evidence', filename, { type: 'authenticated' })
+      const result = await uploadToCloudinary(file.buffer, 'bishwassetu/skill-evidence', filename, { type: 'authenticated' })
+      return { ...result, fileHash: hashFileBuffer(file.buffer) }
     })
   )
 
-  await prisma.$transaction(async (tx) => {
-    await tx.skillEvidence.createMany({
-      data: uploaded.map((r) => ({
-        providerId,
-        type,
-        cloudinaryId: r.publicId,
-        fileUrl:      r.secureUrl,
-      })),
-    })
+  const created = await prisma.$transaction(async (tx) => {
+    // create() in a loop (not createMany) — MySQL createMany doesn't return
+    // rows, and the AI pre-check job below needs each new row's id.
+    const rows = await Promise.all(
+      uploaded.map((r) =>
+        tx.skillEvidence.create({
+          data: {
+            providerId,
+            type,
+            cloudinaryId: r.publicId,
+            fileUrl:      r.secureUrl,
+            fileHash:     r.fileHash,
+          },
+          select: { id: true },
+        })
+      )
+    )
 
     // Don't downgrade an already-verified provider just for supplementary evidence.
     if (provider.skillStatus !== 'VERIFIED') {
@@ -228,7 +238,25 @@ export const submitSkillEvidence = async (
         data:  { skillStatus: 'PENDING_REVIEW' },
       })
     }
+
+    return rows
   })
+
+  // AI pre-check (duplicate/stock-photo/AI-generated flags + certificate OCR)
+  // runs async via the KYC queue — never blocks the upload response, and a
+  // failure there just means this submission gets no AI assist, same as
+  // before this feature existed (skill evidence is always human-reviewed).
+  // Gated like kycManualReview: off by default so a pre-revenue pilot
+  // doesn't pay for AI infra it doesn't need yet.
+  if (features.skillEvidenceAiPrecheck) {
+    for (const row of created) {
+      await kycQueue.add(
+        'skill-evidence-precheck',
+        { evidenceId: row.id },
+        { attempts: 2, backoff: { type: 'exponential', delay: 5000 } }
+      )
+    }
+  }
 
   return {
     status:  provider.skillStatus === 'VERIFIED' ? provider.skillStatus : 'PENDING_REVIEW',

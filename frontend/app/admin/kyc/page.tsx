@@ -94,6 +94,18 @@ export default function KycQueuePage() {
   );
 }
 
+// Must track backend/src/kyc/kycFaceMatch.ts::FACE_MATCH_THRESHOLD — the AI
+// itself approves a face match at this similarity, so the dashboard's
+// pass/fail read must agree with it rather than judging against an
+// arbitrary stricter number.
+const FACE_MATCH_THRESHOLD = 0.75;
+
+const FORGERY_RISK_POINTS: Record<"low" | "medium" | "high", number> = {
+  low: 5,
+  medium: 35,
+  high: 70,
+};
+
 function riskFromDecision(item: KycQueueItem): {
   score: number;
   tone: "warning" | "soft" | "urgentSoft";
@@ -104,7 +116,7 @@ function riskFromDecision(item: KycQueueItem): {
   const forgery = d?.forgeryRisk ?? null;
   let risk = 20;
   if (face != null) risk += Math.max(0, (0.95 - face) * 100);
-  if (forgery != null) risk += forgery * 60;
+  if (forgery != null) risk += FORGERY_RISK_POINTS[forgery] ?? 0;
   risk = Math.min(99, Math.round(risk));
   return {
     score: risk,
@@ -268,15 +280,17 @@ function ReviewPanel({
           icon={<ScanFace className="h-4 w-4" />}
           label="Face match"
           value={d?.faceScore != null ? `${Math.round(d.faceScore * 100)}%` : "—"}
-          pass={d?.faceScore != null ? d.faceScore >= 0.95 : null}
-          threshold="threshold 95%"
+          pass={d?.faceScore != null ? d.faceScore >= FACE_MATCH_THRESHOLD : null}
+          threshold={`threshold ${Math.round(FACE_MATCH_THRESHOLD * 100)}%`}
+          reasoning={d?.faceReasoning}
         />
         <CheckRow
           icon={<FileWarning className="h-4 w-4" />}
           label="Forgery risk"
-          value={d?.forgeryRisk != null ? `${Math.round(d.forgeryRisk * 100)}%` : "—"}
-          pass={d?.forgeryRisk != null ? d.forgeryRisk < 0.3 : null}
-          threshold="lower is better"
+          value={d?.forgeryRisk ? d.forgeryRisk[0].toUpperCase() + d.forgeryRisk.slice(1) : "—"}
+          pass={d?.forgeryRisk != null ? d.forgeryRisk === "low" : null}
+          threshold="low is better"
+          reasoning={d?.forgeryReasoning}
         />
         <CheckRow
           icon={<ShieldCheck className="h-4 w-4" />}
@@ -286,6 +300,22 @@ function ReviewPanel({
           threshold={d?.decision ?? "no decision"}
         />
       </ul>
+
+      {/* Why the AI flagged this — specific issues, not just scores */}
+      {d?.flags && d.flags.length > 0 && (
+        <div className="mt-3 rounded-lg border border-warning/30 bg-warning-soft p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-warning">
+            AI notes
+          </p>
+          <ul className="mt-1.5 space-y-1">
+            {d.flags.map((flag, i) => (
+              <li key={i} className="text-sm text-foreground">
+                • {flag}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Reason input for reject / request-info */}
       {(mode === "reject" || mode === "request-info") && (
@@ -397,39 +427,46 @@ function CheckRow({
   value,
   pass,
   threshold,
+  reasoning,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
   pass: boolean | null;
   threshold: string;
+  reasoning?: string | null;
 }) {
   return (
-    <li className="flex items-center gap-3 rounded-lg border border-border p-3">
-      <span
-        className={cn(
-          "flex h-8 w-8 items-center justify-center rounded-full",
-          pass == null
-            ? "bg-secondary text-muted-foreground"
-            : pass
-              ? "bg-primary-soft text-primary"
-              : "bg-urgent-soft text-urgent"
-        )}
-      >
-        {icon}
-      </span>
-      <div className="flex-1">
-        <p className="text-sm font-medium">{label}</p>
-        <p className="text-xs text-muted-foreground">{threshold}</p>
+    <li className="rounded-lg border border-border p-3">
+      <div className="flex items-center gap-3">
+        <span
+          className={cn(
+            "flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
+            pass == null
+              ? "bg-secondary text-muted-foreground"
+              : pass
+                ? "bg-primary-soft text-primary"
+                : "bg-urgent-soft text-urgent"
+          )}
+        >
+          {icon}
+        </span>
+        <div className="flex-1">
+          <p className="text-sm font-medium">{label}</p>
+          <p className="text-xs text-muted-foreground">{threshold}</p>
+        </div>
+        <span
+          className={cn(
+            "tabular text-sm font-bold",
+            pass == null ? "text-muted-foreground" : pass ? "text-primary" : "text-urgent"
+          )}
+        >
+          {value}
+        </span>
       </div>
-      <span
-        className={cn(
-          "tabular text-sm font-bold",
-          pass == null ? "text-muted-foreground" : pass ? "text-primary" : "text-urgent"
-        )}
-      >
-        {value}
-      </span>
+      {reasoning && (
+        <p className="mt-2 pl-11 text-xs text-muted-foreground">{reasoning}</p>
+      )}
     </li>
   );
 }

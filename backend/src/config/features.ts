@@ -24,6 +24,14 @@ export const features = {
    */
   kycManualReview: truthy(process.env.KYC_MANUAL_REVIEW, true),
 
+  /**
+   * AI pre-check (duplicate/stock-photo/AI-generated flags + certificate
+   * OCR) for skill-evidence submissions. Off by default for the same
+   * pilot-cost reason as kycManualReview — skill evidence stays fully
+   * human-reviewed either way, this only adds AI-assist on top.
+   */
+  skillEvidenceAiPrecheck: truthy(process.env.SKILL_EVIDENCE_AI_PRECHECK_ENABLED, false),
+
   /** RAG / Groq streaming assistant. Off until support volume justifies it. */
   aiAssistant: truthy(process.env.AI_ASSISTANT_ENABLED, false),
 

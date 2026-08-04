@@ -247,6 +247,12 @@ model Provider {
   embedding               Json? // service description embedding vector
   identityRejectionReason String?   @db.Text
   skillRejectionReason    String?   @db.Text
+  // SHA-256 of the normalized government ID number extracted by OCR — never
+  // the plaintext number (see docs/DATA_RETENTION_AND_SECURITY.md §4: a
+  // blacklist retains only "phone / ID number hash", never the raw ID).
+  // Lets runKycPipeline catch the same ID re-registering under a new
+  // phone/account without ever persisting the ID itself outside KYC images.
+  idNumberHash            String?   @db.VarChar(64)
   deletedAt               DateTime?
 
   createdAt DateTime @default(now())
@@ -272,6 +278,7 @@ model Provider {
   @@index([identityStatus])
   @@index([skillStatus])
   @@index([trustScore])
+  @@index([idNumberHash])
   @@index([serviceArea])
   @@index([city])
   @@map("providers")
@@ -349,6 +356,7 @@ model SkillEvidence {
   type             String    @db.VarChar(20) // 'certificate'|'work_photo'|'reference'
   cloudinaryId     String    @db.VarChar(200) // Cloudinary public_id (restricted folder)
   fileUrl          String    @db.VarChar(500) // signed delivery URL
+  fileHash         String?   @db.VarChar(64)  // SHA-256 of the raw upload — exact-duplicate detection across providers
   certNumber       String?   @db.VarChar(100) // extracted via OCR — for Phase 3 issuer lookup
   issuerName       String?   @db.VarChar(200) // extracted via OCR
   aiPrecheck       Json?
@@ -371,6 +379,7 @@ model SkillEvidence {
 
   @@index([providerId])
   @@index([reviewStatus])
+  @@index([fileHash])
   @@map("skill_evidence")
 }
 
@@ -389,6 +398,12 @@ model KycAiDecision {
   adminOverride String?  @db.VarChar(10) // 'APPROVE'|'REJECT'
   modelVer      String   @db.VarChar(50)
   createdAt     DateTime @default(now())
+
+  // The *why* behind the scores above — without these an admin sees "62%
+  // confidence" with no explanation. Populated by runKycPipeline.
+  flags            Json?   // string[] — name mismatches, face/forgery/duplicate-ID issues
+  faceReasoning    String? @db.VarChar(500) // FaceMatchResult.reasoning
+  forgeryReasoning String? @db.VarChar(500) // ForgeryResult.aiReasoning
 
   provider Provider @relation(fields: [providerId], references: [id])
 
