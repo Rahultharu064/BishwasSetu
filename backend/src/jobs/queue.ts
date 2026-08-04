@@ -15,7 +15,7 @@ const createMockQueue = (name: string) => {
   }
 
   return {
-    add: (jobName: string, data: any, opts?: { delay?: number }) => {
+    add: (jobName: string, data: any, opts?: { delay?: number; repeat?: any }) => {
       const run = () => {
         const handler = handlers.get(jobName)
         if (!handler) {
@@ -30,6 +30,8 @@ const createMockQueue = (name: string) => {
             emit('failed', job, err)
           })
       }
+      // NOTE: repeatable cron jobs (maintenanceQueue's "expire-guarantees" etc.)
+      // fire once in mock mode instead of on a schedule — fine for dev without Redis.
       if (opts?.delay) setTimeout(run, opts.delay)
       else setImmediate(run)
       return Promise.resolve({ id: 'mock-job' })
@@ -47,6 +49,11 @@ const createMockQueue = (name: string) => {
   } as any
 }
 
+// Parse the URL once and build a shared options object so every Bull
+// queue's internal connections (client/subscriber/bclient) get the same
+// keepAlive + retry + TLS tuning — passing a bare string leaves Bull's
+// ioredis instances on defaults, which Upstash's idle-connection resets
+// don't tolerate well.
 const buildRedisOptions = (url: string) => {
   const parsed = new URL(url)
   return {
@@ -69,17 +76,8 @@ let kycQueue: any
 let trustQueue: any
 let moderationQueue: any
 let escrowQueue: any
-let emergencyQueue: any
+let dispatchQueue: any
 let maintenanceQueue: any
-
-const queueNames = [
-  'kyc-pipeline',
-  'trust-recompute',
-  'content-moderation',
-  'escrow',
-  'emergency-dispatch',
-  'maintenance',
-] as const
 
 if (isRedisEnabled && redisUrl) {
   try {
@@ -95,7 +93,7 @@ if (isRedisEnabled && redisUrl) {
       redis: redisOptions,
       defaultJobOptions: { removeOnComplete: 50, removeOnFail: 100 },
     })
-    emergencyQueue = new Bull('emergency-dispatch', { redis: redisOptions })
+    dispatchQueue = new Bull('emergency-dispatch', { redis: redisOptions })
     maintenanceQueue = new Bull('maintenance', { redis: redisOptions })
 
     const queues = [
@@ -103,7 +101,7 @@ if (isRedisEnabled && redisUrl) {
       ['trust-recompute', trustQueue],
       ['content-moderation', moderationQueue],
       ['escrow', escrowQueue],
-      ['emergency-dispatch', emergencyQueue],
+      ['emergency-dispatch', dispatchQueue],
       ['maintenance', maintenanceQueue],
     ] as const
 
@@ -116,7 +114,7 @@ if (isRedisEnabled && redisUrl) {
     trustQueue = createMockQueue('trust-recompute')
     moderationQueue = createMockQueue('content-moderation')
     escrowQueue = createMockQueue('escrow')
-    emergencyQueue = createMockQueue('emergency-dispatch')
+    dispatchQueue = createMockQueue('emergency-dispatch')
     maintenanceQueue = createMockQueue('maintenance')
   }
 } else {
@@ -124,8 +122,8 @@ if (isRedisEnabled && redisUrl) {
   trustQueue = createMockQueue('trust-recompute')
   moderationQueue = createMockQueue('content-moderation')
   escrowQueue = createMockQueue('escrow')
-  emergencyQueue = createMockQueue('emergency-dispatch')
+  dispatchQueue = createMockQueue('emergency-dispatch')
   maintenanceQueue = createMockQueue('maintenance')
 }
 
-export { kycQueue, trustQueue, moderationQueue, escrowQueue, emergencyQueue, maintenanceQueue }
+export { kycQueue, trustQueue, moderationQueue, escrowQueue, dispatchQueue, maintenanceQueue }
