@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import * as AuthService from '../services/authService'
 import { sendSuccess, sendError } from '../utils/response'
+import { refreshCookieOptions, clearRefreshCookieOptions } from '../config/cookies'
 
 // ── POST /api/v1/auth/register ────────────────
 
@@ -33,12 +34,7 @@ export const verifyOtp = async (
     const result = await AuthService.verifyUserOtp(userId, code)
 
     // Set refresh token in HttpOnly cookie
-    res.cookie('refreshToken', result.refreshToken, {
-      httpOnly: true,
-      secure:   process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge:   7 * 24 * 60 * 60 * 1000, // 7 days
-    })
+    res.cookie('refreshToken', result.refreshToken, refreshCookieOptions)
 
     sendSuccess(res, {
       accessToken: result.accessToken,
@@ -112,13 +108,9 @@ export const googleCallback = async (
     const refreshToken = signRefreshToken(tokenPayload)
     await saveRefreshToken(user.id, refreshToken)
 
-    // Set refresh token in HttpOnly cookie (sameSite: lax for cross-origin redirects)
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure:   process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge:   7 * 24 * 60 * 60 * 1000, // 7 days
-    })
+    // Set refresh token in HttpOnly cookie — see config/cookies.ts for why the
+    // cross-site flags matter on this redirect back to the frontend origin.
+    res.cookie('refreshToken', refreshToken, refreshCookieOptions)
 
     // Redirect browser to the frontend callback page
     res.redirect(`${frontendUrl}/auth/callback?next=${encodeURIComponent(redirectTo)}`)
@@ -147,12 +139,7 @@ export const refresh = async (
     const result = await AuthService.refreshAccessToken(token)
 
     // Rotate cookie
-    res.cookie('refreshToken', result.refreshToken, {
-      httpOnly: true,
-      secure:   process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge:   7 * 24 * 60 * 60 * 1000,
-    })
+    res.cookie('refreshToken', result.refreshToken, refreshCookieOptions)
 
     sendSuccess(res, { accessToken: result.accessToken, user: result.user }, 'Token refreshed')
   } catch (err: any) {
@@ -179,7 +166,7 @@ export const logout = async (
       await AuthService.logoutUser(token)
     }
 
-    res.clearCookie('refreshToken')
+    res.clearCookie('refreshToken', clearRefreshCookieOptions)
     sendSuccess(res, null, 'Logged out successfully')
   } catch (err) {
     next(err)

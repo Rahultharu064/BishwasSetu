@@ -53,22 +53,36 @@ export const helmetConfig = {
 }
 
 // ── CORS config ───────────────────────────────────────────────
+
+// FRONTEND_URL accepts a comma-separated list so the Vercel production domain,
+// any custom domain, and specific preview URLs can all be allowed from one env
+// var. Trailing slashes are tolerated because an Origin header never has one —
+// `https://app.vercel.app/` in the env would otherwise never match.
+const normalizeOrigin = (value: string) => value.trim().replace(/\/+$/, '')
+
+const allowedOrigins = [
+  ...(process.env.FRONTEND_URL ?? '').split(',').map(normalizeOrigin),
+  'http://localhost:3000',
+  'http://localhost:5173',
+].filter(Boolean)
+
 export const corsConfig = {
   origin: (
     origin:   string | undefined,
     callback: (err: Error | null, allow?: boolean) => void
   ) => {
-    const allowedOrigins = [
-      process.env.FRONTEND_URL!,
-      'http://localhost:3000',
-      'http://localhost:5173',
-    ]
-
-    if (!origin || allowedOrigins.includes(origin)) {
+    // No Origin header — same-origin, curl, health checks. Not a browser CORS
+    // request, so there is nothing to approve.
+    if (!origin || allowedOrigins.includes(normalizeOrigin(origin))) {
       callback(null, true)
-    } else {
-      callback(new Error(`CORS: origin ${origin} not allowed`))
+      return
     }
+
+    // Deny by omitting the CORS headers rather than throwing: an Error here is
+    // surfaced by errorHandler as a 500, which hides the real cause and makes a
+    // misconfigured FRONTEND_URL look like a server crash.
+    console.warn(`CORS: origin ${origin} not in FRONTEND_URL allowlist`)
+    callback(null, false)
   },
   credentials:      true,
   methods:          ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

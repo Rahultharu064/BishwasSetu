@@ -12,7 +12,7 @@
  * Languages: 'en' | 'ne' (Devanagari). The retriever searches both and
  * prefers the user's detected language.
  *
- * Run standalone:   npx tsx prisma/seedKb.ts
+ * Run standalone:   npx tsx src/scripts/seedKb.ts   (production: npm run db:seed:kb:prod)
  * Or import { seedKbArticles } into the main seed.
  */
 

@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import * as AdminAuthService from '../services/adminAuthService'
 import { sendSuccess, sendError } from '../utils/response'
+import { refreshCookieOptions } from '../config/cookies'
 
 // POST /api/v1/admin-auth/login — direct credential login, no OTP step.
 // See adminAuthService.ts for why this is intentionally its own module
@@ -13,12 +14,7 @@ export const login = async (
   try {
     const result = await AdminAuthService.loginAdmin(req.body)
 
-    res.cookie('refreshToken', result.refreshToken, {
-      httpOnly: true,
-      secure:   process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge:   7 * 24 * 60 * 60 * 1000, // 7 days — matches the public auth flow's cookie
-    })
+    res.cookie('refreshToken', result.refreshToken, refreshCookieOptions)
 
     sendSuccess(res, {
       accessToken: result.accessToken,
