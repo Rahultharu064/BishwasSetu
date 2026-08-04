@@ -656,6 +656,7 @@ model KbArticle {
   lang      String   @default("ne") @db.VarChar(5) // 'ne'|'en'
   updatedAt DateTime @updatedAt
 
+  @@fulltext([title, content], map: "kb_articles_title_content_fulltext_idx")
   @@map("kb_articles")
 }
 
