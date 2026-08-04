@@ -1,16 +1,10 @@
 import Bull from 'bull'
 
-// Enabled whenever REDIS_URI/REDIS_URL is configured, local or remote —
-// falls back to the mock queue below if Bull can't actually connect.
 const redisUrl = process.env.REDIS_URI || process.env.REDIS_URL
 const isRedisEnabled = !!redisUrl
 
 type JobHandler = (job: { data: any; progress: (n: number) => Promise<void> }) => Promise<any> | any
 
-// Mock queue for when Redis is not available — mirrors config/queues.ts's
-// working pattern (registers handlers, actually invokes them on add) rather
-// than silently dropping every job. Includes a no-op `progress()` on the job
-// object since the kyc/trust/moderation workers call `job.progress(...)`.
 const createMockQueue = (name: string) => {
   console.log(`ℹ️ Mock queue "${name}" initialized (Redis not available)`)
   const handlers = new Map<string, JobHandler>()
@@ -22,11 +16,6 @@ const createMockQueue = (name: string) => {
 
   return {
     add: (jobName: string, data: any, opts?: { delay?: number }) => {
-      // Resolve the handler at execution time, not at add() time — callers
-      // (e.g. maintenanceJob.ts) schedule repeatable jobs at module load
-      // before their own `.process()` registration further down the same
-      // file, same as real Bull tolerates since a processor can attach any
-      // time before a queued job actually runs.
       const run = () => {
         const handler = handlers.get(jobName)
         if (!handler) {
@@ -58,31 +47,50 @@ const createMockQueue = (name: string) => {
   } as any
 }
 
+// Parse the URL once and build a shared options object so every Bull
+// queue's internal connections (client/subscriber/bclient) get the same
+// keepAlive + retry + TLS tuning — passing a bare string leaves Bull's
+// ioredis instances on defaults, which Upstash's idle-connection resets
+// don't tolerate well.
+const buildRedisOptions = (url: string) => {
+  const parsed = new URL(url)
+  return {
+    port: Number(parsed.port) || 6379,
+    host: parsed.hostname,
+    password: parsed.password || undefined,
+    username: parsed.username || undefined,
+    tls: parsed.protocol === 'rediss:' ? {} : undefined,
+    keepAlive: 30000,
+    maxRetriesPerRequest: null,
+    enableReadyCheck: false,
+    retryStrategy: (times: number) => {
+      if (times > 20) return null
+      return Math.min(times * 200, 5000)
+    },
+  }
+}
+
+// Declare all three up front so both the success path and the catch/fallback
+// path (and the final export) refer to the same variables.
 let kycQueue: any
 let trustQueue: any
 let moderationQueue: any
 
 if (isRedisEnabled && redisUrl) {
   try {
+    const redisOptions = buildRedisOptions(redisUrl)
+
     kycQueue = new Bull('kyc-pipeline', {
-      redis: redisUrl,
+      redis: redisOptions,
       defaultJobOptions: {
         removeOnComplete: 50,
-        removeOnFail:     100,
+        removeOnFail: 100,
       },
     })
 
-    trustQueue = new Bull('trust-recompute', {
-      redis: redisUrl,
-    })
+    trustQueue = new Bull('trust-recompute', { redis: redisOptions })
+    moderationQueue = new Bull('content-moderation', { redis: redisOptions })
 
-    moderationQueue = new Bull('content-moderation', {
-      redis: redisUrl,
-    })
-
-    // Bull queues are EventEmitters — Node throws synchronously on an
-    // 'error' event with no listener, which would crash the whole process
-    // on a transient Redis blip (same crash class the rate-limiter hit).
     for (const [name, q] of [['kyc-pipeline', kycQueue], ['trust-recompute', trustQueue], ['content-moderation', moderationQueue]] as const) {
       q.on('error', (err: Error) => console.error(`❌ Queue "${name}" error:`, err.message))
     }
