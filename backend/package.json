@@ -29,7 +29,6 @@
     "@types/passport-google-oauth20": "^2.0.17",
     "@types/socket.io": "^3.0.1",
     "@types/uuid": "^10.0.0",
-    "prisma": "^6.19.3",
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
@@ -37,6 +36,7 @@
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
+    "prisma": "^6.19.3",
     "@types/compression": "^1.8.1",
     "@types/hpp": "^0.2.7",
     "axios": "^1.18.1",
