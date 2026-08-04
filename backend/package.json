@@ -13,6 +13,8 @@
     "db:seed:kb": "tsx src/scripts/seedKb.ts",
     "db:seed:prod": "node dist/scripts/seed.js",
     "db:seed:kb:prod": "node dist/scripts/seedKb.js",
+    "assistant:setup-index": "tsx src/scripts/setupPineconeIndex.ts",
+    "assistant:reindex-kb": "tsx src/scripts/reindexKbToPinecone.ts",
     "test": "vitest run"
   },
   "devDependencies": {
@@ -38,8 +40,8 @@
     "vitest": "^4.1.10"
   },
   "dependencies": {
+    "@pinecone-database/pinecone": "^8.2.0",
     "@prisma/client": "^6.19.3",
-    "prisma": "^6.19.3",
     "@types/compression": "^1.8.1",
     "@types/hpp": "^0.2.7",
     "axios": "^1.18.1",
@@ -69,6 +71,7 @@
     "nodemon": "^3.1.11",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
+    "prisma": "^6.19.3",
     "rate-limit-redis": "^5.0.0",
     "resend": "^6.18.1",
     "socket.io": "^4.8.3",

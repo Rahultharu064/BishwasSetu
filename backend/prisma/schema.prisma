@@ -154,6 +154,7 @@ model User {
   reviews       Review[]
   complaints    Complaint[]        @relation("CustomerComplaints")
   sessions      AssistantSession[]
+  assistantFeedback AssistantFeedback[]
   messages      Message[]          @relation("SentMessages")
   addresses     SavedAddress[]
 
@@ -678,6 +679,29 @@ model AssistantSession {
 
   @@index([sessionId])
   @@map("assistant_sessions")
+}
+
+// ─────────────────────────────────────────────
+// ASSISTANT FEEDBACK — thumbs up/down per answer
+// ─────────────────────────────────────────────
+
+model AssistantFeedback {
+  id           String   @id @default(uuid()) @db.Char(36)
+  userId       String?  @db.Char(36)
+  sessionId    String   @db.VarChar(100)
+  // Index of the rated message within that session's message list.
+  messageIndex Int
+  rating       String   @db.VarChar(4) // 'up'|'down'
+  // KB sources shown alongside the rated answer — lets us see which
+  // articles correlate with negative feedback without re-running retrieval.
+  sources      Json?
+  comment      String?  @db.VarChar(500)
+  createdAt    DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([sessionId])
+  @@map("assistant_feedback")
 }
 
 // ─────────────────────────────────────────────

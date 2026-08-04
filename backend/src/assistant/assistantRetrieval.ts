@@ -1,4 +1,11 @@
 import { prisma } from '../config/db'
+import { features } from '../config/features'
+import {
+  getKbIndex,
+  PINECONE_RERANK_MODEL,
+  CHUNK_TEXT_FIELD,
+  type KbChunkMetadata,
+} from '../config/pinecone'
 
 export interface RetrievedChunk {
   id:        string
@@ -67,9 +74,55 @@ export const classifyIntent = (
   return 'general'
 }
 
+// ── Semantic search (Pinecone, embeddings) ─────────────────────
+// Primary retrieval path when AI_SEMANTIC_SEARCH_ENABLED is on — catches
+// paraphrases and synonyms that keyword FULLTEXT search misses (e.g. "what
+// happens if the guy doesn't show up" retrieving the cancellation policy).
+// Returns null (never []) on anything short of a clean result, so the
+// caller can tell "no hits" apart from "couldn't search" and fall back.
+
+const retrieveChunksSemantic = async (
+  query: string,
+  lang:  'ne' | 'en',
+  limit: number
+): Promise<RetrievedChunk[] | null> => {
+  const index = getKbIndex()
+  if (!index || !query.trim()) return null
+
+  try {
+    const response = await index.searchRecords({
+      query: {
+        topK:   Math.max(limit * 3, 10), // widen the pool before rerank narrows it
+        inputs: { text: query },
+        filter: { lang: { $in: [lang, 'en'] } },
+      },
+      rerank: {
+        model:      PINECONE_RERANK_MODEL,
+        rankFields: [CHUNK_TEXT_FIELD],
+        topN:       limit,
+      },
+      fields: [CHUNK_TEXT_FIELD, 'article_id', 'title', 'category'],
+    })
+
+    return response.result.hits.map((hit) => {
+      const fields = hit.fields as Partial<KbChunkMetadata>
+      return {
+        id:        fields.article_id ?? hit._id,
+        title:     fields.title ?? '',
+        content:   (fields[CHUNK_TEXT_FIELD] ?? '').slice(0, 1500),
+        category:  fields.category ?? '',
+        relevance: hit._score,
+      }
+    })
+  } catch (err) {
+    console.warn('Pinecone semantic search failed, falling back to FULLTEXT:', err)
+    return null
+  }
+}
+
 // ── MySQL FULLTEXT search ─────────────────────────────────────
 
-export const retrieveChunks = async (
+const retrieveChunksFullText = async (
   query:    string,
   lang:     'ne' | 'en',
   limit:    number = 5
@@ -131,4 +184,21 @@ export const retrieveChunks = async (
       relevance: 0.5,
     }))
   }
+}
+
+// ── Orchestrator ────────────────────────────────────────────────
+// Semantic search when enabled and configured; FULLTEXT/LIKE otherwise or
+// on any semantic-path failure. Same signature as the old retrieveChunks
+// so assistantService.ts doesn't need to know which path served a request.
+
+export const retrieveChunks = async (
+  query: string,
+  lang:  'ne' | 'en',
+  limit: number = 5
+): Promise<RetrievedChunk[]> => {
+  if (features.assistantSemanticSearch) {
+    const semantic = await retrieveChunksSemantic(query, lang, limit)
+    if (semantic) return semantic
+  }
+  return retrieveChunksFullText(query, lang, limit)
 }

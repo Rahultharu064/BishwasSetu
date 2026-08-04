@@ -20,7 +20,7 @@ const ACCESS_DENIED: InjectedContext = {
   summary: 'The requested context is not accessible to this user. Do not reveal any details about it — if asked, say you can only discuss the signed-in user\'s own bookings, complaints, or provider info.',
 }
 
-const isStaff = (requester: Requester) =>
+export const isStaff = (requester: Requester) =>
   requester.role === 'ADMIN' || requester.role === 'MODERATOR'
 
 // ── Booking context ───────────────────────────────────────────

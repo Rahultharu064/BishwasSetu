@@ -2,21 +2,60 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { Sparkles, X, Send, Bot, User, WifiOff } from "lucide-react";
-import { streamAssistantChat } from "@/lib/api";
+import { Sparkles, X, Send, Bot, User, WifiOff, ThumbsUp, ThumbsDown, RotateCcw } from "lucide-react";
+import { streamAssistantChat, sendAssistantFeedback } from "@/lib/api";
 import { useAuth } from "@/context/auth-context";
 import { useLang } from "@/context/language-context";
 import { cn } from "@/lib/utils";
 
+interface Source {
+  title: string;
+  category: string;
+}
+
 interface Msg {
   role: "user" | "assistant";
   content: string;
+  sources?: Source[];
+  feedback?: "up" | "down";
 }
 
 type ContextType = "booking" | "provider" | "complaint" | "credits" | "general";
 
 function newSessionId() {
   return `web_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+// Conversation is kept client-side only (localStorage) — the backend's Redis
+// session already expires after 30 minutes, so this is purely a UX cache to
+// survive page reloads, not a source of truth.
+const STORAGE_KEY = "bs_assistant_session";
+
+interface StoredSession {
+  sessionId: string;
+  messages: Msg[];
+}
+
+function loadStoredSession(): StoredSession | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as StoredSession;
+    if (!parsed.sessionId || !Array.isArray(parsed.messages)) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function saveStoredSession(session: StoredSession) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+  } catch {
+    /* storage full/unavailable — conversation just won't survive a reload */
+  }
 }
 
 const UUID_RE = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
@@ -63,6 +102,25 @@ export function AssistantWidget() {
   const sessionId = useRef<string>(newSessionId());
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const hydrated = useRef(false);
+
+  // Restore a conversation left over from before a reload — purely a UX
+  // cache (see STORAGE_KEY comment above), so any parse/shape issue just
+  // falls back to a fresh session instead of failing loudly.
+  useEffect(() => {
+    const stored = loadStoredSession();
+    if (stored) {
+      sessionId.current = stored.sessionId;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setMessages(stored.messages);
+    }
+    hydrated.current = true;
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated.current) return;
+    saveStoredSession({ sessionId: sessionId.current, messages });
+  }, [messages]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
@@ -74,6 +132,27 @@ export function AssistantWidget() {
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [open]);
+
+  // Cancel an in-flight Groq stream if the widget unmounts mid-answer —
+  // otherwise the backend keeps streaming (and the app keeps paying for
+  // tokens) for a response nobody is reading anymore.
+  useEffect(() => {
+    return () => abortRef.current?.abort();
+  }, []);
+
+  function close() {
+    if (streaming) abortRef.current?.abort();
+    setOpen(false);
+  }
+
+  function newChat() {
+    if (streaming) abortRef.current?.abort();
+    sessionId.current = newSessionId();
+    setMessages([]);
+    setError(null);
+    setStreaming(false);
+    saveStoredSession({ sessionId: sessionId.current, messages: [] });
+  }
 
   async function send(text: string) {
     const trimmed = text.trim();
@@ -92,11 +171,17 @@ export function AssistantWidget() {
         ...contextForRoute(pathname, user?.providerId),
       },
       {
+        onMeta: (meta) =>
+          setMessages((m) => {
+            const copy = [...m];
+            copy[copy.length - 1] = { ...copy[copy.length - 1], sources: meta.sources };
+            return copy;
+          }),
         onToken: (t) =>
           setMessages((m) => {
             const copy = [...m];
             copy[copy.length - 1] = {
-              role: "assistant",
+              ...copy[copy.length - 1],
               content: copy[copy.length - 1].content + t,
             };
             return copy;
@@ -117,6 +202,26 @@ export function AssistantWidget() {
     );
   }
 
+  async function rate(index: number, rating: "up" | "down") {
+    const target = messages[index];
+    if (!target || target.feedback) return;
+    setMessages((m) => {
+      const copy = [...m];
+      copy[index] = { ...copy[index], feedback: rating };
+      return copy;
+    });
+    try {
+      await sendAssistantFeedback({
+        sessionId: sessionId.current,
+        messageIndex: index,
+        rating,
+        sources: target.sources,
+      });
+    } catch {
+      /* best-effort — losing a feedback vote isn't worth surfacing an error */
+    }
+  }
+
   return (
     <>
       {/* FAB — persistent on all screens (ux.md §11) */}
@@ -134,7 +239,7 @@ export function AssistantWidget() {
         <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-end sm:justify-end sm:p-6">
           <div
             className="absolute inset-0 bg-foreground/30 backdrop-blur-sm sm:hidden"
-            onClick={() => setOpen(false)}
+            onClick={close}
             aria-hidden
           />
           <div
@@ -153,8 +258,18 @@ export function AssistantWidget() {
                   {tr("assistant.subtitle")}
                 </p>
               </div>
+              {messages.length > 0 && (
+                <button
+                  onClick={newChat}
+                  aria-label={tr("assistant.newChat")}
+                  title={tr("assistant.newChat")}
+                  className="rounded-full p-1.5 text-muted-foreground hover:bg-secondary"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </button>
+              )}
               <button
-                onClick={() => setOpen(false)}
+                onClick={close}
                 aria-label={tr("assistant.close")}
                 className="rounded-full p-1.5 text-muted-foreground hover:bg-secondary"
               >
@@ -192,49 +307,95 @@ export function AssistantWidget() {
                 </div>
               )}
 
-              {messages.map((m, i) => (
-                <div
-                  key={i}
-                  className={cn(
-                    "flex gap-2",
-                    m.role === "user" ? "flex-row-reverse" : "flex-row"
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "flex h-7 w-7 shrink-0 items-center justify-center rounded-full",
-                      m.role === "user"
-                        ? "bg-secondary text-foreground"
-                        : "bg-primary-soft text-primary"
+              {messages.map((m, i) => {
+                const isLast = i === messages.length - 1;
+                const settled = m.role === "assistant" && m.content !== "" && !(streaming && isLast);
+                return (
+                  <div key={i} className={cn("flex flex-col gap-1", m.role === "user" ? "items-end" : "items-start")}>
+                    <div
+                      className={cn(
+                        "flex gap-2",
+                        m.role === "user" ? "flex-row-reverse" : "flex-row"
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "flex h-7 w-7 shrink-0 items-center justify-center rounded-full",
+                          m.role === "user"
+                            ? "bg-secondary text-foreground"
+                            : "bg-primary-soft text-primary"
+                        )}
+                      >
+                        {m.role === "user" ? (
+                          <User className="h-4 w-4" />
+                        ) : (
+                          <Bot className="h-4 w-4" />
+                        )}
+                      </span>
+                      <div
+                        className={cn(
+                          "max-w-[75%] whitespace-pre-wrap rounded-2xl px-3.5 py-2 text-sm leading-relaxed",
+                          m.role === "user"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-secondary text-foreground"
+                        )}
+                      >
+                        {m.content ||
+                          (streaming && isLast ? (
+                            <span className="inline-flex gap-1">
+                              <Dot delay={0} />
+                              <Dot delay={150} />
+                              <Dot delay={300} />
+                            </span>
+                          ) : (
+                            ""
+                          ))}
+                      </div>
+                    </div>
+
+                    {settled && m.sources && m.sources.length > 0 && (
+                      <div className="ml-9 flex flex-wrap gap-1.5">
+                        {m.sources.map((s, si) => (
+                          <span
+                            key={si}
+                            title={s.title}
+                            className="rounded-full border border-border px-2 py-0.5 text-[11px] text-muted-foreground"
+                          >
+                            {s.title}
+                          </span>
+                        ))}
+                      </div>
                     )}
-                  >
-                    {m.role === "user" ? (
-                      <User className="h-4 w-4" />
-                    ) : (
-                      <Bot className="h-4 w-4" />
+
+                    {settled && (
+                      <div className="ml-9 flex items-center gap-1">
+                        <button
+                          onClick={() => rate(i, "up")}
+                          disabled={!!m.feedback}
+                          aria-label={tr("assistant.feedbackUp")}
+                          className={cn(
+                            "rounded-full p-1 text-muted-foreground hover:bg-secondary disabled:hover:bg-transparent",
+                            m.feedback === "up" && "text-primary"
+                          )}
+                        >
+                          <ThumbsUp className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => rate(i, "down")}
+                          disabled={!!m.feedback}
+                          aria-label={tr("assistant.feedbackDown")}
+                          className={cn(
+                            "rounded-full p-1 text-muted-foreground hover:bg-secondary disabled:hover:bg-transparent",
+                            m.feedback === "down" && "text-warning"
+                          )}
+                        >
+                          <ThumbsDown className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     )}
-                  </span>
-                  <div
-                    className={cn(
-                      "max-w-[75%] whitespace-pre-wrap rounded-2xl px-3.5 py-2 text-sm leading-relaxed",
-                      m.role === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-secondary text-foreground"
-                    )}
-                  >
-                    {m.content ||
-                      (streaming && i === messages.length - 1 ? (
-                        <span className="inline-flex gap-1">
-                          <Dot delay={0} />
-                          <Dot delay={150} />
-                          <Dot delay={300} />
-                        </span>
-                      ) : (
-                        ""
-                      ))}
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               {error && (
                 <div className="flex items-center gap-2 rounded-lg bg-warning-soft p-3 text-sm text-warning">

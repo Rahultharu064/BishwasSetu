@@ -27,6 +27,16 @@ export const features = {
   /** RAG / Groq streaming assistant. Off until support volume justifies it. */
   aiAssistant: truthy(process.env.AI_ASSISTANT_ENABLED, false),
 
+  /**
+   * Semantic KB retrieval via Pinecone (embeddings) instead of MySQL
+   * FULLTEXT keyword search. Requires PINECONE_API_KEY and a populated
+   * index (see src/scripts/setupPineconeIndex.ts / reindexKbToPinecone.ts).
+   * Degrades to the FULLTEXT/LIKE path in assistantRetrieval.ts whenever
+   * this is off, the key is missing, or a Pinecone call fails — never
+   * blocks an answer.
+   */
+  assistantSemanticSearch: truthy(process.env.AI_SEMANTIC_SEARCH_ENABLED, false),
+
   /** Emergency "Find Me a Pro Now" dispatch. Needs provider density first. */
   emergencyDispatch: truthy(process.env.EMERGENCY_DISPATCH_ENABLED, false),
 

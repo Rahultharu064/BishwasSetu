@@ -813,9 +813,18 @@ export async function streamAssistantChat(
             type: string;
             content?: string;
             message?: string;
+            intent?: string;
+            lang?: "ne" | "en";
+            sources?: { title: string; category: string }[];
           };
           if (evt.type === "token" && evt.content) handlers.onToken(evt.content);
           else if (evt.type === "done") handlers.onDone();
+          else if (evt.type === "meta")
+            handlers.onMeta?.({
+              intent: evt.intent ?? "general",
+              lang: evt.lang ?? "en",
+              sources: evt.sources ?? [],
+            });
           else if (evt.type === "error")
             handlers.onError(evt.message ?? "Assistant error.");
         } catch {
@@ -827,4 +836,15 @@ export async function streamAssistantChat(
   } catch {
     handlers.onError("Connection dropped mid-answer.");
   }
+}
+
+/** Thumbs up/down on a specific assistant answer, tied to the KB sources shown alongside it. */
+export async function sendAssistantFeedback(body: {
+  sessionId: string;
+  messageIndex: number;
+  rating: "up" | "down";
+  sources?: { title: string; category: string }[];
+  comment?: string;
+}): Promise<void> {
+  await apiRequest("/assistant/feedback", { method: "POST", body, auth: true });
 }

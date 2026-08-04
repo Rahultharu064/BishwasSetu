@@ -29,9 +29,23 @@ export const getHistory = async (
   try {
     const data = await AssistantService.getSessionHistory(
       requireString(req.params.sessionId, "sessionId"),
-      req.user!.id
+      { id: req.user!.id, role: req.user!.role, providerId: req.user!.providerId }
     )
     sendSuccess(res, data)
+  } catch (err: any) {
+    err.code ? sendError(res, err.message, err.code, err.status) : next(err)
+  }
+}
+
+// POST /api/v1/assistant/feedback
+export const submitFeedback = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const data = await AssistantService.submitFeedback(req.body, req.user)
+    sendSuccess(res, data, 'Feedback recorded', 201)
   } catch (err: any) {
     err.code ? sendError(res, err.message, err.code, err.status) : next(err)
   }

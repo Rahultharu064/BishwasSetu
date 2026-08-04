@@ -9,8 +9,9 @@ import {
   retrieveChunks,
   RetrievedChunk,
 } from '../assistant/assistantRetrieval'
-import { fetchContext, type Requester } from '../assistant/assistantContext'
-import type { ChatInput }    from '../validators/assistantValidator'
+import { fetchContext, isStaff, type Requester } from '../assistant/assistantContext'
+import { syncArticleToPinecone, deleteArticleFromPinecone } from '../assistant/pineconeSync'
+import type { ChatInput, FeedbackInput } from '../validators/assistantValidator'
 
 const SESSION_TTL = 30 * 60          // 30 minutes in seconds
 const MAX_HISTORY = 10               // keep last 10 turns in context
@@ -233,15 +234,19 @@ const persistSessionToDB = async (
 }
 
 // ── GET session history ───────────────────────────────────────
+// Scoped to whoever owns the session (or staff) — sessionId alone must never
+// be enough to read another user's conversation, since it's a client-chosen,
+// fairly guessable string (see newSessionId() in the frontend widget).
 
 export const getSessionHistory = async (
   sessionId: string,
-  userId:    string
+  requester: Requester
 ) => {
   const session = await prisma.assistantSession.findUnique({
     where:  { sessionId },
     select: {
       sessionId:   true,
+      userId:      true,
       contextType: true,
       messages:    true,
       createdAt:   true,
@@ -253,10 +258,37 @@ export const getSessionHistory = async (
     throw { code: 'SESSION_NOT_FOUND', message: 'Session not found', status: 404 }
   }
 
-  return session
+  const owns = isStaff(requester) || (!!requester.id && session.userId === requester.id)
+  if (!owns) {
+    throw { code: 'SESSION_NOT_FOUND', message: 'Session not found', status: 404 }
+  }
+
+  const { userId: _userId, ...rest } = session
+  return rest
+}
+
+// ── POST feedback (thumbs up/down) on a specific answer ───────────────────
+
+export const submitFeedback = async (
+  input:     FeedbackInput,
+  requester: Requester | undefined
+) => {
+  return prisma.assistantFeedback.create({
+    data: {
+      userId:       requester?.id,
+      sessionId:    input.sessionId,
+      messageIndex: input.messageIndex,
+      rating:       input.rating,
+      sources:      input.sources,
+      comment:      input.comment,
+    },
+  })
 }
 
 // ── Admin: KB article management ─────────────────────────────
+// Every write keeps the Pinecone semantic index in sync (best-effort — see
+// pineconeSync.ts) so admins never have to remember to run a manual reindex
+// after editing an article through this API.
 
 export const createKbArticle = async (input: {
   category: string
@@ -265,6 +297,7 @@ export const createKbArticle = async (input: {
   lang:     string
 }) => {
   const article = await prisma.kbArticle.create({ data: input })
+  await syncArticleToPinecone(article)
   return article
 }
 
@@ -272,11 +305,14 @@ export const updateKbArticle = async (
   id:    string,
   input: Partial<{ category: string; title: string; content: string; lang: string }>
 ) => {
-  return prisma.kbArticle.update({ where: { id }, data: input })
+  const article = await prisma.kbArticle.update({ where: { id }, data: input })
+  await syncArticleToPinecone(article)
+  return article
 }
 
 export const deleteKbArticle = async (id: string) => {
   await prisma.kbArticle.delete({ where: { id } })
+  await deleteArticleFromPinecone(id)
   return { message: 'Article deleted' }
 }
 

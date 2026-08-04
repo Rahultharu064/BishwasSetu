@@ -174,6 +174,9 @@ export const STRINGS = {
   "assistant.inputPlaceholder": { en: "Type your question…", ne: "आफ्नो प्रश्न लेख्नुहोस्…" },
   "assistant.send": { en: "Send", ne: "पठाउनुहोस्" },
   "assistant.message": { en: "Message", ne: "सन्देश" },
+  "assistant.newChat": { en: "New chat", ne: "नयाँ कुराकानी" },
+  "assistant.feedbackUp": { en: "Helpful", ne: "उपयोगी" },
+  "assistant.feedbackDown": { en: "Not helpful", ne: "उपयोगी छैन" },
 
   "assistant.guest1": { en: "What is BishwasSetu?", ne: "बिश्वासेतु के हो?" },
   "assistant.guest2": { en: "How does it work?", ne: "यसले कसरी काम गर्छ?" },

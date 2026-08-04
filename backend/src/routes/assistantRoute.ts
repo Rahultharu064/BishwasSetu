@@ -1,17 +1,27 @@
 import { Router } from 'express'
 import * as AssistantController from '../controllers/assistantController'
 import { protect, restrictTo, optionalAuth } from '../middlewares/authMiddleware'
+import { assistantLimiter }    from '../middlewares/rateMiddleware'
 import { validate }            from '../middlewares/validateMiddleware'
-import { ChatSchema, KbArticleSchema } from '../validators/assistantValidator'
+import { ChatSchema, FeedbackSchema, KbArticleSchema } from '../validators/assistantValidator'
 
 const router = Router()
 
 
 router.post(
   '/chat',
+  assistantLimiter,
   optionalAuth,
   validate(ChatSchema),
   AssistantController.chat
+)
+
+router.post(
+  '/feedback',
+  assistantLimiter,
+  optionalAuth,
+  validate(FeedbackSchema),
+  AssistantController.submitFeedback
 )
 
 // ── Authenticated history ──────────────────────────────────────

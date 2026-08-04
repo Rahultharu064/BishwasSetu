@@ -20,5 +20,21 @@ export const KbArticleSchema = z.object({
   content:  z.string().min(10).max(10000).trim(),
   lang:     z.enum(['ne', 'en']).default('ne'),
 })
+
+export const FeedbackSchema = z.object({
+  sessionId:    z.string().min(1).max(100),
+  messageIndex: z.number().int().min(0),
+  rating:       z.enum(['up', 'down']),
+  // Sources shown alongside the rated answer — passed through from the
+  // 'meta' SSE event the client already received, so we don't need to
+  // re-run retrieval just to know what the answer was grounded in.
+  sources:      z.array(z.object({
+    title:    z.string(),
+    category: z.string(),
+  })).max(10).default([]),
+  comment:      z.string().max(500).trim().optional(),
+})
+
 export type ChatInput      = z.infer<typeof ChatSchema>
 export type KbArticleInput = z.infer<typeof KbArticleSchema>
+export type FeedbackInput  = z.infer<typeof FeedbackSchema>
