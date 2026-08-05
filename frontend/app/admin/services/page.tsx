@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Layers,
   ChevronRight,
@@ -8,6 +8,11 @@ import {
   Pencil,
   Power,
   Users,
+  Search,
+  X,
+  FolderTree,
+  ListTree,
+  Wrench,
 } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { useFetch } from "@/lib/use-fetch";
@@ -25,6 +30,7 @@ import { Sheet } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState, ErrorState } from "@/components/ui/states";
+import { StatCard } from "@/components/ui/stat-card";
 
 function slugify(s: string): string {
   return s
@@ -50,6 +56,7 @@ export default function AdminServicesPage() {
   const [openSubs, setOpenSubs] = useState<Set<string>>(new Set());
   const [target, setTarget] = useState<FormTarget | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
 
   function toggleSet(
     set: Set<string>,
@@ -82,7 +89,67 @@ export default function AdminServicesPage() {
     }
   }
 
-  const categories = req.data ?? [];
+  const categories = useMemo(() => req.data ?? [], [req.data]);
+
+  // Catalog-wide counters for the stat row — computed client-side from the
+  // same tree the list renders, so there's no separate summary endpoint to
+  // keep in sync.
+  const catalogStats = useMemo(() => {
+    let activeCategories = 0;
+    let totalSubCategories = 0;
+    let activeSubCategories = 0;
+    let totalServices = 0;
+    let activeServices = 0;
+    let totalProviders = 0;
+    for (const cat of categories) {
+      if (cat.isActive) activeCategories++;
+      totalProviders += cat._count.providers;
+      for (const sub of cat.subCategories) {
+        totalSubCategories++;
+        if (sub.isActive) activeSubCategories++;
+        for (const svc of sub.services) {
+          totalServices++;
+          if (svc.isActive) activeServices++;
+        }
+      }
+    }
+    return {
+      totalCategories: categories.length,
+      activeCategories,
+      totalSubCategories,
+      activeSubCategories,
+      totalServices,
+      activeServices,
+      totalProviders,
+    };
+  }, [categories]);
+
+  // Client-side search across all three levels — a category matches (and
+  // shows in full) if its own name matches; otherwise only its matching
+  // sub-categories/services survive the filter.
+  const filteredCategories = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return categories;
+    return categories.flatMap((cat) => {
+      const catMatches = cat.name.toLowerCase().includes(q);
+      const subCategories = cat.subCategories.flatMap((sub) => {
+        if (catMatches) return [sub];
+        const subMatches = sub.name.toLowerCase().includes(q);
+        const services = sub.services.filter((s) =>
+          s.name.toLowerCase().includes(q)
+        );
+        if (subMatches) return [sub];
+        if (services.length > 0) return [{ ...sub, services }];
+        return [];
+      });
+      if (catMatches || subCategories.length > 0) {
+        return [{ ...cat, subCategories }];
+      }
+      return [];
+    });
+  }, [categories, query]);
+
+  const searching = query.trim().length > 0;
 
   return (
     <div>
@@ -101,6 +168,61 @@ export default function AdminServicesPage() {
           <Plus className="h-4 w-4" /> New category
         </Button>
       </div>
+
+      {!req.loading && !req.error && categories.length > 0 && (
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            tone="primary"
+            icon={<FolderTree className="h-5 w-5" />}
+            label="Categories"
+            value={String(catalogStats.totalCategories)}
+            sub={`${catalogStats.activeCategories} active`}
+          />
+          <StatCard
+            tone="skilled"
+            icon={<ListTree className="h-5 w-5" />}
+            label="Sub-categories"
+            value={String(catalogStats.totalSubCategories)}
+            sub={`${catalogStats.activeSubCategories} active`}
+          />
+          <StatCard
+            tone="skilled"
+            icon={<Wrench className="h-5 w-5" />}
+            label="Services"
+            value={String(catalogStats.totalServices)}
+            sub={`${catalogStats.activeServices} active`}
+          />
+          <StatCard
+            tone="primary"
+            icon={<Users className="h-5 w-5" />}
+            label="Providers listed"
+            value={catalogStats.totalProviders.toLocaleString()}
+            sub="across all categories"
+          />
+        </div>
+      )}
+
+      {!req.loading && !req.error && categories.length > 0 && (
+        <div className="relative mt-5 max-w-sm">
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search categories, sub-categories, services…"
+            className="pl-10 pr-9"
+            aria-label="Search catalog"
+          />
+          {query && (
+            <button
+              onClick={() => setQuery("")}
+              aria-label="Clear search"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-muted-foreground hover:bg-secondary"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="mt-5">
         {req.loading ? (
@@ -121,10 +243,17 @@ export default function AdminServicesPage() {
               onClick: () => setTarget({ level: "category", mode: "create" }),
             }}
           />
+        ) : searching && filteredCategories.length === 0 ? (
+          <EmptyState
+            title="No matches"
+            description={`Nothing in the catalog matches "${query.trim()}".`}
+            icon={<Search className="h-8 w-8" />}
+            action={{ label: "Clear search", onClick: () => setQuery("") }}
+          />
         ) : (
           <ul className="space-y-3">
-            {categories.map((cat) => {
-              const isOpen = openCats.has(cat.id);
+            {filteredCategories.map((cat) => {
+              const isOpen = searching || openCats.has(cat.id);
               return (
                 <li
                   key={cat.id}
@@ -207,7 +336,7 @@ export default function AdminServicesPage() {
                       ) : (
                         <ul className="space-y-2.5">
                           {cat.subCategories.map((sub) => {
-                            const subOpen = openSubs.has(sub.id);
+                            const subOpen = searching || openSubs.has(sub.id);
                             return (
                               <li
                                 key={sub.id}
@@ -423,7 +552,7 @@ export default function AdminServicesPage() {
   );
 }
 
-// ── Category form ────────────────────────────────────────────
+// ── Category form ────────────────────────────────
 
 function CategoryForm({
   initial,
@@ -489,7 +618,7 @@ function CategoryForm({
           id="cat-name-np"
           value={nameNp}
           onChange={(e) => setNameNp(e.target.value)}
-          placeholder="प्लम्बिङ"
+          placeholder="प्लम्बिङ्"
         />
       </div>
       <div>
@@ -530,7 +659,7 @@ function CategoryForm({
   );
 }
 
-// ── Sub-category form ────────────────────────────────────────
+// ── Sub-category form ────────────────────────────
 
 function SubCategoryForm({
   categoryId,
@@ -627,7 +756,7 @@ function SubCategoryForm({
   );
 }
 
-// ── Service form ─────────────────────────────────────────────
+// ── Service form ───────────────────────────────
 
 const PRICING_TYPES = [
   { value: "fixed", label: "Fixed" },

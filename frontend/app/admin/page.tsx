@@ -23,12 +23,12 @@ import type {
   RevenueAnalytics,
   BookingTrendPoint,
 } from "@/lib/admin-types";
-import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/ui/states";
 import { Badge } from "@/components/ui/badge";
 import { BarChart, type BarChartDatum } from "@/components/ui/bar-chart";
 import { SectionCard } from "@/components/ui/section-card";
+import { StatCard } from "@/components/ui/stat-card";
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -150,59 +150,61 @@ export default function AdminDashboardPage() {
           </Link>
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Stat
+            <StatCard
               tone="primary"
               icon={<Users className="h-5 w-5" />}
               label="Active users"
               value={data.users.total.toLocaleString()}
               sub={`+${data.users.newThisWeek} this week`}
             />
-            <Stat
+            <StatCard
               tone="skilled"
               icon={<ShieldCheck className="h-5 w-5" />}
               label="Verified providers"
               value={data.providers.verified.toLocaleString()}
               sub={`of ${data.providers.total} total`}
             />
-            <Stat
+            <StatCard
               tone="primary"
               icon={<TrendingUp className="h-5 w-5" />}
               label="Avg trust score"
               value={String(data.providers.avgTrustScore)}
               sub="verified providers"
             />
-            <Stat
+            <StatCard
               tone="skilled"
               icon={<CalendarCheck className="h-5 w-5" />}
               label="Bookings (30d)"
               value={data.bookings.thisMonth.toLocaleString()}
               sub={`${data.bookings.completed} completed all-time`}
             />
-            <Stat
+            <StatCard
               tone="primary"
               icon={<Coins className="h-5 w-5" />}
               label="Commission (30d)"
               value={npr(data.revenue.monthlyCommissionNpr)}
               sub={`${data.revenue.monthlyBookings} paid bookings`}
             />
-            <Stat
+            <StatCard
               tone="primary"
               icon={<Coins className="h-5 w-5" />}
               label="Commission (all-time)"
               value={npr(data.revenue.totalCommissionNpr)}
             />
-            <Stat
+            <StatCard
               tone={data.complaints.critical > 0 ? "urgent" : "neutral"}
               icon={<MessageSquareWarning className="h-5 w-5" />}
               label="Open complaints"
               value={String(data.complaints.open)}
               sub={data.complaints.critical > 0 ? `${data.complaints.critical} critical` : "none critical"}
+              href="/admin/complaints"
             />
-            <Stat
+            <StatCard
               tone={data.providers.pendingKycReview > 0 ? "warning" : "neutral"}
               icon={<ClipboardCheck className="h-5 w-5" />}
               label="Pending KYC"
               value={String(data.providers.pendingKycReview)}
+              href="/admin/kyc"
             />
           </div>
         </>
@@ -284,44 +286,6 @@ function RevenueStream({
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
       <p className="tabular mt-0.5 text-lg font-bold">{value}</p>
       <p className="text-xs text-muted-foreground">{sub}</p>
-    </div>
-  );
-}
-
-const STAT_TONE = {
-  primary: "bg-primary-soft text-primary",
-  skilled: "bg-skilled-soft text-skilled",
-  warning: "bg-warning-soft text-warning",
-  urgent: "bg-urgent-soft text-urgent",
-  neutral: "bg-secondary text-secondary-foreground",
-} as const;
-
-function Stat({
-  icon,
-  label,
-  value,
-  sub,
-  tone = "neutral",
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  sub?: string;
-  tone?: keyof typeof STAT_TONE;
-}) {
-  return (
-    <div className="rounded-xl border border-border bg-card p-4 shadow-sm transition-shadow hover:shadow-md">
-      <span
-        className={cn(
-          "flex h-9 w-9 items-center justify-center rounded-full",
-          STAT_TONE[tone]
-        )}
-      >
-        {icon}
-      </span>
-      <p className="tabular mt-3 text-2xl font-bold">{value}</p>
-      <p className="text-sm font-medium text-muted-foreground">{label}</p>
-      {sub && <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>}
     </div>
   );
 }
