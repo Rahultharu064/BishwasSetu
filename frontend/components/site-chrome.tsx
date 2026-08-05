@@ -10,14 +10,20 @@ import { AssistantWidget } from "./assistant/assistant-widget";
 // sidebar, top bar, logout — so the public marketing header/footer/bottom-nav
 // and customer-facing assistant widget would be redundant chrome stacked on
 // top of it. Gated here (one place) instead of at every /admin/* page.
-function isAdminRoute(pathname: string): boolean {
-  return pathname === "/admin" || pathname.startsWith("/admin/") || pathname.startsWith("/admin-login");
+function isAppRoute(pathname: string): boolean {
+  return (
+    pathname === "/admin" ||
+    pathname.startsWith("/admin/") ||
+    pathname.startsWith("/admin-login") ||
+    pathname === "/provider" ||
+    pathname.startsWith("/provider/")
+  );
 }
 
 export function SiteChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
-  if (isAdminRoute(pathname)) {
+  if (isAppRoute(pathname)) {
     return <>{children}</>;
   }
 

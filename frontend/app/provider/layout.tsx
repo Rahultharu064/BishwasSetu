@@ -54,7 +54,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
 ];
 
 const NAV_FOOTER: NavItem[] = [
-  { href: "/account/settings", label: "Settings", icon: Settings },
+  { href: "/provider/settings", label: "Settings", icon: Settings },
 ];
 
 const NAV_FLAT = [...NAV_GROUPS.flatMap((g) => g.items), ...NAV_FOOTER];
@@ -211,9 +211,7 @@ export default function ProviderLayout({
           href="/provider"
           className="flex h-16 shrink-0 items-center gap-2 border-b border-border px-4 font-bold"
         >
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground text-background">
-            <Briefcase className="h-4 w-4" />
-          </span>
+          <img src="/LOGO.png" alt="BishwasSetu Logo" className="h-8 w-auto" />
           <span className="text-sm">
             Bishwas<span className="text-primary">Setu</span>{" "}
             <span className="text-muted-foreground">Pro</span>
@@ -242,9 +240,7 @@ export default function ProviderLayout({
             onClick={() => setSidebarOpen(false)}
             className="flex items-center gap-2 font-bold"
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground text-background">
-              <Briefcase className="h-4 w-4" />
-            </span>
+            <img src="/LOGO.png" alt="BishwasSetu Logo" className="h-8 w-auto" />
             <span className="text-sm">
               Bishwas<span className="text-primary">Setu</span>{" "}
               <span className="text-muted-foreground">Pro</span>
@@ -272,9 +268,7 @@ export default function ProviderLayout({
               <Menu className="h-5 w-5" />
             </button>
             <Link href="/provider" className="flex items-center gap-2 font-bold md:hidden">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground text-background">
-                <Briefcase className="h-4 w-4" />
-              </span>
+              <img src="/LOGO.png" alt="BishwasSetu Logo" className="h-8 w-auto" />
             </Link>
 
             <h1 className="truncate text-sm font-semibold text-foreground">

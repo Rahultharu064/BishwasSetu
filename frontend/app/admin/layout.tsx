@@ -243,9 +243,7 @@ export default function AdminLayout({
           href="/admin"
           className="flex h-16 shrink-0 items-center gap-2 border-b border-border px-4 font-bold"
         >
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground text-background">
-            <ShieldAlert className="h-4 w-4" />
-          </span>
+          <img src="/LOGO.png" alt="BishwasSetu Logo" className="h-8 w-auto" />
           <span className="text-sm">
             Bishwas<span className="text-primary">Setu</span>{" "}
             <span className="text-muted-foreground">Admin</span>
@@ -282,9 +280,7 @@ export default function AdminLayout({
             onClick={() => setSidebarOpen(false)}
             className="flex items-center gap-2 font-bold"
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground text-background">
-              <ShieldAlert className="h-4 w-4" />
-            </span>
+            <img src="/LOGO.png" alt="BishwasSetu Logo" className="h-8 w-auto" />
             <span className="text-sm">
               Bishwas<span className="text-primary">Setu</span>{" "}
               <span className="text-muted-foreground">Admin</span>
@@ -315,9 +311,7 @@ export default function AdminLayout({
               <Menu className="h-5 w-5" />
             </button>
             <Link href="/admin" className="flex items-center gap-2 font-bold md:hidden">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground text-background">
-                <ShieldAlert className="h-4 w-4" />
-              </span>
+              <img src="/LOGO.png" alt="BishwasSetu Logo" className="h-8 w-auto" />
             </Link>
 
             <h1 className="truncate text-sm font-semibold text-foreground">
