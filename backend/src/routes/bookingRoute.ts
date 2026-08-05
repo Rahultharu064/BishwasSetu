@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import * as BookingController from '../controllers/bookingController'
 import * as PaymentController from '../controllers/paymentController'
-import { authMiddleware, protect, restrictTo, requireVerifiedProvider } from '../middlewares/authMiddleware'
+import { authMiddleware, protect, restrictTo } from '../middlewares/authMiddleware'
 import { validate } from '../middlewares/validateMiddleware'
 import {
   CreateBookingSchema,
@@ -32,7 +32,6 @@ router.get(
 router.get(
   '/provider/me',
   restrictTo('PROVIDER'),
-  requireVerifiedProvider,
   BookingController.getProviderBookings
 )
 

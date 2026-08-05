@@ -69,8 +69,14 @@ export const getProviderBookings = async (
   req: Request, res: Response, next: NextFunction
 ): Promise<void> => {
   try {
+    // Guard: provider role without a linked provider profile (onboarding incomplete)
+    if (!req.user?.providerId) {
+      sendError(res, 'Complete your provider onboarding before viewing bookings.', 'PROVIDER_NOT_FOUND', 403)
+      return
+    }
+
     const data = await BookingService.getProviderBookings(
-      req.user!.providerId!,
+      req.user.providerId,
       {
         status: asString(req.query.status),
         page:   Number(req.query.page  ?? 1),
