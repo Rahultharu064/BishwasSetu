@@ -26,6 +26,8 @@ import type {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet } from "@/components/ui/sheet";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState, ErrorState } from "@/components/ui/states";
 import { TrustBadge } from "@/components/badges";
 
 const STATUS_META: Record<
@@ -217,44 +219,60 @@ export default function ProviderBadgesPage() {
         <h2 className="mb-2 text-sm font-semibold text-muted-foreground">
           Available badges
         </h2>
-        <div className="space-y-3">
-          {catalog.map((item) => {
-            const held = heldTypes.has(item.badgeType);
-            return (
-              <div
-                key={item.badgeType}
-                className="rounded-2xl border border-border bg-card p-5"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <TrustBadge type={item.badgeType} size="default" />
-                      {item.annual && (
-                        <span className="text-xs text-muted-foreground">/ year</span>
-                      )}
-                    </div>
-                    <p className="mt-2 text-sm text-foreground">{item.description}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {item.verificationStep}
-                    </p>
-                  </div>
-                  <span className="tabular shrink-0 text-lg font-bold text-primary">
-                    {npr(item.priceNpr)}
-                  </span>
-                </div>
-                <Button
-                  full
-                  className="mt-4"
-                  variant={held ? "outline" : "primary"}
-                  disabled={held}
-                  onClick={() => openBadge(item)}
+        {catalogReq.loading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-[132px] w-full rounded-2xl" />
+            ))}
+          </div>
+        ) : catalogReq.error ? (
+          <ErrorState message={catalogReq.error} onRetry={catalogReq.reload} />
+        ) : catalog.length === 0 ? (
+          <EmptyState
+            title="No badges available"
+            description="Check back shortly — we're refreshing the catalog."
+            action={{ label: "Retry", onClick: catalogReq.reload }}
+          />
+        ) : (
+          <div className="space-y-3">
+            {catalog.map((item) => {
+              const held = heldTypes.has(item.badgeType);
+              return (
+                <div
+                  key={item.badgeType}
+                  className="rounded-2xl border border-border bg-card p-5"
                 >
-                  {held ? "Already held or pending" : "Get this badge"}
-                </Button>
-              </div>
-            );
-          })}
-        </div>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <TrustBadge type={item.badgeType} size="default" />
+                        {item.annual && (
+                          <span className="text-xs text-muted-foreground">/ year</span>
+                        )}
+                      </div>
+                      <p className="mt-2 text-sm text-foreground">{item.description}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {item.verificationStep}
+                      </p>
+                    </div>
+                    <span className="tabular shrink-0 text-lg font-bold text-primary">
+                      {npr(item.priceNpr)}
+                    </span>
+                  </div>
+                  <Button
+                    full
+                    className="mt-4"
+                    variant={held ? "outline" : "primary"}
+                    disabled={held}
+                    onClick={() => openBadge(item)}
+                  >
+                    {held ? "Already held or pending" : "Get this badge"}
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       <p className="mt-4 flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground">

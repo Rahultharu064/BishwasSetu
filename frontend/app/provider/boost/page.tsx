@@ -12,6 +12,8 @@ import { npr } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet } from "@/components/ui/sheet";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState, ErrorState } from "@/components/ui/states";
 
 interface Pack {
   id: string;
@@ -22,20 +24,13 @@ interface Pack {
   bestValue?: boolean;
 }
 
-// PRD §6.3 credit packs — fallback when the catalog API is empty.
-const FALLBACK_PACKS: Pack[] = [
-  { id: "starter", name: "Starter", priceNpr: 99, credits: 50, perk: "1 week priority ranking + basic analytics" },
-  { id: "active", name: "Active", priceNpr: 249, credits: 150, perk: "3 weeks priority + homepage featured slot + full analytics + AI tips", bestValue: true },
-  { id: "pro", name: "Pro", priceNpr: 499, credits: 350, perk: "6 weeks priority + 2× search boost + direct message after booking" },
-];
-
 function packsFrom(data: unknown): Pack[] {
-  if (Array.isArray(data) && data.length) return data as Pack[];
+  if (Array.isArray(data)) return data as Pack[];
   if (data && typeof data === "object") {
     const arr = (data as { packs?: Pack[] }).packs;
-    if (Array.isArray(arr) && arr.length) return arr;
+    if (Array.isArray(arr)) return arr;
   }
-  return FALLBACK_PACKS;
+  return [];
 }
 
 function balanceFrom(data: unknown): number {
@@ -60,7 +55,6 @@ export default function BoostPage() {
   const walletReq = useFetch(() => api.creditWallet(), [isAuthenticated]);
 
   const packs = packsFrom(packsReq.data);
-  const usingFallback = packs === FALLBACK_PACKS;
   const balance = balanceFrom(walletReq.data);
 
   const [selected, setSelected] = useState<Pack | null>(null);
@@ -69,10 +63,6 @@ export default function BoostPage() {
 
   async function purchase() {
     if (!selected) return;
-    if (usingFallback) {
-      toast("Credit packs are unavailable right now. Please try again shortly.", "error");
-      return;
-    }
     setBusy(true);
     try {
       const returnUrl =
@@ -130,7 +120,11 @@ export default function BoostPage() {
         </span>
         <div>
           <p className="text-sm text-primary-foreground/80">Credit balance</p>
-          <p className="tabular text-2xl font-bold">{balance} credits</p>
+          {walletReq.loading ? (
+            <Skeleton className="mt-1 h-7 w-24 bg-white/15" />
+          ) : (
+            <p className="tabular text-2xl font-bold">{balance} credits</p>
+          )}
         </div>
       </div>
 
@@ -139,38 +133,56 @@ export default function BoostPage() {
         Credits fund priority placement — never a paid override of trust scores.
       </p>
 
-      <div className="mt-5 space-y-3">
-        {packs.map((p) => (
-          <button
-            key={p.id}
-            onClick={() => setSelected(p)}
-            className={`flex w-full items-center gap-4 rounded-2xl border p-5 text-left transition-colors ${
-              p.bestValue
-                ? "border-primary bg-primary-soft/40"
-                : "border-border bg-card hover:border-primary/40"
-            }`}
-          >
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <p className="font-bold">{p.name}</p>
-                {p.bestValue && (
-                  <Badge variant="primary" size="sm">
-                    Best value
-                  </Badge>
-                )}
-              </div>
-              <p className="tabular mt-0.5 text-sm text-muted-foreground">
-                {p.credits} credits
-              </p>
-              {p.perk && (
-                <p className="mt-1.5 text-xs text-muted-foreground">{p.perk}</p>
-              )}
-            </div>
-            <span className="tabular text-lg font-bold text-primary">
-              {npr(p.priceNpr)}
-            </span>
-          </button>
-        ))}
+      <div className="mt-5">
+        {packsReq.loading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-[92px] w-full rounded-2xl" />
+            ))}
+          </div>
+        ) : packsReq.error ? (
+          <ErrorState message={packsReq.error} onRetry={packsReq.reload} />
+        ) : packs.length === 0 ? (
+          <EmptyState
+            title="No credit packs available"
+            description="We're refreshing the catalog — check back shortly."
+            action={{ label: "Retry", onClick: packsReq.reload }}
+          />
+        ) : (
+          <div className="space-y-3">
+            {packs.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => setSelected(p)}
+                className={`flex w-full items-center gap-4 rounded-2xl border p-5 text-left transition-colors ${
+                  p.bestValue
+                    ? "border-primary bg-primary-soft/40"
+                    : "border-border bg-card hover:border-primary/40"
+                }`}
+              >
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="font-bold">{p.name}</p>
+                    {p.bestValue && (
+                      <Badge variant="primary" size="sm">
+                        Best value
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="tabular mt-0.5 text-sm text-muted-foreground">
+                    {p.credits} credits
+                  </p>
+                  {p.perk && (
+                    <p className="mt-1.5 text-xs text-muted-foreground">{p.perk}</p>
+                  )}
+                </div>
+                <span className="tabular text-lg font-bold text-primary">
+                  {npr(p.priceNpr)}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
