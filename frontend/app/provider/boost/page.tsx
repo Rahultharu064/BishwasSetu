@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Coins, Check, TrendingUp, Lock } from "lucide-react";
-import { api, ApiError } from "@/lib/api";
+import { api, ApiError, API_BASE } from "@/lib/api";
 import { useFetch } from "@/lib/use-fetch";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/context/toast-context";
@@ -60,6 +60,7 @@ export default function BoostPage() {
   const walletReq = useFetch(() => api.creditWallet(), [isAuthenticated]);
 
   const packs = packsFrom(packsReq.data);
+  const usingFallback = packs === FALLBACK_PACKS;
   const balance = balanceFrom(walletReq.data);
 
   const [selected, setSelected] = useState<Pack | null>(null);
@@ -68,18 +69,45 @@ export default function BoostPage() {
 
   async function purchase() {
     if (!selected) return;
+    if (usingFallback) {
+      toast("Credit packs are unavailable right now. Please try again shortly.", "error");
+      return;
+    }
     setBusy(true);
     try {
-      await api.purchaseCredits({ packId: selected.id, paymentMethod: method });
-      toast(`${selected.credits} credits added to your wallet.`, "success");
-      setSelected(null);
-      walletReq.reload();
+      const returnUrl =
+        method === "KHALTI"
+          ? `${API_BASE}/payments/khalti/return`
+          : `${API_BASE}/payments/esewa/success`;
+      const result = await api.initiateCreditPurchase({
+        packId: selected.id,
+        paymentMethod: method,
+        returnUrl,
+      });
+      if (result.method === "ESEWA" && result.esewaParams && result.esewaUrl) {
+        // eSewa ePay v2 requires a signed POST form submit, not a GET redirect.
+        const form = document.createElement("form");
+        form.method = "POST";
+        form.action = result.esewaUrl;
+        for (const [key, value] of Object.entries(result.esewaParams)) {
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = key;
+          input.value = value;
+          form.appendChild(input);
+        }
+        document.body.appendChild(form);
+        form.submit();
+      } else if (result.paymentUrl) {
+        window.location.href = result.paymentUrl;
+      } else {
+        throw new Error("Payment gateway didn't return a redirect URL.");
+      }
     } catch (err) {
       toast(
         err instanceof ApiError ? err.message : "Purchase couldn't be completed.",
         "error"
       );
-    } finally {
       setBusy(false);
     }
   }
