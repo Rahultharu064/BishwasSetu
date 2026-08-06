@@ -8,12 +8,18 @@
  * Badges are display-only trust signals; they never alter the numeric trust
  * score (kept performance-earned per PRD §7).
  */
+import { randomUUID } from 'node:crypto'
 import { prisma } from '../config/db'
 import { features } from '../config/features'
-import { verifyKhaltiPayment, verifyEsewaPayment } from '../utils/payment'
+import {
+  verifyKhaltiPayment,
+  verifyEsewaPayment,
+  initiateKhaltiPayment,
+  initiateEsewaPayment,
+} from '../utils/payment'
 import { uploadToCloudinary, getSignedUrl } from '../utils/cloudinary'
 import { BADGE_CATALOG, isPurchasableBadge, type PurchasableBadge } from '../config/badgeCatalog'
-import type { PurchaseBadgeInput } from '../validators/badgeValidator'
+import type { PurchaseBadgeInput, InitiateBadgePurchaseInput } from '../validators/badgeValidator'
 
 const featureGuard = () => {
   if (!features.trustBadges) {
@@ -63,6 +69,59 @@ export const uploadBadgeDocument = async (
     documentId: result.publicId,
     fileType: ext,
   }
+}
+
+// ── POST /badges/initiate ────────────────────────────────────────
+// Kicks off the Khalti/eSewa checkout for a badge fee. The frontend must
+// send the user through the returned paymentUrl/formFields, then complete
+// the purchase via POST /badges/purchase with the real gateway ref.
+export const initiateBadgePurchase = async (
+  providerId: string,
+  input: InitiateBadgePurchaseInput
+) => {
+  featureGuard()
+
+  const { badgeType, paymentMethod, returnUrl } = input
+
+  if (!isPurchasableBadge(badgeType)) {
+    throw { code: 'INVALID_BADGE', message: 'This badge cannot be purchased', status: 400 }
+  }
+  const spec = BADGE_CATALOG[badgeType as PurchasableBadge]
+
+  const existing = await prisma.providerBadge.findFirst({
+    where: { providerId, badgeType, status: { in: ['ACTIVE', 'PENDING'] } },
+  })
+  if (existing) {
+    throw {
+      code: 'BADGE_ALREADY_HELD',
+      message:
+        existing.status === 'ACTIVE'
+          ? `You already hold the ${spec.label} badge`
+          : `Your ${spec.label} badge is already awaiting verification`,
+      status: 409,
+    }
+  }
+
+  const amountPaisa = spec.priceNpr * 100
+  const orderId = randomUUID()
+
+  if (paymentMethod === 'KHALTI') {
+    const result = await initiateKhaltiPayment({
+      amountPaisa,
+      purchaseOrderId: orderId,
+      purchaseOrderName: `${spec.label} badge`,
+      returnUrl,
+    })
+    return { method: 'KHALTI' as const, paymentUrl: result.paymentUrl }
+  }
+
+  const result = initiateEsewaPayment({
+    amountPaisa,
+    transactionUuid: orderId,
+    successUrl: returnUrl,
+    failureUrl: returnUrl,
+  })
+  return { method: 'ESEWA' as const, paymentUrl: result.paymentUrl, formFields: result.formFields }
 }
 
 // ── POST /badges/purchase ──────────────────────────────────────

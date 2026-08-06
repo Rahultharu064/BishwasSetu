@@ -108,25 +108,44 @@ export default function ProviderBadgesPage() {
     }
     setBusy(true);
     try {
-      // The Khalti/eSewa redirect returns this reference; wired the same way as
-      // the rest of the app's gateway flows.
-      const paymentRef = `${method}-${selected.badgeType}-${Date.now()}`;
-      const res = await api.purchaseBadge({
+      const returnUrl = `${window.location.origin}/provider/badges/payment-return`;
+      const result = await api.initiateBadgePurchase({
         badgeType: selected.badgeType,
         paymentMethod: method,
-        paymentRef,
-        documentUrl: doc?.url,
-        documentId: doc?.id,
+        returnUrl,
       });
-      toast(res.message, "success");
-      setSelected(null);
-      mineReq.reload();
+      // Stashed for the return page — the gateway redirect drops all React state.
+      sessionStorage.setItem(
+        "bs_pending_badge_purchase",
+        JSON.stringify({
+          badgeType: selected.badgeType,
+          paymentMethod: method,
+          documentUrl: doc?.url,
+          documentId: doc?.id,
+        })
+      );
+      if (result.method === "ESEWA" && result.formFields) {
+        // eSewa ePay v2 requires a signed POST form submit, not a GET redirect.
+        const form = document.createElement("form");
+        form.method = "POST";
+        form.action = result.paymentUrl;
+        for (const [key, value] of Object.entries(result.formFields)) {
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = key;
+          input.value = value;
+          form.appendChild(input);
+        }
+        document.body.appendChild(form);
+        form.submit();
+      } else {
+        window.location.href = result.paymentUrl;
+      }
     } catch (err) {
       toast(
         err instanceof ApiError ? err.message : "Purchase couldn't be completed.",
         "error"
       );
-    } finally {
       setBusy(false);
     }
   }

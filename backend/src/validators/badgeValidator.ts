@@ -12,9 +12,16 @@ export const PurchaseBadgeSchema = z.object({
   documentId: z.string().max(200).optional(),
 })
 
+export const InitiateBadgePurchaseSchema = z.object({
+  badgeType: z.enum(['SKILL_VERIFIED', 'BACKGROUND_CHECKED', 'INSURED']),
+  paymentMethod: z.enum(['KHALTI', 'ESEWA']),
+  returnUrl: z.string().url(),
+})
+
 export const RejectBadgeSchema = z.object({
   reason: z.string().min(3).max(500).trim(),
 })
 
 export type PurchaseBadgeInput = z.infer<typeof PurchaseBadgeSchema>
+export type InitiateBadgePurchaseInput = z.infer<typeof InitiateBadgePurchaseSchema>
 export type RejectBadgeInput = z.infer<typeof RejectBadgeSchema>

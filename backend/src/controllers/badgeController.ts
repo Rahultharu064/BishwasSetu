@@ -48,6 +48,16 @@ export const uploadDocument = async (req: Request, res: Response, next: NextFunc
   }
 }
 
+// ── POST /api/v1/badges/initiate (provider) ────────────
+export const initiate = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const result = await BadgeService.initiateBadgePurchase(req.user!.providerId!, req.body)
+    sendSuccess(res, result, 'Payment initiated')
+  } catch (err) {
+    handle(err, res, next)
+  }
+}
+
 // ── POST /api/v1/badges/purchase (provider) ────────────
 export const purchase = async (req: Request, res: Response, next: NextFunction) => {
   try {
