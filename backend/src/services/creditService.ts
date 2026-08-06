@@ -56,9 +56,21 @@ export const getCreditHistory = async (
 // ── GET available credit packs ─────────────────────────────────
 
 export const getCreditPacks = async () => {
-  return prisma.creditPack.findMany({
+  const packs = await prisma.creditPack.findMany({
     where:   { isActive: true },
     orderBy: { priceNpr: 'asc' },
+  })
+
+  return packs.map((p) => {
+    const f = (p.features ?? {}) as { perk?: string; bestValue?: boolean }
+    return {
+      id:        p.id,
+      name:      p.name.charAt(0).toUpperCase() + p.name.slice(1),
+      priceNpr:  p.priceNpr,
+      credits:   p.credits,
+      perk:      f.perk,
+      bestValue: f.bestValue ?? false,
+    }
   })
 }
 

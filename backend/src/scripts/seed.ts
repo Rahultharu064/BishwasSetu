@@ -169,6 +169,33 @@ async function main() {
   console.log('✅ Sub-categories created:', subCategoryCount);
   console.log('✅ Services created:', serviceCount);
 
+  // ── Credit packs (PRD §6.3) ──────────────────────────────────────
+  const existingPacks = await prisma.creditPack.count();
+  if (existingPacks === 0) {
+    await prisma.creditPack.createMany({
+      data: [
+        {
+          name: 'starter', credits: 50, priceNpr: 99,
+          features: { perk: '1 week priority ranking + basic analytics' },
+        },
+        {
+          name: 'active', credits: 150, priceNpr: 249,
+          features: {
+            perk: '3 weeks priority + homepage featured slot + full analytics + AI tips',
+            bestValue: true,
+          },
+        },
+        {
+          name: 'pro', credits: 350, priceNpr: 499,
+          features: { perk: '6 weeks priority + 2× search boost + direct message after booking' },
+        },
+      ],
+    });
+    console.log('✅ Credit packs seeded: 3');
+  } else {
+    console.log('ℹ️ Credit packs already exist — skipping');
+  }
+
   // ── Customer users ───────────────────────────────────────────────
   const customerSeeds = [
     { email: 'ram.sharma@example.com', name: 'Ram Sharma', phone: '9811123456', city: 'Kathmandu Metropolitan City', district: 'Kathmandu' },
