@@ -415,8 +415,19 @@ export const api = {
   creditPacks: () => apiRequest<unknown>("/credits/packs", { auth: true }),
   creditWallet: () => apiRequest<unknown>("/credits/wallet", { auth: true }),
   creditHistory: () => apiRequest<unknown>("/credits/history", { auth: true }),
-  purchaseCredits: (body: { packId: string; paymentMethod: string }) =>
-    apiRequest<unknown>("/credits/purchase", { method: "POST", body, auth: true }),
+  initiateCreditPurchase: (body: {
+    packId: string;
+    paymentMethod: "KHALTI" | "ESEWA";
+    returnUrl: string;
+  }) =>
+    apiRequest<{
+      orderId: string;
+      method: "KHALTI" | "ESEWA";
+      paymentUrl?: string;
+      /** eSewa only — ePay v2 requires a signed POST form submit, not a GET redirect. */
+      esewaUrl?: string;
+      esewaParams?: Record<string, string>;
+    }>("/payments/initiate", { method: "POST", body, auth: true }),
 
   // KYC (provider)
   kycStatus: () =>
