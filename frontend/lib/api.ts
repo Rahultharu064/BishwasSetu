@@ -651,6 +651,17 @@ export const api = {
       "/badges/document",
       { method: "POST", body: form, auth: true }
     ),
+  initiateBadgePurchase: (body: {
+    badgeType: import("./types").PurchasableBadgeType;
+    paymentMethod: "KHALTI" | "ESEWA";
+    returnUrl: string;
+  }) =>
+    apiRequest<{
+      method: "KHALTI" | "ESEWA";
+      paymentUrl: string;
+      /** eSewa only — ePay v2 requires a signed POST form submit, not a GET redirect. */
+      formFields?: Record<string, string>;
+    }>("/badges/initiate", { method: "POST", body, auth: true }),
   purchaseBadge: (body: {
     badgeType: import("./types").PurchasableBadgeType;
     paymentMethod: "KHALTI" | "ESEWA";

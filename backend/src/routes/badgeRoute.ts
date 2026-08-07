@@ -3,7 +3,7 @@ import * as BadgeController from '../controllers/badgeController'
 import { protect, restrictTo } from '../middlewares/authMiddleware'
 import { validate } from '../middlewares/validateMiddleware'
 import { badgeDocumentUpload } from '../middlewares/uploadMiddleware'
-import { PurchaseBadgeSchema, RejectBadgeSchema } from '../validators/badgeValidator'
+import { PurchaseBadgeSchema, InitiateBadgePurchaseSchema, RejectBadgeSchema } from '../validators/badgeValidator'
 
 const router = Router()
 
@@ -34,6 +34,7 @@ router.use(protect, restrictTo('PROVIDER'))
 router.get('/catalog', BadgeController.getCatalog)
 router.get('/me', BadgeController.getMyBadges)
 router.post('/document', badgeDocumentUpload, BadgeController.uploadDocument)
+router.post('/initiate', validate(InitiateBadgePurchaseSchema), BadgeController.initiate)
 router.post('/purchase', validate(PurchaseBadgeSchema), BadgeController.purchase)
 
 export default router
