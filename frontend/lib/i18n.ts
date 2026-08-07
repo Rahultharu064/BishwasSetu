@@ -97,6 +97,7 @@ export const STRINGS = {
   "search.ariaWhere": { en: "Where do you need it", ne: "तपाईंलाई कहाँ चाहिन्छ" },
 
   // ── Booking flow ────────────────────────────────────────
+  "booking.stepCounter": { en: "Step {current} of {total}", ne: "चरण {current} / {total}" },
   "booking.step.service": { en: "Service", ne: "सेवा" },
   "booking.step.schedule": { en: "Schedule", ne: "समय तालिका" },
   "booking.step.review": { en: "Review", ne: "समीक्षा" },
@@ -143,8 +144,11 @@ export const STRINGS = {
     en: "Your money is held safely by BishwasSetu. The provider is paid only when you confirm the job is done.",
     ne: "तपाईंको पैसा बिश्वासेतुले सुरक्षित राख्छ। काम सम्पन्न भएको पुष्टि गरेपछि मात्र प्रदायकले भुक्तानी पाउँछन्।",
   },
+  "booking.step2.escrowHeld": { en: "Held safely", ne: "सुरक्षित राखिन्छ" },
+  "booking.step2.escrowReleased": { en: "Released on completion", ne: "काम सकिएपछि जारी" },
 
   "booking.step3.heading": { en: "Pay into escrow", ne: "एस्क्रोमा भुक्तानी गर्नुहोस्" },
+  "booking.step3.escrowChip": { en: "Escrow protected", ne: "एस्क्रो सुरक्षित" },
   "booking.step3.paymentMethodLabel": { en: "Payment method", ne: "भुक्तानी विधि" },
   "booking.step3.heldNote": {
     en: 'Held in escrow until you tap "Job Complete".',
