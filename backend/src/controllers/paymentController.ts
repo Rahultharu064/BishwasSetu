@@ -59,8 +59,8 @@ export const esewaSuccess = async (
     const result      = await PaymentService.handleEsewaReturn(encodedData)
 
     const redirectUrl = result.success
-      ? `${process.env.FRONTEND_URL}/credits/success`
-      : `${process.env.FRONTEND_URL}/credits/failed`
+      ? `${process.env.FRONTEND_URL}/credits/success?message=${encodeURIComponent(result.message)}`
+      : `${process.env.FRONTEND_URL}/credits/failed?message=${encodeURIComponent(result.message)}`
 
     res.redirect(redirectUrl)
   } catch {
