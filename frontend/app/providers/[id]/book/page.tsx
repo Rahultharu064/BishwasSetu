@@ -28,6 +28,35 @@ interface ProfileResponse {
   provider: Provider;
 }
 
+// Escrow flow explainer (ux.local.md §9.1) — the trust moment where the
+// customer sees where their money goes before they commit to paying.
+function EscrowNode({
+  icon: Icon,
+  label,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+}) {
+  return (
+    <div className="flex w-16 shrink-0 flex-col items-center gap-1.5 text-center">
+      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-card text-primary ring-1 ring-primary/25">
+        <Icon className="h-4 w-4" />
+      </span>
+      <span className="text-[11px] font-medium leading-tight text-foreground">
+        {label}
+      </span>
+    </div>
+  );
+}
+
+function EscrowConnector() {
+  return (
+    <div className="flex h-10 flex-1 items-center px-1" aria-hidden>
+      <div className="h-0.5 w-full rounded bg-primary/30" />
+    </div>
+  );
+}
+
 export default function BookingPage({
   params,
 }: {
@@ -68,6 +97,7 @@ export default function BookingPage({
   }, [addressReq.data]);
 
   const [step, setStep] = useState(0);
+  const [direction, setDirection] = useState<"forward" | "backward">("forward");
   const [categoryId, setCategoryId] = useState("");
   const [description, setDescription] = useState("");
   const [date, setDate] = useState("");
@@ -143,7 +173,15 @@ export default function BookingPage({
   }
 
   function next() {
-    if (validateStep()) setStep((s) => Math.min(s + 1, STEPS.length - 1));
+    if (validateStep()) {
+      setDirection("forward");
+      setStep((s) => Math.min(s + 1, STEPS.length - 1));
+    }
+  }
+
+  function back() {
+    setDirection("backward");
+    setStep((s) => s - 1);
   }
 
   async function pay() {
@@ -206,11 +244,11 @@ export default function BookingPage({
       </Link>
 
       {/* Progress dots */}
-      <div className="mb-6 flex items-center gap-2">
+      <div className="mb-2 flex items-center gap-2">
         {STEPS.map((label, i) => (
           <div key={label} className="flex flex-1 items-center gap-2">
             <div
-              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-colors ${
                 i < step
                   ? "bg-primary text-primary-foreground"
                   : i === step
@@ -222,7 +260,7 @@ export default function BookingPage({
             </div>
             {i < STEPS.length - 1 && (
               <div
-                className={`h-0.5 flex-1 rounded ${
+                className={`h-0.5 flex-1 rounded transition-colors ${
                   i < step ? "bg-primary" : "bg-border"
                 }`}
               />
@@ -230,7 +268,20 @@ export default function BookingPage({
           </div>
         ))}
       </div>
+      <p className="mb-6 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        {tr("booking.stepCounter", { current: step + 1, total: STEPS.length })}
+        <span className="mx-1.5 text-border">·</span>
+        {STEPS[step]}
+      </p>
 
+      <div
+        key={step}
+        className={`motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300 ${
+          direction === "forward"
+            ? "motion-safe:slide-in-from-right-4"
+            : "motion-safe:slide-in-from-left-4"
+        }`}
+      >
       {/* Step 0 — Service & details */}
       {step === 0 && (
         <div className="space-y-4">
@@ -241,17 +292,19 @@ export default function BookingPage({
               <div className="flex flex-wrap gap-2">
                 {categories.map((c, i) => {
                   const cid = c.category?.id ?? String(i);
+                  const isSelected = categoryId === cid;
                   return (
                     <button
                       key={cid}
                       type="button"
                       onClick={() => setCategoryId(cid)}
-                      className={`rounded-lg border px-3 py-2 text-sm font-medium ${
-                        categoryId === cid
-                          ? "border-primary bg-primary-soft text-primary"
+                      className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                        isSelected
+                          ? "border-primary bg-primary-soft text-primary shadow-sm"
                           : "border-border hover:bg-secondary"
                       }`}
                     >
+                      {isSelected && <Check className="h-3.5 w-3.5" />}
                       {c.category?.name}
                     </button>
                   );
@@ -377,10 +430,16 @@ export default function BookingPage({
             </div>
           )}
 
-          {/* Escrow explainer card (ux.md §5.4 step 3) */}
-          <div className="flex items-start gap-3 rounded-xl bg-primary-soft p-4">
-            <Lock className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-            <p className="text-sm text-foreground">
+          {/* Escrow flow explainer (ux.md §5.4 step 3 / §9.1) */}
+          <div className="rounded-2xl border border-primary/15 bg-primary-soft/40 p-5">
+            <div className="flex items-start">
+              <EscrowNode icon={Wallet} label={tr("booking.step2.youPay")} />
+              <EscrowConnector />
+              <EscrowNode icon={Lock} label={tr("booking.step2.escrowHeld")} />
+              <EscrowConnector />
+              <EscrowNode icon={ShieldCheck} label={tr("booking.step2.escrowReleased")} />
+            </div>
+            <p className="mt-4 text-center text-xs text-muted-foreground">
               {tr("booking.step2.escrowExplainer")}
             </p>
           </div>
@@ -397,19 +456,24 @@ export default function BookingPage({
           <div className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-center gap-3 border-b border-border pb-3">
               <Avatar src={provider.profilePhoto} name={name} size={44} />
-              <div>
-                <p className="font-semibold">{name}</p>
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-semibold">{name}</p>
                 <p className="text-xs text-muted-foreground">
                   {new Date(`${date}T${time}`).toLocaleString()}
                 </p>
               </div>
-              <span className="tabular ml-auto text-lg font-bold text-primary">
+              <span className="tabular shrink-0 text-lg font-bold text-primary">
                 {npr(priceNum)}
               </span>
             </div>
-            <p className="mt-3 flex items-start gap-2 text-sm text-muted-foreground">
-              <MapPin className="mt-0.5 h-4 w-4 shrink-0" /> {address}
-            </p>
+            <div className="mt-3 flex items-start justify-between gap-3">
+              <p className="flex items-start gap-2 text-sm text-muted-foreground">
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0" /> {address}
+              </p>
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary-soft px-2.5 py-1 text-[11px] font-semibold text-primary">
+                <Lock className="h-3 w-3" /> {tr("booking.step3.escrowChip")}
+              </span>
+            </div>
           </div>
 
           <div>
@@ -423,12 +487,20 @@ export default function BookingPage({
                     setMethod(m);
                     setMethodTouched(true);
                   }}
-                  className={`rounded-xl border p-4 text-center font-semibold ${
+                  className={`flex items-center justify-center gap-2 rounded-xl border p-4 text-center font-semibold transition-colors ${
                     method === m
                       ? "border-primary bg-primary-soft text-primary"
                       : "border-border hover:bg-secondary"
                   }`}
                 >
+                  <span
+                    aria-hidden
+                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white ${
+                      m === "KHALTI" ? "bg-[#5C2D91]" : "bg-[#60BB46]"
+                    }`}
+                  >
+                    {m === "KHALTI" ? "K" : "e"}
+                  </span>
                   {m === "KHALTI" ? "Khalti" : "eSewa"}
                 </button>
               ))}
@@ -440,6 +512,7 @@ export default function BookingPage({
           </p>
         </div>
       )}
+      </div>
 
       {/* Nav bar */}
       <div className="fixed inset-x-0 bottom-16 z-30 border-t border-border bg-background/95 p-3 backdrop-blur md:bottom-0">
@@ -447,7 +520,7 @@ export default function BookingPage({
           {step > 0 && (
             <Button
               variant="outline"
-              onClick={() => setStep((s) => s - 1)}
+              onClick={back}
               disabled={submitting}
             >
               {tr("common.back")}
