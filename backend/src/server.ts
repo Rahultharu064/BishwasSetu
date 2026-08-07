@@ -62,6 +62,19 @@ async function bootstrap() {
 
     server = app.listen(PORT, () => {
       logger.info(`Server running on port ${PORT}`, { env: process.env.NODE_ENV })
+
+      // NODE_ENV gates the refresh-token cookie's Secure/SameSite=None flags
+      // (see config/cookies.ts) — required because the frontend and this API
+      // sit on different domains. Left unset here, refresh cookies get
+      // silently dropped by the browser, and every user gets logged out
+      // (401s) the moment their short-lived access token expires.
+      if (process.env.NODE_ENV !== 'production') {
+        logger.warn(
+          'NODE_ENV is not "production" — cross-site refresh-token cookies will be ' +
+          'rejected by browsers and users will be logged out on every access-token ' +
+          'expiry. Set NODE_ENV=production in this host\'s environment variables.'
+        )
+      }
     })
 
   } catch (error) {
