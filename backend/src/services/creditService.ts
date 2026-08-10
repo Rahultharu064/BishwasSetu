@@ -55,23 +55,38 @@ export const getCreditHistory = async (
 
 // ── GET available credit packs ─────────────────────────────────
 
+/**
+ * Returns `{ enabled, packs }` — never a bare array.
+ *
+ * `enabled` mirrors `features.credits`, the same flag `purchaseCredits` and
+ * `activateBoost` enforce. Without it the client cannot tell "paid boosts are
+ * switched off for the pilot" from "the catalog happens to be empty", so it
+ * renders a retry-forever empty state and lets providers walk into a 403 at
+ * the payment step. When the flag is off the catalog is not read at all: a
+ * pack nobody can buy is not an offer.
+ */
 export const getCreditPacks = async () => {
+  if (!features.credits) return { enabled: false, packs: [] }
+
   const packs = await prisma.creditPack.findMany({
     where:   { isActive: true },
     orderBy: { priceNpr: 'asc' },
   })
 
-  return packs.map((p) => {
-    const f = (p.features ?? {}) as { perk?: string; bestValue?: boolean }
-    return {
-      id:        p.id,
-      name:      p.name.charAt(0).toUpperCase() + p.name.slice(1),
-      priceNpr:  p.priceNpr,
-      credits:   p.credits,
-      perk:      f.perk,
-      bestValue: f.bestValue ?? false,
-    }
-  })
+  return {
+    enabled: true,
+    packs: packs.map((p) => {
+      const f = (p.features ?? {}) as { perk?: string; bestValue?: boolean }
+      return {
+        id:        p.id,
+        name:      p.name.charAt(0).toUpperCase() + p.name.slice(1),
+        priceNpr:  p.priceNpr,
+        credits:   p.credits,
+        perk:      f.perk,
+        bestValue: f.bestValue ?? false,
+      }
+    }),
+  }
 }
 
 // ── PURCHASE credit pack ───────────────────────────────────────

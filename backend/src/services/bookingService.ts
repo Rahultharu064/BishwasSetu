@@ -103,7 +103,7 @@ export const createBooking = async (
 ) => {
   const {
     providerId, categoryId, description, scheduledAt,
-    priceNpr, paymentMethod, isEmergency, neighborhood,
+    priceNpr, paymentMethod, isEmergency, neighborhood, address,
   } = input
 
   // 1. Verify provider exists and is VERIFIED
@@ -194,6 +194,7 @@ export const createBooking = async (
       // Anti-Disintermediation + Emergency Dispatch fields (PRD §5.1, 5.3, 5.4)
       isEmergency:   isEmergency  ?? false,
       neighborhood:  neighborhood ?? null,
+      address:       address ?? null,
       hasGuarantee:  true,          // On-platform bookings always carry 7-day guarantee
       escrowStatus:  'NONE',        // Moves to HELD once customer initiates payment
     },

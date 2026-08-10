@@ -425,6 +425,10 @@ model Booking {
   isEmergency   Boolean       @default(false)
   hasGuarantee  Boolean       @default(true)
   neighborhood  String?       @db.VarChar(100)
+  // Full service address as the customer typed it at booking time. Distinct
+  // from `neighborhood`, which is only the coarse area tag used for §5.4
+  // hyper-local stats — the provider still needs the door to knock on.
+  address       String?       @db.VarChar(255)
   description   String?       @db.Text
   scheduledAt   DateTime
   completedAt           DateTime?

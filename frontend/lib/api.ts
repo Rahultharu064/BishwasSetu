@@ -412,7 +412,10 @@ export const api = {
     apiRequest<import("./types").Complaint>(`/complaints/${id}`, { auth: true }),
 
   // Credits / boost (provider)
-  creditPacks: () => apiRequest<unknown>("/credits/packs", { auth: true }),
+  creditPacks: () =>
+    apiRequest<import("./types").CreditPacksResponse>("/credits/packs", {
+      auth: true,
+    }),
   creditWallet: () => apiRequest<unknown>("/credits/wallet", { auth: true }),
   creditHistory: () => apiRequest<unknown>("/credits/history", { auth: true }),
   initiateCreditPurchase: (body: {
