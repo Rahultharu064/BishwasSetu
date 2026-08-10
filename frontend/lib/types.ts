@@ -340,6 +340,26 @@ export interface ChatThread {
   messages: ChatMessage[];
 }
 
+// ── Credits / boost (provider) ────────────────────────────────
+export interface CreditPack {
+  id: string;
+  name: string;
+  priceNpr: number;
+  credits: number;
+  perk?: string;
+  bestValue?: boolean;
+}
+
+/**
+ * `enabled` mirrors the backend `CREDITS_ENABLED` flag. It is what separates
+ * "paid boosts aren't live yet" from "the catalog is momentarily empty" — the
+ * two need different UI, because only one of them is worth a retry.
+ */
+export interface CreditPacksResponse {
+  enabled: boolean;
+  packs: CreditPack[];
+}
+
 // ── Saved addresses ───────────────────────────────────────────
 export interface SavedAddress {
   id: string;

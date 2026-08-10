@@ -14,6 +14,9 @@ export const CreateBookingSchema = z.object({
   isEmergency:   z.boolean().optional().default(false),
   // Hyper-Local Neighbourhood Tag (PRD §5.4) — e.g. 'Maharajgunj'
   neighborhood:  z.string().max(100).trim().optional(),
+  // Full service address the customer entered — where the provider actually
+  // goes. `neighborhood` is only the coarse tag derived from it.
+  address:       z.string().max(255).trim().optional(),
 })
 
 export const UpdateBookingStatusSchema = z.object({

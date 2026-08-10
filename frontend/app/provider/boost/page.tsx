@@ -3,34 +3,21 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Coins, Check, TrendingUp, Lock } from "lucide-react";
+import { ChevronLeft, Coins, Check, TrendingUp, Lock, Star } from "lucide-react";
 import { api, ApiError, API_BASE } from "@/lib/api";
 import { useFetch } from "@/lib/use-fetch";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/context/toast-context";
 import { npr } from "@/lib/format";
-import { Button } from "@/components/ui/button";
+import type { CreditPack as Pack, CreditPacksResponse } from "@/lib/types";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState, ErrorState } from "@/components/ui/states";
 
-interface Pack {
-  id: string;
-  name: string;
-  priceNpr: number;
-  credits: number;
-  perk?: string;
-  bestValue?: boolean;
-}
-
-function packsFrom(data: unknown): Pack[] {
-  if (Array.isArray(data)) return data as Pack[];
-  if (data && typeof data === "object") {
-    const arr = (data as { packs?: Pack[] }).packs;
-    if (Array.isArray(arr)) return arr;
-  }
-  return [];
+function packsFrom(data: CreditPacksResponse | null): Pack[] {
+  return Array.isArray(data?.packs) ? data.packs : [];
 }
 
 function balanceFrom(data: unknown): number {
@@ -56,6 +43,8 @@ export default function BoostPage() {
 
   const packs = packsFrom(packsReq.data);
   const balance = balanceFrom(walletReq.data);
+  // Undefined until the request lands — only `false` means "switched off".
+  const creditsEnabled = packsReq.data?.enabled;
 
   const [selected, setSelected] = useState<Pack | null>(null);
   const [method, setMethod] = useState<"KHALTI" | "ESEWA">("KHALTI");
@@ -142,6 +131,43 @@ export default function BoostPage() {
           </div>
         ) : packsReq.error ? (
           <ErrorState message={packsReq.error} onRetry={packsReq.reload} />
+        ) : creditsEnabled === false ? (
+          // Paid boosts are off for the single-city pilot (docs/MVP_SCOPE.md).
+          // Say so plainly instead of dangling a Retry that can never succeed —
+          // and point at what actually moves a provider up the results today.
+          <div className="rounded-2xl border border-border bg-card p-6">
+            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-secondary text-muted-foreground">
+              <Lock className="h-5 w-5" />
+            </span>
+            <p className="mt-3 text-base font-semibold">
+              Paid boosts aren&apos;t live yet
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              We turn on credit packs once enough pros are competing for the same
+              jobs in your area. Until then nobody can buy their way past you.
+            </p>
+            <p className="mt-4 text-sm font-medium">
+              What lifts your ranking right now
+            </p>
+            <ul className="mt-2 space-y-2 text-sm text-muted-foreground">
+              {[
+                "Completed jobs paid through escrow on BishwasSetu",
+                "Your trust score — reviews, on-time arrivals, low complaints",
+                "Finishing KYC verification to reach a higher tier",
+              ].map((item) => (
+                <li key={item} className="flex items-start gap-2">
+                  <Star className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+            <Link
+              href="/provider"
+              className={buttonVariants({ variant: "outline", full: true, className: "mt-5" })}
+            >
+              Back to dashboard
+            </Link>
+          </div>
         ) : packs.length === 0 ? (
           <EmptyState
             title="No credit packs available"
@@ -185,10 +211,12 @@ export default function BoostPage() {
         )}
       </div>
 
-      <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-        <Lock className="h-3.5 w-3.5" /> No auto-renew — every purchase is a single
-        transaction.
-      </p>
+      {creditsEnabled !== false && (
+        <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+          <Lock className="h-3.5 w-3.5" /> No auto-renew — every purchase is a
+          single transaction.
+        </p>
+      )}
 
       {/* Purchase confirmation */}
       <Sheet

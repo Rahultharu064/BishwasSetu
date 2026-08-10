@@ -58,6 +58,16 @@ describe('credits gate', () => {
       } as any)
     ).rejects.toMatchObject({ code: 'CREDITS_DISABLED', status: 403 })
   })
+
+  // getCreditPacks stays a 200 (a pack catalogue is not an error), but it has
+  // to say the feature is off — otherwise the client cannot tell "boosts are
+  // disabled for the pilot" from "the catalogue is empty right now" and shows
+  // a retry-forever empty state.
+  it('reports enabled:false with no packs when CREDITS_ENABLED is off', async () => {
+    process.env.CREDITS_ENABLED = 'false'
+    const { getCreditPacks } = await import('../services/creditService')
+    await expect(getCreditPacks()).resolves.toEqual({ enabled: false, packs: [] })
+  })
 })
 
 describe('neighborhood tags gate', () => {

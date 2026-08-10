@@ -102,6 +102,17 @@ export const STRINGS = {
   "booking.step.schedule": { en: "Schedule", ne: "समय तालिका" },
   "booking.step.review": { en: "Review", ne: "समीक्षा" },
   "booking.step.pay": { en: "Pay", ne: "भुक्तानी" },
+  "booking.progressLabel": { en: "Booking progress", ne: "बुकिङ प्रगति" },
+  "booking.stepDone": { en: "completed", ne: "पूरा भयो" },
+  "booking.bookingWith": { en: "Booking with", ne: "सँग बुकिङ" },
+  "booking.trustScore": { en: "Trust {score}", ne: "विश्वास {score}" },
+  "booking.jobsDone": { en: "{count} jobs done", ne: "{count} काम सम्पन्न" },
+  "booking.edit": { en: "Edit", ne: "सम्पादन" },
+  "booking.optional": { en: "Optional", ne: "वैकल्पिक" },
+  "booking.errorSummary": {
+    en: "Check the highlighted fields before you continue.",
+    ne: "अगाडि बढ्नुअघि देखाइएका ठाउँहरू जाँच्नुहोस्।",
+  },
 
   "booking.step0.heading": { en: "What do you need done?", ne: "तपाईंलाई के काम गराउनु छ?" },
   "booking.step0.serviceLabel": { en: "Service", ne: "सेवा" },
@@ -116,6 +127,19 @@ export const STRINGS = {
     en: "Describe the job in at least 10 characters.",
     ne: "कामलाई कम्तिमा १० अक्षरमा वर्णन गर्नुहोस्।",
   },
+  "booking.step0.errDescribeMax": {
+    en: "Keep the description under 1,000 characters.",
+    ne: "वर्णन १,००० अक्षरभित्र राख्नुहोस्।",
+  },
+  "booking.step0.serviceHint": {
+    en: "Pick the closest match — the pro can adjust on site.",
+    ne: "नजिकको मिल्ने छान्नुहोस् — प्रोले स्थलमै मिलाउन सक्छन्।",
+  },
+  "booking.step0.describeHint": {
+    en: "The more specific you are, the more accurate the price and the fewer follow-up questions.",
+    ne: "जति स्पष्ट लेख्नुहुन्छ, मूल्य त्यति सही हुन्छ र थप प्रश्न कम आउँछन्।",
+  },
+  "booking.step0.charCount": { en: "{count} / 1,000", ne: "{count} / १,०००" },
 
   "booking.step1.heading": { en: "When & where?", ne: "कहिले र कहाँ?" },
   "booking.step1.dateLabel": { en: "Date", ne: "मिति" },
@@ -129,6 +153,31 @@ export const STRINGS = {
   "booking.step1.errDateTime": { en: "Pick a date and time.", ne: "मिति र समय छान्नुहोस्।" },
   "booking.step1.errFutureTime": { en: "Choose a time in the future.", ne: "भविष्यको समय छान्नुहोस्।" },
   "booking.step1.errAddress": { en: "Enter the service address.", ne: "सेवा ठेगाना प्रविष्ट गर्नुहोस्।" },
+  "booking.step1.today": { en: "Today", ne: "आज" },
+  "booking.step1.tomorrow": { en: "Tomorrow", ne: "भोलि" },
+  "booking.step1.otherDate": { en: "Another date", ne: "अर्को मिति" },
+  "booking.step1.morning": { en: "Morning", ne: "बिहान" },
+  "booking.step1.afternoon": { en: "Afternoon", ne: "दिउँसो" },
+  "booking.step1.evening": { en: "Evening", ne: "साँझ" },
+  "booking.step1.pickDateFirst": {
+    en: "Pick a date to see available times.",
+    ne: "उपलब्ध समय हेर्न पहिले मिति छान्नुहोस्।",
+  },
+  "booking.step1.noSlotsToday": {
+    en: "No slots left today — try tomorrow.",
+    ne: "आज कुनै समय बाँकी छैन — भोलि हेर्नुहोस्।",
+  },
+  "booking.step1.arrivalNote": {
+    en: "Arrival window, not an exact minute — the pro confirms before setting out.",
+    ne: "यो आगमनको समय दायरा हो, ठ्याक्कै मिनेट होइन — प्रो हिँड्नुअघि पुष्टि गर्छन्।",
+  },
+  "booking.step1.savedAddresses": { en: "Saved addresses", ne: "सुरक्षित ठेगानाहरू" },
+  "booking.step1.default": { en: "Default", ne: "पूर्वनिर्धारित" },
+  "booking.step1.otherAddress": { en: "A different address", ne: "अर्को ठेगाना" },
+  "booking.step1.addressHint": {
+    en: "Add a landmark — it saves the pro a phone call.",
+    ne: "ल्यान्डमार्क थप्नुहोस् — प्रोलाई फोन गर्नु पर्दैन।",
+  },
 
   "booking.step2.heading": { en: "Estimate & escrow", ne: "अनुमान र एस्क्रो" },
   "booking.step2.priceLabel": { en: "Agreed price (NPR)", ne: "सहमत मूल्य (रु.)" },
@@ -138,16 +187,40 @@ export const STRINGS = {
     ne: "एउटै सम्पूर्ण मूल्य — छुट्टै ग्राहक बुकिङ शुल्क छैन।",
   },
   "booking.step2.errPrice": { en: "Enter an amount of at least NPR 100.", ne: "कम्तिमा रु. १०० रकम प्रविष्ट गर्नुहोस्।" },
+  "booking.step2.errPriceMax": {
+    en: "Enter an amount under NPR 500,000.",
+    ne: "रु. ५,००,००० भन्दा कम रकम प्रविष्ट गर्नुहोस्।",
+  },
   "booking.step2.youPay": { en: "You pay", ne: "तपाईंले तिर्ने" },
-  "booking.step2.providerReceives": { en: "Provider receives (after {pct}% fee)", ne: "प्रदायकले पाउने (रु. {pct}% शुल्क कटाएर)" },
+  "booking.step2.priceHint": {
+    en: "The amount you and the pro agreed on for this job.",
+    ne: "यो कामका लागि तपाईं र प्रोबीच सहमत भएको रकम।",
+  },
+  "booking.step2.commonAmounts": { en: "Common amounts", ne: "प्रचलित रकम" },
+  "booking.step2.allInclusive": {
+    en: "All-inclusive. This is the full amount you pay — nothing is added later.",
+    ne: "सबै समावेश। तपाईंले तिर्ने पूरा रकम यही हो — पछि केही थपिँदैन।",
+  },
+  "booking.step2.tierLimit": {
+    en: "{name} is a Tier 1 · Basic pro and can take jobs under NPR 1,000. Lower the amount, or book a Tier 2+ pro for bigger jobs.",
+    ne: "{name} टियर १ · बेसिक प्रो हुन् र रु. १,००० भन्दा कमका काम मात्र लिन सक्छन्। रकम घटाउनुहोस्, वा ठूला कामका लागि टियर २+ प्रो बुक गर्नुहोस्।",
+  },
   "booking.step2.escrowExplainer": {
     en: "Your money is held safely by BishwasSetu. The provider is paid only when you confirm the job is done.",
     ne: "तपाईंको पैसा बिश्वासेतुले सुरक्षित राख्छ। काम सम्पन्न भएको पुष्टि गरेपछि मात्र प्रदायकले भुक्तानी पाउँछन्।",
   },
   "booking.step2.escrowHeld": { en: "Held safely", ne: "सुरक्षित राखिन्छ" },
   "booking.step2.escrowReleased": { en: "Released on completion", ne: "काम सकिएपछि जारी" },
+  "booking.step2.guarantee": {
+    en: "7-day workmanship guarantee on every escrow-paid job.",
+    ne: "एस्क्रोबाट भुक्तानी भएका हरेक कामका लागि ७ दिने कारीगरी ग्यारेन्टी।",
+  },
+  "booking.step2.refund": {
+    en: "Pro doesn't show up? Your money comes back — you never chase it.",
+    ne: "प्रो आएनन् भने? तपाईंको पैसा फिर्ता आउँछ — पछि लाग्नु पर्दैन।",
+  },
 
-  "booking.step3.heading": { en: "Pay into escrow", ne: "एस्क्रोमा भुक्तानी गर्नुहोस्" },
+  "booking.step3.heading": { en: "Review & pay", ne: "समीक्षा र भुक्तानी" },
   "booking.step3.escrowChip": { en: "Escrow protected", ne: "एस्क्रो सुरक्षित" },
   "booking.step3.paymentMethodLabel": { en: "Payment method", ne: "भुक्तानी विधि" },
   "booking.step3.heldNote": {
@@ -155,6 +228,16 @@ export const STRINGS = {
     ne: "तपाईंले “काम सम्पन्न” थिच्नेबित्तिकै एस्क्रोमा राखिन्छ।",
   },
   "booking.step3.pay": { en: "Pay {amount}", ne: "{amount} तिर्नुहोस्" },
+  "booking.step3.summaryTitle": { en: "Your booking", ne: "तपाईंको बुकिङ" },
+  "booking.step3.rowService": { en: "Service", ne: "सेवा" },
+  "booking.step3.rowWhen": { en: "When", ne: "कहिले" },
+  "booking.step3.rowWhere": { en: "Where", ne: "कहाँ" },
+  "booking.step3.rowJob": { en: "Job details", ne: "कामको विवरण" },
+  "booking.step3.total": { en: "Total to pay", ne: "तिर्नुपर्ने जम्मा" },
+  "booking.step3.redirectNote": {
+    en: "You'll be taken to {wallet} to complete the payment, then straight back here.",
+    ne: "भुक्तानी पूरा गर्न तपाईंलाई {wallet} मा लगिनेछ, त्यसपछि सिधै यहीँ फर्काइनेछ।",
+  },
 
   "booking.notAvailable": { en: "This provider isn't available.", ne: "यो सेवा प्रदायक उपलब्ध छैन।" },
   "booking.browseServices": { en: "Browse services", ne: "सेवाहरू हेर्नुहोस्" },
