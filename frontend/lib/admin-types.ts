@@ -172,6 +172,24 @@ export interface AuditLogResponse {
   pagination: Pagination;
 }
 
+// ── Leakage flags (GET /admin/leakage-flags) — off-platform signals ───
+export interface LeakageFlag {
+  id: string;
+  providerId: string;
+  customerId?: string | null;
+  bookingId?: string | null;
+  signal: string; // PHONE_IN_CHAT | CANCEL_AFTER_CONTACT | COMPLAINT_PATTERN
+  details?: Record<string, unknown> | null;
+  status: "OPEN" | "REVIEWED" | "DISMISSED" | "ACTIONED";
+  createdAt: string;
+  reviewedAt?: string | null;
+}
+
+export interface LeakageFlagsResponse {
+  flags: LeakageFlag[];
+  pagination: Pagination;
+}
+
 // ── Revenue analytics (GET /admin/analytics/revenue) ──────────
 export interface RevenueAnalytics {
   period: { from: string; to: string };

@@ -70,13 +70,40 @@ export async function revenuePoints(
 }
 
 export async function leakageFlags(
-  _req: Request,
+  req: Request,
   res: Response,
   next: NextFunction
 ) {
   try {
-    const flags = await guaranteeService.listOpenLeakageFlags();
-    res.json({ success: true, data: flags });
+    const status = req.query.status as
+      | "OPEN"
+      | "REVIEWED"
+      | "DISMISSED"
+      | "ACTIONED"
+      | undefined;
+    const data = await guaranteeService.listLeakageFlags({
+      status,
+      page: Number(req.query.page ?? 1),
+      limit: Number(req.query.limit ?? 30),
+    });
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function resolveLeakageFlag(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const flag = await guaranteeService.resolveLeakageFlag(
+      requireString(req.params.flagId, "flagId"),
+      req.user!.id,
+      req.body.status
+    );
+    res.json({ success: true, data: flag });
   } catch (err) {
     next(err);
   }

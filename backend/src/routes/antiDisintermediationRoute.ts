@@ -22,6 +22,7 @@ import {
   emergencyIdParamSchema,
   providerIdParamSchema,
   createAreaSchema,
+  resolveLeakageFlagSchema,
 } from "../validators/antiDisintermediationValidator";
 
 const router = Router();
@@ -88,6 +89,13 @@ router.get(
   protect,
   restrictTo("ADMIN"),
   guarantee.leakageFlags
+);
+router.patch(
+  "/admin/leakage-flags/:flagId/resolve",
+  protect,
+  restrictTo("ADMIN"),
+  validateRequest(resolveLeakageFlagSchema),
+  guarantee.resolveLeakageFlag
 );
 
 // ── 5.3 Emergency dispatch ────────────────────────────────────

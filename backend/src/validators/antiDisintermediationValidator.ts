@@ -73,6 +73,13 @@ export const providerIdParamSchema = z.object({
   params: z.object({ providerId: z.string().min(1) }),
 });
 
+// ---------- 5.5 Leakage flags ----------
+
+export const resolveLeakageFlagSchema = z.object({
+  params: z.object({ flagId: z.string().min(1) }),
+  body: z.object({ status: z.enum(["REVIEWED", "DISMISSED", "ACTIONED"]) }),
+});
+
 export const createAreaSchema = z.object({
   body: z.object({
     name: z.string().min(2).max(100),

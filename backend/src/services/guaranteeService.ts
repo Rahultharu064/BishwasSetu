@@ -1,5 +1,6 @@
 import { prisma } from "../config/db";
 import { ApiError } from "../utils/apierror";
+import { logAdminAction } from "./auditLogService";
 
 export async function listGuaranteesForCustomer(customerId: string) {
   return prisma.serviceGuarantee.findMany({
@@ -82,9 +83,50 @@ export async function getProviderRevenuePoints(providerId: string) {
   return ledgers.reduce((acc, curr) => acc + curr.points, 0);
 }
 
-export async function listOpenLeakageFlags() {
-  return prisma.leakageFlag.findMany({
-    where: { status: "OPEN" },
-    orderBy: { createdAt: "desc" }
+export async function listLeakageFlags(params: {
+  status?: "OPEN" | "REVIEWED" | "DISMISSED" | "ACTIONED";
+  page: number;
+  limit: number;
+}) {
+  const { status = "OPEN", page, limit } = params;
+  const skip = (page - 1) * limit;
+
+  const [flags, total] = await Promise.all([
+    prisma.leakageFlag.findMany({
+      where: { status },
+      skip,
+      take: limit,
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.leakageFlag.count({ where: { status } }),
+  ]);
+
+  return {
+    flags,
+    pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
+  };
+}
+
+export async function resolveLeakageFlag(
+  flagId: string,
+  adminId: string,
+  status: "REVIEWED" | "DISMISSED" | "ACTIONED"
+) {
+  const flag = await prisma.leakageFlag.findUnique({ where: { id: flagId } });
+  if (!flag) throw new ApiError(404, "Leakage flag not found");
+
+  const updated = await prisma.leakageFlag.update({
+    where: { id: flagId },
+    data: { status, reviewedAt: new Date() },
   });
+
+  await logAdminAction({
+    adminId,
+    action: "LEAKAGE_FLAG_RESOLVED",
+    targetType: "fraudFlag",
+    targetId: flagId,
+    details: { signal: flag.signal, status },
+  });
+
+  return updated;
 }
