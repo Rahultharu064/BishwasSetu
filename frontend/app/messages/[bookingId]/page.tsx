@@ -9,6 +9,7 @@ import { useFetch } from "@/lib/use-fetch";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/context/toast-context";
 import { useNotifications } from "@/context/notification-context";
+import { useLang } from "@/context/language-context";
 import { formatDateTime } from "@/lib/format";
 import type { ChatThread } from "@/lib/types";
 import { Avatar } from "@/components/ui/avatar";
@@ -26,6 +27,7 @@ export default function ConversationPage({
   const { toast } = useToast();
   const { isAuthenticated, loading: authLoading } = useAuth();
   const { socket } = useNotifications();
+  const { tr } = useLang();
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -75,7 +77,7 @@ export default function ConversationPage({
       req.reload();
     } catch (err) {
       toast(
-        err instanceof ApiError ? err.message : "Couldn't send. Try again.",
+        err instanceof ApiError ? err.message : tr("messages.thread.errSendFailed"),
         "error"
       );
     } finally {
@@ -92,7 +94,7 @@ export default function ConversationPage({
         <Link
           href="/messages"
           className="text-muted-foreground hover:text-foreground"
-          aria-label="Back to messages"
+          aria-label={tr("messages.thread.backToMessages")}
         >
           <ChevronLeft className="h-5 w-5" />
         </Link>
@@ -108,7 +110,7 @@ export default function ConversationPage({
                 {thread.other.name}
               </p>
               <p className="text-xs text-muted-foreground">
-                Booking #{bookingId.slice(0, 8)}
+                {tr("messages.thread.bookingLabel", { id: bookingId.slice(0, 8) })}
               </p>
             </div>
             {thread.other.providerId && (
@@ -116,7 +118,7 @@ export default function ConversationPage({
                 href={`/providers/${thread.other.providerId}`}
                 className="text-sm font-medium text-primary hover:underline"
               >
-                Profile
+                {tr("messages.thread.profile")}
               </Link>
             )}
           </>
@@ -140,8 +142,8 @@ export default function ConversationPage({
           <ErrorState message={req.error} onRetry={req.reload} />
         ) : messages.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center text-center text-sm text-muted-foreground">
-            <p>No messages yet.</p>
-            <p>Send the first message to coordinate the job.</p>
+            <p>{tr("messages.thread.noMessagesYet")}</p>
+            <p>{tr("messages.thread.sendFirstMessage")}</p>
           </div>
         ) : (
           messages.map((m) => (
@@ -169,7 +171,7 @@ export default function ConversationPage({
                     hour: "2-digit",
                     minute: "2-digit",
                   })}
-                  {m.mine && m.readAt ? " · Read" : ""}
+                  {m.mine && m.readAt ? tr("messages.thread.read") : ""}
                 </p>
               </div>
             </div>
@@ -181,7 +183,7 @@ export default function ConversationPage({
       {/* Composer */}
       {thread && !thread.canSend ? (
         <div className="mb-3 flex items-center justify-center gap-1.5 rounded-xl bg-secondary px-4 py-3 text-sm text-muted-foreground">
-          <Lock className="h-4 w-4" /> This conversation is closed.
+          <Lock className="h-4 w-4" /> {tr("messages.thread.conversationClosed")}
         </div>
       ) : (
         <form
@@ -201,7 +203,7 @@ export default function ConversationPage({
               }
             }}
             rows={1}
-            placeholder="Type a message…"
+            placeholder={tr("messages.thread.composerPlaceholder")}
             className="max-h-32 min-h-[44px] flex-1 resize-none rounded-xl border border-input bg-card px-3.5 py-2.5 text-sm placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
           />
           <Button

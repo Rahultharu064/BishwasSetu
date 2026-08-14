@@ -7,6 +7,7 @@ import { CalendarCheck, Lock, ChevronRight } from "lucide-react";
 import { api } from "@/lib/api";
 import { useFetch } from "@/lib/use-fetch";
 import { useAuth } from "@/context/auth-context";
+import { useLang } from "@/context/language-context";
 import { npr, formatDateTime } from "@/lib/format";
 import type { Booking } from "@/lib/types";
 import { BookingStatusBadge } from "@/components/booking-status-badge";
@@ -17,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 function BookingsInner() {
   const router = useRouter();
   const { isAuthenticated, loading: authLoading } = useAuth();
+  const { tr } = useLang();
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) router.replace("/login?next=/bookings");
@@ -39,9 +41,9 @@ function BookingsInner() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="text-2xl font-bold tracking-tight">My bookings</h1>
+      <h1 className="text-2xl font-bold tracking-tight">{tr("bookings.list.heading")}</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Track jobs and escrow status in one place.
+        {tr("bookings.list.subtitle")}
       </p>
 
       {loading ? (
@@ -57,23 +59,23 @@ function BookingsInner() {
       ) : bookings.length === 0 ? (
         <div className="mt-8">
           <EmptyState
-            title="No bookings yet"
-            description="Find a verified pro and book your first service — protected by escrow and a 7-day guarantee."
+            title={tr("bookings.list.emptyTitle")}
+            description={tr("bookings.list.emptyDesc")}
             icon={<CalendarCheck className="h-8 w-8" />}
-            action={{ label: "Browse services", onClick: () => router.push("/services") }}
+            action={{ label: tr("booking.browseServices"), onClick: () => router.push("/services") }}
           />
         </div>
       ) : (
         <div className="mt-6 space-y-8">
           {active.length > 0 && (
-            <Section title="Active">
+            <Section title={tr("bookings.list.active")}>
               {active.map((b) => (
                 <BookingCard key={b.id} booking={b} />
               ))}
             </Section>
           )}
           {past.length > 0 && (
-            <Section title="Past">
+            <Section title={tr("bookings.list.past")}>
               {past.map((b) => (
                 <BookingCard key={b.id} booking={b} />
               ))}
@@ -103,6 +105,7 @@ function Section({
 }
 
 function BookingCard({ booking }: { booking: Booking }) {
+  const { tr } = useLang();
   const providerName =
     booking.provider?.legalName || booking.provider?.user?.name || "Provider";
   return (
@@ -113,9 +116,9 @@ function BookingCard({ booking }: { booking: Booking }) {
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="font-semibold">
-            {booking.category?.name ?? "Service"}
+            {booking.category?.name ?? tr("bookings.serviceFallback")}
           </p>
-          <p className="text-sm text-muted-foreground">with {providerName}</p>
+          <p className="text-sm text-muted-foreground">{tr("bookings.list.with", { name: providerName })}</p>
         </div>
         <BookingStatusBadge status={booking.status} />
       </div>
@@ -139,7 +142,7 @@ function BookingCard({ booking }: { booking: Booking }) {
       )}
 
       <div className="mt-3 flex items-center justify-end text-sm font-medium text-primary">
-        View details <ChevronRight className="h-4 w-4" />
+        {tr("bookings.list.viewDetails")} <ChevronRight className="h-4 w-4" />
       </div>
     </Link>
   );

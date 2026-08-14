@@ -15,8 +15,10 @@ import { api, ApiError } from "@/lib/api";
 import { useFetch } from "@/lib/use-fetch";
 import { useToast } from "@/context/toast-context";
 import { useAuth } from "@/context/auth-context";
+import { useLang } from "@/context/language-context";
 import { npr, formatDateTime } from "@/lib/format";
 import type { Booking } from "@/lib/types";
+import type { StringKey } from "@/lib/i18n";
 import { BookingStatusBadge } from "@/components/booking-status-badge";
 import { EscrowStatusBar } from "@/components/escrow-status-bar";
 import { EscrowPaymentCard } from "@/components/escrow-payment-card";
@@ -29,12 +31,12 @@ import { ErrorState } from "@/components/ui/states";
 import { StarRatingInput } from "@/components/ui/star-rating";
 import { Textarea, Label } from "@/components/ui/input";
 
-const COMPLAINT_TYPES = [
-  { value: "SERVICE_QUALITY", label: "Poor service quality" },
-  { value: "NO_SHOW", label: "Provider didn't show up" },
-  { value: "OVERCHARGING", label: "Overcharging" },
-  { value: "ABUSIVE_BEHAVIOR", label: "Abusive behaviour" },
-  { value: "FRAUD", label: "Fraud" },
+const COMPLAINT_TYPES: { value: string; labelKey: StringKey }[] = [
+  { value: "SERVICE_QUALITY", labelKey: "bookings.detail.complaintType.SERVICE_QUALITY" },
+  { value: "NO_SHOW", labelKey: "bookings.detail.complaintType.NO_SHOW" },
+  { value: "OVERCHARGING", labelKey: "bookings.detail.complaintType.OVERCHARGING" },
+  { value: "ABUSIVE_BEHAVIOR", labelKey: "bookings.detail.complaintType.ABUSIVE_BEHAVIOR" },
+  { value: "FRAUD", labelKey: "bookings.detail.complaintType.FRAUD" },
 ];
 
 export default function BookingDetailPage({
@@ -46,6 +48,7 @@ export default function BookingDetailPage({
   const { toast } = useToast();
   const [active, setActive] = useState(false);
   const { user } = useAuth();
+  const { tr } = useLang();
   const { data, loading, error, reload } = useFetch<Booking>(
     () => api.bookingById(id),
     [id],
@@ -104,11 +107,11 @@ export default function BookingDetailPage({
           /* review is optional — don't block the release */
         }
       }
-      toast("Payment released. Thanks for confirming!", "success");
+      toast(tr("bookings.detail.toastReleased"), "success");
       setConfirmOpen(false);
       reload();
     } catch (err) {
-      toast(err instanceof ApiError ? err.message : "Couldn't update.", "error");
+      toast(err instanceof ApiError ? err.message : tr("bookings.detail.errUpdateFailed"), "error");
     } finally {
       setBusy(false);
     }
@@ -116,19 +119,19 @@ export default function BookingDetailPage({
 
   async function submitComplaint() {
     if (cDesc.trim().length < 20) {
-      setCError("Please describe the problem in at least 20 characters.");
+      setCError(tr("bookings.detail.errComplaintLen"));
       return;
     }
     setCError(null);
     setBusy(true);
     try {
       await api.createComplaint({ bookingId: id, type: cType, description: cDesc.trim() });
-      toast("Complaint filed — escrow is paused while we review.", "success");
+      toast(tr("bookings.detail.toastComplaintFiled"), "success");
       setComplaintOpen(false);
       setCDesc("");
       reload();
     } catch (err) {
-      setCError(err instanceof ApiError ? err.message : "Couldn't file the complaint.");
+      setCError(err instanceof ApiError ? err.message : tr("bookings.detail.errComplaintFailed"));
     } finally {
       setBusy(false);
     }
@@ -146,7 +149,7 @@ export default function BookingDetailPage({
   if (error || !data)
     return (
       <div className="mx-auto max-w-2xl px-4 py-10">
-        <ErrorState message={error ?? "Booking not found."} onRetry={reload} />
+        <ErrorState message={error ?? tr("bookings.detail.bookingNotFound")} onRetry={reload} />
       </div>
     );
 
@@ -161,30 +164,30 @@ export default function BookingDetailPage({
         href="/bookings"
         className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground"
       >
-        <ChevronLeft className="h-4 w-4" /> My bookings
+        <ChevronLeft className="h-4 w-4" /> {tr("bookings.detail.backToBookings")}
       </Link>
 
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">
-          {b.category?.name ?? "Service"}
+          {b.category?.name ?? tr("bookings.serviceFallback")}
         </h1>
         <BookingStatusBadge status={b.status} />
       </div>
       <p className="mt-1 text-sm text-muted-foreground">
-        Booking #{b.id.slice(0, 8)}
+        {tr("bookings.detail.bookingId", { id: b.id.slice(0, 8) })}
       </p>
 
       {/* Live status timeline */}
       <div className="mt-6 rounded-xl border border-border bg-card p-5">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-sm font-semibold">Live status</h2>
+          <h2 className="text-sm font-semibold">{tr("bookings.detail.liveStatus")}</h2>
           {active && (
             <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
               </span>
-              Live
+              {tr("bookings.detail.live")}
             </span>
           )}
         </div>
@@ -225,7 +228,7 @@ export default function BookingDetailPage({
                   window.location.href = result.paymentUrl;
                 }
               } catch (err) {
-                toast(err instanceof ApiError ? err.message : "Payment failed.", "error");
+                toast(err instanceof ApiError ? err.message : tr("bookings.detail.errPaymentFailed"), "error");
               }
             }}
             onReleaseFunds={completeJob}
@@ -237,7 +240,7 @@ export default function BookingDetailPage({
       {b.escrowStatus !== "NONE" && (b.amount == null || b.amount === 0) && (
         <div className="mt-6 rounded-xl border border-border bg-card p-5">
           <h2 className="mb-4 flex items-center gap-1.5 text-sm font-semibold">
-            <Lock className="h-4 w-4 text-primary" /> Escrow status
+            <Lock className="h-4 w-4 text-primary" /> {tr("bookings.detail.escrowStatus")}
           </h2>
           <EscrowStatusBar status={b.escrowStatus} />
         </div>
@@ -253,14 +256,14 @@ export default function BookingDetailPage({
               href={`/providers/${b.provider.id}`}
               className="text-sm text-primary hover:underline"
             >
-              View profile
+              {tr("bookings.detail.viewProfile")}
             </Link>
           )}
         </div>
         {["ACCEPTED", "IN_PROGRESS", "COMPLETED"].includes(b.status) && (
           <Link href={`/messages/${b.id}`}>
             <Button variant="soft" size="sm">
-              <MessageCircle className="h-4 w-4" /> Message
+              <MessageCircle className="h-4 w-4" /> {tr("bookings.detail.message")}
             </Button>
           </Link>
         )}
@@ -269,23 +272,23 @@ export default function BookingDetailPage({
       {/* Details */}
       <div className="mt-5 space-y-3 rounded-xl border border-border bg-card p-4 text-sm">
         {b.scheduledAt && (
-          <Row label="Scheduled">{formatDateTime(b.scheduledAt)}</Row>
+          <Row label={tr("bookings.detail.scheduled")}>{formatDateTime(b.scheduledAt)}</Row>
         )}
         {b.address && (
-          <Row label="Address">
+          <Row label={tr("bookings.detail.address")}>
             <span className="inline-flex items-center gap-1">
               <MapPin className="h-3.5 w-3.5" /> {b.address}
             </span>
           </Row>
         )}
-        {b.notes && <Row label="Notes">{b.notes}</Row>}
+        {b.notes && <Row label={tr("bookings.detail.notes")}>{b.notes}</Row>}
       </div>
 
       {/* Guarantee */}
       <div className="mt-5 flex items-center gap-3 rounded-xl bg-primary-soft p-4">
         <ShieldCheck className="h-5 w-5 shrink-0 text-primary" />
         <p className="text-sm text-foreground">
-          Covered by the 7-Day Workmanship Guarantee.
+          {tr("bookings.detail.guaranteeText")}
         </p>
       </div>
 
@@ -294,10 +297,10 @@ export default function BookingDetailPage({
         <div className="fixed inset-x-0 bottom-16 z-30 border-t border-border bg-background/95 p-3 backdrop-blur md:bottom-0">
           <div className="mx-auto flex max-w-2xl gap-3 px-1">
             <Button variant="outline" onClick={() => setComplaintOpen(true)}>
-              <AlertTriangle className="h-4 w-4" /> Report a problem
+              <AlertTriangle className="h-4 w-4" /> {tr("bookings.detail.reportProblem")}
             </Button>
             <Button full onClick={() => setConfirmOpen(true)}>
-              <CheckCircle2 className="h-4 w-4" /> Job Complete
+              <CheckCircle2 className="h-4 w-4" /> {tr("bookings.detail.jobComplete")}
             </Button>
           </div>
         </div>
@@ -307,19 +310,15 @@ export default function BookingDetailPage({
       <Sheet
         open={confirmOpen}
         onClose={() => setConfirmOpen(false)}
-        title="Release payment?"
+        title={tr("bookings.detail.releaseTitle")}
       >
         <p className="text-sm text-muted-foreground">
-          This releases{" "}
-          <span className="tabular font-semibold text-foreground">
-            {npr(b.amount)}
-          </span>{" "}
-          to {providerName}. Are you satisfied with the work?
+          {tr("bookings.detail.releaseBody", { amount: npr(b.amount), name: providerName })}
         </p>
 
         {/* Optional inline review */}
         <div className="mt-4 rounded-xl border border-border p-4">
-          <p className="text-sm font-medium">Rate this job (optional)</p>
+          <p className="text-sm font-medium">{tr("bookings.detail.rateJob")}</p>
           <div className="mt-2">
             <StarRatingInput value={rating} onChange={setRating} />
           </div>
@@ -328,7 +327,7 @@ export default function BookingDetailPage({
               className="mt-3"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder="What went well? (optional, helps other customers)"
+              placeholder={tr("bookings.detail.reviewPlaceholder")}
             />
           )}
         </div>
@@ -340,10 +339,10 @@ export default function BookingDetailPage({
             onClick={() => setConfirmOpen(false)}
             disabled={busy}
           >
-            Not yet
+            {tr("bookings.detail.notYet")}
           </Button>
           <Button full onClick={completeJob} disabled={busy}>
-            {busy ? "Releasing…" : "Yes, release"}
+            {busy ? tr("bookings.detail.releasing") : tr("bookings.detail.yesRelease")}
           </Button>
         </div>
       </Sheet>
@@ -352,13 +351,13 @@ export default function BookingDetailPage({
       <Sheet
         open={complaintOpen}
         onClose={() => setComplaintOpen(false)}
-        title="Report a problem"
+        title={tr("bookings.detail.reportProblem")}
       >
         <p className="text-sm text-muted-foreground">
-          Filing a complaint pauses the escrow release while our team reviews it.
+          {tr("bookings.detail.complaintIntro")}
         </p>
         <div className="mt-4">
-          <Label>What went wrong?</Label>
+          <Label>{tr("bookings.detail.whatWentWrong")}</Label>
           <div className="flex flex-col gap-2">
             {COMPLAINT_TYPES.map((t) => (
               <button
@@ -371,18 +370,18 @@ export default function BookingDetailPage({
                     : "border-border hover:bg-secondary"
                 }`}
               >
-                {t.label}
+                {tr(t.labelKey)}
               </button>
             ))}
           </div>
         </div>
         <div className="mt-4">
-          <Label htmlFor="cdesc">Describe what happened</Label>
+          <Label htmlFor="cdesc">{tr("bookings.detail.describeWhatHappened")}</Label>
           <Textarea
             id="cdesc"
             value={cDesc}
             onChange={(e) => setCDesc(e.target.value)}
-            placeholder="Give us the details so we can help (at least 20 characters)."
+            placeholder={tr("bookings.detail.describePlaceholder")}
           />
           {cError && (
             <p className="mt-1.5 text-sm text-urgent" role="alert">
@@ -397,7 +396,7 @@ export default function BookingDetailPage({
             onClick={() => setComplaintOpen(false)}
             disabled={busy}
           >
-            Cancel
+            {tr("bookings.detail.cancel")}
           </Button>
           <Button
             variant="destructive"
@@ -405,7 +404,7 @@ export default function BookingDetailPage({
             onClick={submitComplaint}
             disabled={busy}
           >
-            {busy ? "Filing…" : "File complaint"}
+            {busy ? tr("bookings.detail.filing") : tr("bookings.detail.fileComplaint")}
           </Button>
         </div>
       </Sheet>
