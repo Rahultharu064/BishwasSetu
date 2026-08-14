@@ -155,6 +155,23 @@ export interface FraudFlagsResponse {
   pagination: Pagination;
 }
 
+// ── Audit log (GET /admin/audit-log) ───────────────────────────
+export interface AuditLogEntry {
+  id: string;
+  adminId: string;
+  action: string;
+  targetType: "complaint" | "provider" | "user" | "fraudFlag" | "skillEvidence";
+  targetId: string;
+  details?: Record<string, unknown> | null;
+  createdAt: string;
+  admin?: { name: string; role: string } | null;
+}
+
+export interface AuditLogResponse {
+  logs: AuditLogEntry[];
+  pagination: Pagination;
+}
+
 // ── Revenue analytics (GET /admin/analytics/revenue) ──────────
 export interface RevenueAnalytics {
   period: { from: string; to: string };

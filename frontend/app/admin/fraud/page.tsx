@@ -69,14 +69,18 @@ export default function AdminFraudPage() {
   const { toast } = useToast();
   const [tab, setTab] = useState<Tab>("flags");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
 
   const flagsReq = useFetch(
-    () => api.adminFraudFlags({ limit: 30 }),
-    [],
+    () => api.adminFraudFlags({ page, limit: 30 }),
+    [page],
   );
   const anomaliesReq = useFetch(() => api.adminTrustAnomalies(), []);
 
-  const { flags } = useMemo(() => flagsFrom(flagsReq.data), [flagsReq.data]);
+  const { flags, pagination } = useMemo(
+    () => flagsFrom(flagsReq.data),
+    [flagsReq.data]
+  );
   const anomalies = useMemo(
     () => anomaliesFrom(anomaliesReq.data),
     [anomaliesReq.data]
@@ -108,9 +112,9 @@ export default function AdminFraudPage() {
       <div className="mt-4 inline-flex rounded-full border border-border p-1">
         <TabButton active={tab === "flags"} onClick={() => setTab("flags")}>
           <Flag className="h-4 w-4" /> Fraud flags
-          {flags.length > 0 && (
+          {pagination.total > 0 && (
             <span className="ml-1 rounded-full bg-urgent-soft px-1.5 text-[11px] font-semibold text-urgent">
-              {flags.length}
+              {pagination.total}
             </span>
           )}
         </TabButton>
@@ -179,7 +183,34 @@ export default function AdminFraudPage() {
               ))}
             </ul>
           )
-        ) : anomaliesReq.loading ? (
+        ) : null}
+        {tab === "flags" &&
+          !flagsReq.loading &&
+          !flagsReq.error &&
+          pagination.totalPages > 1 && (
+            <div className="mt-5 flex items-center justify-between">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                Previous
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                Page {pagination.page} of {pagination.totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page >= pagination.totalPages}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                Next
+              </Button>
+            </div>
+          )}
+        {tab === "anomalies" && (anomaliesReq.loading ? (
           <SkeletonList />
         ) : anomaliesReq.error ? (
           <ErrorState
@@ -236,7 +267,7 @@ export default function AdminFraudPage() {
               );
             })}
           </ul>
-        )}
+        ))}
       </div>
     </div>
   );

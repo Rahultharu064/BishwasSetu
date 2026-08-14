@@ -7,9 +7,11 @@ import { api } from "@/lib/api";
 import { useFetch } from "@/lib/use-fetch";
 import { providersFrom } from "@/lib/normalize";
 import type { Provider } from "@/lib/types";
+import type { Pagination } from "@/lib/admin-types";
 import { Avatar } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { TrustScoreRing } from "@/components/trust-score-ring";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState, ErrorState } from "@/components/ui/states";
@@ -34,21 +36,25 @@ export default function AdminProvidersPage() {
   const [status, setStatus] = useState("");
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
 
   const req = useFetch(
     () =>
       api.adminProviders({
         identityStatus: status || undefined,
         search: query || undefined,
+        page,
         limit: 30,
       }),
-    [status, query]
+    [status, query, page]
   );
 
   const providers = providersFrom(req.data) as (Provider & {
     _count?: { bookings?: number };
     user?: { name: string; email?: string; phone?: string };
   })[];
+  const pagination = (req.data as { pagination?: Pagination } | undefined)
+    ?.pagination;
 
   return (
     <div>
@@ -61,6 +67,7 @@ export default function AdminProvidersPage() {
       <form
         onSubmit={(e) => {
           e.preventDefault();
+          setPage(1);
           setQuery(search.trim());
         }}
         className="relative mt-4 max-w-md"
@@ -79,7 +86,10 @@ export default function AdminProvidersPage() {
         {FILTERS.map((f) => (
           <button
             key={f.value || "all"}
-            onClick={() => setStatus(f.value)}
+            onClick={() => {
+              setPage(1);
+              setStatus(f.value);
+            }}
             className={`whitespace-nowrap rounded-full border px-3 py-1.5 text-sm font-medium ${
               status === f.value
                 ? "border-primary bg-primary-soft text-primary"
@@ -149,6 +159,30 @@ export default function AdminProvidersPage() {
           </ul>
         )}
       </div>
+
+      {!req.loading && !req.error && pagination && pagination.totalPages > 1 && (
+        <div className="mt-5 flex items-center justify-between">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+          >
+            Previous
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            Page {pagination.page} of {pagination.totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= pagination.totalPages}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            Next
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

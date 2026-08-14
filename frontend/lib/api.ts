@@ -554,6 +554,13 @@ export const api = {
       auth: true,
     }),
 
+  // Admin — audit log (every state-changing decision above)
+  adminAuditLog: (query?: Record<string, string | number | undefined>) =>
+    apiRequest<import("./admin-types").AuditLogResponse>("/admin/audit-log", {
+      query,
+      auth: true,
+    }),
+
   // Admin — revenue analytics
   adminRevenue: (query: { from: string; to: string }) =>
     apiRequest<unknown>("/admin/analytics/revenue", { query, auth: true }),

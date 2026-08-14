@@ -32,13 +32,15 @@ import { EmptyState, ErrorState } from "@/components/ui/states";
 import { cn } from "@/lib/utils";
 
 export default function KycQueuePage() {
+  const [page, setPage] = useState(1);
   const { data, loading, error, reload } = useFetch<KycQueueResponse>(
-    () => api.adminKycQueue({ limit: 20 }) as Promise<KycQueueResponse>,
-    []
+    () => api.adminKycQueue({ page, limit: 20 }) as Promise<KycQueueResponse>,
+    [page]
   );
   const [selected, setSelected] = useState<KycQueueItem | null>(null);
 
   const queue = data?.queue ?? [];
+  const pagination = data?.pagination;
 
   return (
     <div>
@@ -80,6 +82,30 @@ export default function KycQueuePage() {
             />
           ))}
         </ul>
+      )}
+
+      {!loading && !error && pagination && pagination.totalPages > 1 && (
+        <div className="mt-5 flex items-center justify-between">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+          >
+            Previous
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            Page {pagination.page} of {pagination.totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= pagination.totalPages}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            Next
+          </Button>
+        </div>
       )}
 
       <ReviewPanel
