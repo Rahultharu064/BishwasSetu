@@ -7,6 +7,7 @@ import { MessageCircle, Lock, ChevronRight } from "lucide-react";
 import { api } from "@/lib/api";
 import { useFetch } from "@/lib/use-fetch";
 import { useAuth } from "@/context/auth-context";
+import { useLang } from "@/context/language-context";
 import { relativeTime } from "@/lib/format";
 import type { Conversation } from "@/lib/types";
 import { Avatar } from "@/components/ui/avatar";
@@ -25,6 +26,7 @@ function conversationsFrom(data: unknown): Conversation[] {
 export default function MessagesPage() {
   const router = useRouter();
   const { isAuthenticated, loading: authLoading } = useAuth();
+  const { tr } = useLang();
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated)
@@ -41,9 +43,9 @@ export default function MessagesPage() {
 
   return (
     <div className="mx-auto max-w-lg px-4 py-8">
-      <h1 className="text-2xl font-bold tracking-tight">Messages</h1>
+      <h1 className="text-2xl font-bold tracking-tight">{tr("messages.list.heading")}</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Chat with the other party once a booking is accepted.
+        {tr("messages.list.subtitle")}
       </p>
 
       <div className="mt-6">
@@ -60,18 +62,17 @@ export default function MessagesPage() {
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary-soft text-primary">
               <MessageCircle className="h-6 w-6" />
             </div>
-            <p className="mt-3 font-semibold">No conversations yet</p>
+            <p className="mt-3 font-semibold">{tr("messages.list.emptyTitle")}</p>
             <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
-              To protect you from spam, messaging opens only once a provider
-              accepts your booking — never before.
+              {tr("messages.list.emptyDesc")}
             </p>
             <Link href="/services" className="mt-4 inline-block">
               <Button variant="soft" size="sm">
-                Book a service
+                {tr("messages.list.bookService")}
               </Button>
             </Link>
             <p className="mt-4 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Lock className="h-3.5 w-3.5" /> No pre-booking DMs — by design
+              <Lock className="h-3.5 w-3.5" /> {tr("messages.list.noPreBookingDms")}
             </p>
           </div>
         ) : (
@@ -111,8 +112,8 @@ export default function MessagesPage() {
                       }`}
                     >
                       {c.lastMessage
-                        ? `${c.lastMessage.mine ? "You: " : ""}${c.lastMessage.body}`
-                        : `${c.category ?? "Booking"} · say hello`}
+                        ? `${c.lastMessage.mine ? tr("messages.list.youPrefix") : ""}${c.lastMessage.body}`
+                        : `${c.category ?? tr("messages.list.bookingFallback")} ${tr("messages.list.sayHello")}`}
                     </p>
                   </div>
                   <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />

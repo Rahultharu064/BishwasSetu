@@ -27,7 +27,7 @@ import { Input, PasswordInput, Label, FieldError } from "@/components/ui/input";
 export default function AccountPage() {
   const router = useRouter();
   const { user, isAuthenticated, loading, logout } = useAuth();
-  const { lang, toggle } = useLang();
+  const { lang, toggle, tr } = useLang();
 
   useEffect(() => {
     if (!loading && !isAuthenticated) router.replace("/login?next=/account");
@@ -36,11 +36,11 @@ export default function AccountPage() {
   if (loading || !user) return null;
 
   const rows = [
-    { href: "/bookings", icon: <CalendarCheck className="h-5 w-5" />, label: "My bookings" },
-    { href: "/complaints", icon: <MessageSquareWarning className="h-5 w-5" />, label: "My complaints" },
-    { href: "/account/addresses", icon: <MapPin className="h-5 w-5" />, label: "Saved addresses" },
-    { href: "/account/payments", icon: <Wallet className="h-5 w-5" />, label: "Payment methods" },
-    { href: "/trust-safety", icon: <ShieldCheck className="h-5 w-5" />, label: "Trust & Safety" },
+    { href: "/bookings", icon: <CalendarCheck className="h-5 w-5" />, label: tr("account.myBookings") },
+    { href: "/complaints", icon: <MessageSquareWarning className="h-5 w-5" />, label: tr("account.myComplaints") },
+    { href: "/account/addresses", icon: <MapPin className="h-5 w-5" />, label: tr("account.savedAddresses") },
+    { href: "/account/payments", icon: <Wallet className="h-5 w-5" />, label: tr("account.paymentMethods") },
+    { href: "/trust-safety", icon: <ShieldCheck className="h-5 w-5" />, label: tr("account.trustSafety") },
   ];
 
   return (
@@ -52,7 +52,7 @@ export default function AccountPage() {
         <Link href="/provider" className="mt-6 block">
           <div className="flex items-center gap-3 rounded-xl bg-primary p-4 text-primary-foreground">
             <ShieldCheck className="h-5 w-5" />
-            <span className="flex-1 font-semibold">Go to provider dashboard</span>
+            <span className="flex-1 font-semibold">{tr("account.goToProviderDashboard")}</span>
             <ChevronRight className="h-5 w-5" />
           </div>
         </Link>
@@ -62,7 +62,7 @@ export default function AccountPage() {
         <Link href="/admin" className="mt-6 block">
           <div className="flex items-center gap-3 rounded-xl bg-foreground p-4 text-background">
             <ShieldCheck className="h-5 w-5" />
-            <span className="flex-1 font-semibold">Open admin console</span>
+            <span className="flex-1 font-semibold">{tr("account.openAdminConsole")}</span>
             <ChevronRight className="h-5 w-5" />
           </div>
         </Link>
@@ -88,7 +88,7 @@ export default function AccountPage() {
           <span className="text-primary">
             <Globe className="h-5 w-5" />
           </span>
-          <span className="flex-1 font-medium">Language</span>
+          <span className="flex-1 font-medium">{tr("account.language")}</span>
           <span className="text-sm font-semibold text-muted-foreground">
             {lang === "ne" ? "नेपाली" : "English"}
           </span>
@@ -109,7 +109,7 @@ export default function AccountPage() {
           router.push("/");
         }}
       >
-        <LogOut className="h-4 w-4" /> Log out
+        <LogOut className="h-4 w-4" /> {tr("account.logout")}
       </Button>
     </div>
   );
@@ -120,6 +120,7 @@ export default function AccountPage() {
 function ProfileHeader() {
   const { user, updateUser } = useAuth();
   const { toast } = useToast();
+  const { tr } = useLang();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(user?.name ?? "");
   const [error, setError] = useState<string | null>(null);
@@ -131,17 +132,17 @@ function ProfileHeader() {
     e.preventDefault();
     setError(null);
     if (name.trim().length < 2) {
-      setError("Name must be at least 2 characters.");
+      setError(tr("account.errNameLen"));
       return;
     }
     setSaving(true);
     try {
       const updated = await api.updateProfile({ name: name.trim() });
       updateUser({ name: updated.name });
-      toast("Profile updated.", "success");
+      toast(tr("account.toastProfileUpdated"), "success");
       setEditing(false);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't save changes.");
+      setError(err instanceof ApiError ? err.message : tr("account.errSaveFailed"));
     } finally {
       setSaving(false);
     }
@@ -154,7 +155,7 @@ function ProfileHeader() {
           <UserCircle2 className="h-9 w-9" />
         </span>
         <div className="flex-1">
-          <Label htmlFor="account-name">Display name</Label>
+          <Label htmlFor="account-name">{tr("account.displayName")}</Label>
           <Input
             id="account-name"
             value={name}
@@ -164,7 +165,7 @@ function ProfileHeader() {
           <FieldError>{error}</FieldError>
           <div className="mt-3 flex gap-2">
             <Button type="submit" size="sm" disabled={saving}>
-              {saving ? "Saving…" : "Save"}
+              {saving ? tr("account.saving") : tr("account.save")}
             </Button>
             <Button
               type="button"
@@ -177,7 +178,7 @@ function ProfileHeader() {
                 setError(null);
               }}
             >
-              Cancel
+              {tr("account.cancel")}
             </Button>
           </div>
         </div>
@@ -195,7 +196,7 @@ function ProfileHeader() {
           <h1 className="text-xl font-bold">{user.name}</h1>
           <button
             onClick={() => setEditing(true)}
-            aria-label="Edit display name"
+            aria-label={tr("account.editDisplayName")}
             className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
           >
             <Pencil className="h-3.5 w-3.5" />
@@ -205,7 +206,7 @@ function ProfileHeader() {
           {user.email || user.phone}
         </p>
         <Badge variant="soft" size="sm" className="mt-1">
-          {user.role === "PROVIDER" ? "Provider" : "Customer"}
+          {user.role === "PROVIDER" ? tr("account.provider") : tr("account.customer")}
         </Badge>
       </div>
     </div>
@@ -216,6 +217,7 @@ function ProfileHeader() {
 
 function PasswordSection() {
   const { toast } = useToast();
+  const { tr } = useLang();
   const [open, setOpen] = useState(false);
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
@@ -227,27 +229,27 @@ function PasswordSection() {
     e.preventDefault();
     setError(null);
     if (!current) {
-      setError("Enter your current password.");
+      setError(tr("account.errCurrentPasswordRequired"));
       return;
     }
     if (next.length < 8) {
-      setError("New password must be at least 8 characters.");
+      setError(tr("account.errNewPasswordLen"));
       return;
     }
     if (next !== confirm) {
-      setError("New password and confirmation don't match.");
+      setError(tr("account.errPasswordMismatch"));
       return;
     }
     setSaving(true);
     try {
       await api.changePassword({ currentPassword: current, newPassword: next });
-      toast("Password updated.", "success");
+      toast(tr("account.toastPasswordUpdated"), "success");
       setCurrent("");
       setNext("");
       setConfirm("");
       setOpen(false);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't change password.");
+      setError(err instanceof ApiError ? err.message : tr("account.errPasswordChangeFailed"));
     } finally {
       setSaving(false);
     }
@@ -262,7 +264,7 @@ function PasswordSection() {
         <span className="text-primary">
           <KeyRound className="h-5 w-5" />
         </span>
-        <span className="flex-1 font-medium">Change password</span>
+        <span className="flex-1 font-medium">{tr("account.changePassword")}</span>
         <ChevronRight
           className={`h-5 w-5 text-muted-foreground transition-transform ${open ? "rotate-90" : ""}`}
         />
@@ -270,7 +272,7 @@ function PasswordSection() {
       {open && (
         <form onSubmit={submit} className="space-y-4 border-t border-border p-4" noValidate>
           <div>
-            <Label htmlFor="acct-pw-current">Current password</Label>
+            <Label htmlFor="acct-pw-current">{tr("account.currentPassword")}</Label>
             <PasswordInput
               id="acct-pw-current"
               value={current}
@@ -279,17 +281,17 @@ function PasswordSection() {
             />
           </div>
           <div>
-            <Label htmlFor="acct-pw-new">New password</Label>
+            <Label htmlFor="acct-pw-new">{tr("account.newPassword")}</Label>
             <PasswordInput
               id="acct-pw-new"
               value={next}
               onChange={(e) => setNext(e.target.value)}
-              placeholder="At least 8 characters"
+              placeholder={tr("auth.register.passwordPlaceholder")}
               autoComplete="new-password"
             />
           </div>
           <div>
-            <Label htmlFor="acct-pw-confirm">Confirm new password</Label>
+            <Label htmlFor="acct-pw-confirm">{tr("account.confirmNewPassword")}</Label>
             <PasswordInput
               id="acct-pw-confirm"
               value={confirm}
@@ -299,7 +301,7 @@ function PasswordSection() {
           </div>
           <FieldError>{error}</FieldError>
           <Button type="submit" disabled={saving}>
-            {saving ? "Updating…" : "Update password"}
+            {saving ? tr("account.updating") : tr("account.updatePassword")}
           </Button>
         </form>
       )}
