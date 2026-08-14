@@ -157,6 +157,7 @@ model User {
   assistantFeedback AssistantFeedback[]
   messages      Message[]          @relation("SentMessages")
   addresses     SavedAddress[]
+  auditLogs     AdminAuditLog[]
 
   @@map("users")
 }
@@ -660,6 +661,31 @@ model ModerationLog {
 
   @@index([entityId])
   @@map("moderation_logs")
+}
+
+// ─────────────────────────────────────────────
+// ADMIN AUDIT LOG — every admin/moderator decision that changes state
+// (KYC/skill-evidence review, complaint resolution, fraud-flag review,
+// user activation) gets one row here, independent of the domain record
+// itself, so an accountability review doesn't depend on that record still
+// carrying its own "resolvedBy" field.
+// ─────────────────────────────────────────────
+
+model AdminAuditLog {
+  id         String   @id @default(uuid()) @db.Char(36)
+  adminId    String   @db.Char(36)
+  action     String   @db.VarChar(50) // e.g. 'COMPLAINT_RESOLVED', 'KYC_APPROVED', 'USER_DEACTIVATED'
+  targetType String   @db.VarChar(30) // 'complaint' | 'provider' | 'user' | 'fraudFlag' | 'skillEvidence'
+  targetId   String   @db.Char(36)
+  details    Json?
+  createdAt  DateTime @default(now())
+
+  admin User @relation(fields: [adminId], references: [id])
+
+  @@index([adminId])
+  @@index([targetType, targetId])
+  @@index([createdAt])
+  @@map("admin_audit_logs")
 }
 
 // ─────────────────────────────────────────────

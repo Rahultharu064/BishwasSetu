@@ -1,15 +1,17 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { SlidersHorizontal } from "lucide-react";
 import { api } from "@/lib/api";
 import { useFetch } from "@/lib/use-fetch";
 import { providersFrom } from "@/lib/normalize";
+import type { Pagination } from "@/lib/types";
 import { SearchBar } from "@/components/home/search-bar";
 import { ProviderCard, ProviderCardSkeleton } from "@/components/provider-card";
 import { EmptyState, ErrorState } from "@/components/ui/states";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 const SORTS = [
   { key: "trust", label: "Trust Score" },
@@ -22,14 +24,23 @@ function SearchInner() {
   const q = params.get("q") ?? "";
   const [sort, setSort] = useState("trust");
   const [tierFloor, setTierFloor] = useState(true); // Tier 2+ default (ux.md §5.2)
+  const [page, setPage] = useState(1);
+
+  // A new search term or sort order invalidates whatever page we were on.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPage(1);
+  }, [q, sort]);
 
   const req = useFetch(
-    () => api.searchProviders({ q: q || undefined, limit: 20, sort }),
-    [q, sort]
+    () => api.searchProviders({ q: q || undefined, page, limit: 20, sort }),
+    [q, sort, page]
   );
   const providers = providersFrom(req.data).filter((p) =>
     tierFloor ? p.kycTier !== "TIER_1_BASIC" : true
   );
+  const pagination = (req.data as { pagination?: Pagination } | undefined)
+    ?.pagination;
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">
@@ -73,7 +84,7 @@ function SearchInner() {
           </h1>
           {!req.loading && (
             <Badge variant="soft" size="sm">
-              {providers.length}
+              {pagination?.total ?? providers.length}
             </Badge>
           )}
         </div>
@@ -102,6 +113,30 @@ function SearchInner() {
                 : undefined
             }
           />
+        )}
+
+        {!req.loading && !req.error && pagination && pagination.totalPages > 1 && (
+          <div className="mt-6 flex items-center justify-between">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              Previous
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              Page {pagination.page} of {pagination.totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= pagination.totalPages}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Next
+            </Button>
+          </div>
         )}
       </div>
     </div>

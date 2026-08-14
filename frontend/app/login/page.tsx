@@ -7,12 +7,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Mail, Lock, ArrowRight, UserPlus, Eye, EyeOff, Phone } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { useToast } from "@/context/toast-context";
+import { useLang } from "@/context/language-context";
 import { GoogleLoginButton } from "@/components/auth/google-login-button";
 
 function LoginInner() {
   const router = useRouter();
   const params = useSearchParams();
   const { toast } = useToast();
+  const { tr } = useLang();
   const next = params.get("next") || "/";
 
   const [identifier, setIdentifier] = useState("");
@@ -25,7 +27,7 @@ function LoginInner() {
     ev.preventDefault();
     setError(null);
     if (!identifier || !password) {
-      setError("Enter your email/phone and password.");
+      setError(tr("auth.login.errFields"));
       return;
     }
     setLoading(true);
@@ -36,14 +38,14 @@ function LoginInner() {
         phone: isEmail ? undefined : identifier,
         password,
       });
-      toast("Enter the code we just sent you.", "info");
+      toast(tr("auth.login.toastOtpSent"), "info");
       router.push(
         `/verify-otp?userId=${res.userId}&channel=${
           isEmail ? "email" : "phone"
         }&next=${encodeURIComponent(next)}`
       );
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Login failed.");
+      setError(err instanceof ApiError ? err.message : tr("auth.login.errFailed"));
     } finally {
       setLoading(false);
     }
@@ -85,7 +87,7 @@ function LoginInner() {
               <div className="flex items-center gap-2 mt-1.5">
                 <div className="h-px w-6 bg-[#e7e7e1]" />
                 <span className="text-[9px] font-bold text-[#9ca39f] uppercase tracking-[0.25em]">
-                  Bridge of Trust
+                  {tr("auth.bridgeOfTrust")}
                 </span>
                 <div className="h-px w-6 bg-[#e7e7e1]" />
               </div>
@@ -93,8 +95,8 @@ function LoginInner() {
 
             {/* Heading */}
             <div className="mb-6 text-center">
-              <h2 className="text-xl font-bold text-[#1a1d1c]">Welcome Back</h2>
-              <p className="mt-1 text-sm text-[#6b7280]">Sign in to your account</p>
+              <h2 className="text-xl font-bold text-[#1a1d1c]">{tr("auth.login.welcomeBack")}</h2>
+              <p className="mt-1 text-sm text-[#6b7280]">{tr("auth.login.subtitle")}</p>
             </div>
 
             {/* Google Sign In */}
@@ -103,7 +105,7 @@ function LoginInner() {
             <div className="mt-5 mb-5 flex items-center gap-3">
               <div className="flex-1 h-px bg-[#e7e7e1]" />
               <span className="text-[10px] font-bold text-[#9ca39f] uppercase tracking-wider">
-                Or continue with
+                {tr("auth.orContinueWith")}
               </span>
               <div className="flex-1 h-px bg-[#e7e7e1]" />
             </div>
@@ -116,7 +118,7 @@ function LoginInner() {
                   htmlFor="identifier"
                   className="block text-sm font-semibold text-[#1a1d1c] mb-1.5"
                 >
-                  Email Address
+                  {tr("auth.login.emailAddressLabel")}
                 </label>
                 <div
                   className="flex items-center overflow-hidden rounded-xl border border-[#e7e7e1] bg-[#fafaf7] transition-all duration-200 focus-within:border-[#0E7C5B] focus-within:ring-2 focus-within:ring-[#0E7C5B]/15 focus-within:bg-white"
@@ -129,7 +131,7 @@ function LoginInner() {
                     type="text"
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
-                    placeholder="Enter your email"
+                    placeholder={tr("auth.login.emailPlaceholder")}
                     autoComplete="username"
                     className="flex-1 bg-transparent px-3 py-3 text-sm text-[#1a1d1c] placeholder:text-[#9ca39f] outline-none"
                   />
@@ -142,7 +144,7 @@ function LoginInner() {
                   htmlFor="password"
                   className="block text-sm font-semibold text-[#1a1d1c] mb-1.5"
                 >
-                  Password
+                  {tr("auth.login.passwordLabel")}
                 </label>
                 <div
                   className="flex items-center overflow-hidden rounded-xl border border-[#e7e7e1] bg-[#fafaf7] transition-all duration-200 focus-within:border-[#0E7C5B] focus-within:ring-2 focus-within:ring-[#0E7C5B]/15 focus-within:bg-white"
@@ -155,7 +157,7 @@ function LoginInner() {
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
+                    placeholder={tr("auth.login.passwordPlaceholder")}
                     autoComplete="current-password"
                     className="flex-1 bg-transparent px-3 py-3 text-sm text-[#1a1d1c] placeholder:text-[#9ca39f] outline-none"
                   />
@@ -188,7 +190,7 @@ function LoginInner() {
                 className="group w-full flex items-center justify-center gap-2.5 rounded-xl bg-[#0E7C5B] hover:bg-[#0b6a4d] active:scale-[0.98] text-white font-semibold py-3.5 text-sm transition-all duration-200 shadow-lg shadow-[#0E7C5B]/25 hover:shadow-xl hover:shadow-[#0E7C5B]/30 disabled:opacity-60 disabled:cursor-not-allowed mt-2"
               >
                 <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
-                {loading ? "Sending code…" : "Sign In"}
+                {loading ? tr("auth.login.sendingCode") : tr("auth.login.signIn")}
               </button>
             </form>
 
@@ -198,7 +200,7 @@ function LoginInner() {
                 href="/forgot-password"
                 className="text-sm text-[#0E7C5B] hover:text-[#0b6a4d] font-medium hover:underline underline-offset-2 transition-colors"
               >
-                Forgot your password?
+                {tr("auth.login.forgotPassword")}
               </Link>
             </div>
 
@@ -206,7 +208,7 @@ function LoginInner() {
             <div className="mt-5 flex items-center gap-3">
               <div className="flex-1 h-px bg-[#e7e7e1]" />
               <span className="text-xs text-[#9ca39f] whitespace-nowrap">
-                Don&apos;t have an account?
+                {tr("auth.login.noAccount")}
               </span>
               <div className="flex-1 h-px bg-[#e7e7e1]" />
             </div>
@@ -217,14 +219,14 @@ function LoginInner() {
               className="mt-4 w-full flex items-center justify-center gap-2.5 rounded-xl border-2 border-[#0E7C5B] text-[#0E7C5B] hover:bg-[#0E7C5B]/5 active:scale-[0.98] font-semibold py-3 text-sm transition-all duration-200"
             >
               <UserPlus className="h-4 w-4" />
-              Create Account
+              {tr("auth.login.createAccount")}
             </Link>
           </div>
         </div>
 
         {/* Footer note */}
         <p className="mt-5 text-center text-xs text-[#9ca39f]">
-          Nepal&apos;s trusted home services platform
+          {tr("auth.footerTagline")}
         </p>
       </div>
     </div>

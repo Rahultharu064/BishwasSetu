@@ -3,6 +3,7 @@ import {
   notifyKycApproved,
   notifyKycRejected,
 } from '../services/notificationsService'
+import { logAdminAction } from '../services/auditLogService'
 
 // ── DASHBOARD SUMMARY ─────────────────────────────────────────
 
@@ -231,11 +232,17 @@ export const getUsers = async (params: {
   }
 }
 
-export const toggleUserStatus = async (userId: string, isActive: boolean) => {
-  return prisma.user.update({
+export const toggleUserStatus = async (userId: string, isActive: boolean, adminId: string) => {
+  const user = await prisma.user.update({
     where: { id: userId },
     data:  { isActive },
   })
+
+  await logAdminAction({
+    adminId, action: isActive ? 'USER_REACTIVATED' : 'USER_DEACTIVATED', targetType: 'user', targetId: userId,
+  })
+
+  return user
 }
 
 // ── PROVIDER MANAGEMENT ───────────────────────────────────────
@@ -349,6 +356,10 @@ export const approveKyc = async (providerId: string, adminId: string) => {
   // Notify provider
   await notifyKycApproved(provider.userId)
 
+  await logAdminAction({
+    adminId, action: 'KYC_APPROVED', targetType: 'provider', targetId: providerId,
+  })
+
   return { message: 'KYC approved', providerId }
 }
 
@@ -384,6 +395,11 @@ export const rejectKyc = async (
 
   // Notify provider with reason
   await notifyKycRejected(provider.userId, reason)
+
+  await logAdminAction({
+    adminId, action: 'KYC_REJECTED', targetType: 'provider', targetId: providerId,
+    details: { reason },
+  })
 
   return { message: 'KYC rejected', providerId }
 }
@@ -424,6 +440,11 @@ export const requestInfoKyc = async (
   // Requires a new notification type in notificationsService
   const { notifyKycRequestInfo } = await import('../services/notificationsService')
   await notifyKycRequestInfo(provider.userId, reason)
+
+  await logAdminAction({
+    adminId, action: 'KYC_INFO_REQUESTED', targetType: 'provider', targetId: providerId,
+    details: { reason },
+  })
 
   return { message: 'KYC request info sent', providerId }
 }
@@ -466,6 +487,10 @@ export const blacklistKyc = async (
 
   const { notifyKycBlacklisted } = await import('../services/notificationsService')
   await notifyKycBlacklisted(provider.userId)
+
+  await logAdminAction({
+    adminId, action: 'PROVIDER_BLACKLISTED', targetType: 'provider', targetId: providerId,
+  })
 
   return { message: 'Provider blacklisted', providerId }
 }
@@ -566,6 +591,11 @@ export const approveSkillEvidence = async (
     { attempts: 3 }
   )
 
+  await logAdminAction({
+    adminId, action: 'SKILL_EVIDENCE_APPROVED', targetType: 'skillEvidence', targetId: evidenceId,
+    details: { tier: newTier },
+  })
+
   return { message: `Skill evidence approved (${newTier})`, evidenceId }
 }
 
@@ -614,6 +644,11 @@ export const rejectSkillEvidence = async (
         data:  { skillStatus: 'SELF_DECLARED' },
       })
     }
+  })
+
+  await logAdminAction({
+    adminId, action: 'SKILL_EVIDENCE_REJECTED', targetType: 'skillEvidence', targetId: evidenceId,
+    details: { reason },
   })
 
   return { message: 'Skill evidence rejected', evidenceId }
@@ -669,8 +704,14 @@ export const getFraudFlags = async (params: { page: number; limit: number }) => 
 
 export const resolveFraudFlag = async (flagId: string, adminId: string) => {
   // Mark as reviewed by updating result to 'REVIEWED'
-  return prisma.moderationLog.update({
+  const flag = await prisma.moderationLog.update({
     where: { id: flagId },
     data:  { result: 'REVIEWED' },
   })
+
+  await logAdminAction({
+    adminId, action: 'FRAUD_FLAG_RESOLVED', targetType: 'fraudFlag', targetId: flagId,
+  })
+
+  return flag
 }

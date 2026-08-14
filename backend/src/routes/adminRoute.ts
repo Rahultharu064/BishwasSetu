@@ -47,4 +47,7 @@ router.get('/trust/anomalies',          AdminController.getTrustAnomalies)
 router.get('/fraud/flags',              AdminController.getFraudFlags)
 router.patch('/fraud/flags/:id/resolve', AdminController.resolveFraudFlag)
 
+// ── Audit log — every state-changing admin/moderator decision above ──
+router.get('/audit-log', AdminController.getAuditLog)
+
 export default router

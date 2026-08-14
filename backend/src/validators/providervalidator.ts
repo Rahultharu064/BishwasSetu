@@ -17,6 +17,9 @@ export const CompleteProfileSchema = z.object({
       endTime:   z.string().regex(/^\d{2}:\d{2}$/, 'Format: HH:MM'),
     })
   ).min(1),
+  // Quick on/off — separate from the weekly schedule above. A provider on
+  // leave can flip this without touching their configured hours.
+  isAvailable: z.boolean().optional(),
 })
 
 export const UpdateProviderSchema = CompleteProfileSchema.partial()

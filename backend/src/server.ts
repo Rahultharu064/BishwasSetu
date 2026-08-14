@@ -1,11 +1,15 @@
 import 'dotenv/config'
 import app          from './app'
+import { Server as SocketIOServer } from 'socket.io'
 import { prisma }   from './config/db'
 import { redis }    from './config/redis'
 import { logger }   from './utils/logger'
 import { trustQueue, kycQueue, moderationQueue } from './jobs/queue'
 import { escrowQueue, dispatchQueue, maintenanceQueue } from './config/queues'
 import { purgeExpiredKycDocuments } from './jobs/kycRetentionJob'
+import { corsConfig } from './middlewares/securityMiddleware'
+import { setSocketIO } from './config/socketHandlers'
+import { verifyAccessToken } from './utils/jwt'
 import cron         from 'node-cron'
 
 // Import workers
@@ -76,6 +80,36 @@ async function bootstrap() {
         )
       }
     })
+
+    // ── Socket.IO — attached to the same HTTP server ────────────
+    // `app.listen()` already returns the underlying `http.Server`, so this
+    // rides the same port instead of standing up a second listener.
+    const io = new SocketIOServer(server, { cors: corsConfig })
+
+    io.use((socket, next) => {
+      const token =
+        (socket.handshake.auth?.token as string | undefined) ||
+        (socket.handshake.headers.authorization?.replace(/^Bearer\s+/i, ''))
+      if (!token) return next(new Error('Authentication required'))
+      try {
+        const payload = verifyAccessToken(token)
+        socket.data.userId = payload.id
+        next()
+      } catch {
+        next(new Error('Invalid or expired token'))
+      }
+    })
+
+    io.on('connection', (socket) => {
+      const userId = socket.data.userId as string
+      socket.join(`user:${userId}`)
+      socket.on('disconnect', () => {
+        socket.leave(`user:${userId}`)
+      })
+    })
+
+    setSocketIO(io)
+    logger.info('Socket.IO server attached')
 
   } catch (error) {
     logger.error('Bootstrap failed', { error })

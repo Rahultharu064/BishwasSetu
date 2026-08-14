@@ -3,9 +3,10 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
-import { MapPin, Bell, Menu, X, ShieldCheck, LogOut, UserCircle2 } from "lucide-react";
+import { MapPin, Menu, X, ShieldCheck, LogOut, UserCircle2 } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { useLang } from "@/context/language-context";
+import { NotificationBell } from "./notification-bell";
 import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
 
@@ -75,13 +76,7 @@ export function SiteHeader() {
 
           {isAuthenticated ? (
             <>
-              <Link
-                href="/bookings"
-                aria-label={tr("nav.notifications")}
-                className="hidden rounded-full p-2 hover:bg-secondary sm:inline-flex"
-              >
-                <Bell className="h-5 w-5 text-muted-foreground" />
-              </Link>
+              <NotificationBell className="hidden sm:inline-flex" />
               <Link
                 href={
                   user?.role === "PROVIDER"

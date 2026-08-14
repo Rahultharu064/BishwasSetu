@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Users, Search, ShieldCheck } from "lucide-react";
+import { Users, Search, ShieldCheck, ShieldOff } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { useFetch } from "@/lib/use-fetch";
 import { useToast } from "@/context/toast-context";
@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState, ErrorState } from "@/components/ui/states";
+import { Sheet } from "@/components/ui/sheet";
 
 const ROLE_FILTERS = [
   { value: "", label: "All roles" },
@@ -49,6 +50,7 @@ export default function AdminUsersPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [deactivating, setDeactivating] = useState<AdminUser | null>(null);
 
   const req = useFetch(
     () =>
@@ -76,6 +78,7 @@ export default function AdminUsersPage() {
         u.isActive ? "User deactivated." : "User reactivated.",
         "success"
       );
+      setDeactivating(null);
       req.reload();
     } catch (err) {
       toast(
@@ -85,6 +88,13 @@ export default function AdminUsersPage() {
     } finally {
       setBusyId(null);
     }
+  }
+
+  // Reactivating just unblocks sign-in — low stakes, no confirmation needed.
+  // Deactivating cuts off access immediately, so it gets a confirm step.
+  function requestToggle(u: AdminUser) {
+    if (u.isActive) setDeactivating(u);
+    else toggle(u);
   }
 
   return (
@@ -188,7 +198,7 @@ export default function AdminUsersPage() {
                       size="sm"
                       variant={u.isActive ? "outline" : "soft"}
                       disabled={busyId === u.id}
-                      onClick={() => toggle(u)}
+                      onClick={() => requestToggle(u)}
                     >
                       {busyId === u.id
                         ? "…"
@@ -228,6 +238,49 @@ export default function AdminUsersPage() {
           </Button>
         </div>
       )}
+
+      <Sheet
+        open={!!deactivating}
+        onClose={() => setDeactivating(null)}
+        title="Deactivate this user?"
+      >
+        {deactivating && (
+          <>
+            <div className="flex items-center gap-3 rounded-lg bg-secondary p-3">
+              <Avatar name={deactivating.name} size={36} />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold">{deactivating.name}</p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {deactivating.email ?? deactivating.phone ?? "—"}
+                </p>
+              </div>
+            </div>
+            <p className="mt-4 flex items-start gap-2 text-sm text-muted-foreground">
+              <ShieldOff className="mt-0.5 h-4 w-4 shrink-0 text-urgent" />
+              This blocks sign-in immediately. They can be reactivated from
+              this same list at any time.
+            </p>
+            <div className="mt-5 flex gap-2">
+              <Button
+                variant="outline"
+                full
+                disabled={busyId === deactivating.id}
+                onClick={() => setDeactivating(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                full
+                disabled={busyId === deactivating.id}
+                onClick={() => toggle(deactivating)}
+              >
+                {busyId === deactivating.id ? "Deactivating…" : "Deactivate"}
+              </Button>
+            </div>
+          </>
+        )}
+      </Sheet>
     </div>
   );
 }

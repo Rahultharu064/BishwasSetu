@@ -11,6 +11,7 @@ import {
   Coins,
   ShieldCheck,
   ClipboardCheck,
+  CalendarClock,
   Settings,
   ExternalLink,
   LogOut,
@@ -21,6 +22,7 @@ import {
 import { useAuth } from "@/context/auth-context";
 import { cn } from "@/lib/utils";
 import { initials } from "@/lib/format";
+import { NotificationBell } from "@/components/notification-bell";
 
 interface NavItem {
   href: string;
@@ -42,6 +44,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     items: [
       { href: "/provider/jobs", label: "Jobs", icon: Briefcase },
       { href: "/provider/emergencies", label: "Emergency Jobs", icon: Siren },
+      { href: "/provider/availability", label: "Availability", icon: CalendarClock },
     ],
   },
   {
@@ -266,6 +269,7 @@ export default function ProviderLayout({
               >
                 View site <ExternalLink className="h-3.5 w-3.5" />
               </Link>
+              <NotificationBell />
             </div>
 
             <div className="relative">

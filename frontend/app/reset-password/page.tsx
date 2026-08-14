@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ShieldCheck } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { useToast } from "@/context/toast-context";
+import { useLang } from "@/context/language-context";
 import { Button } from "@/components/ui/button";
 import { PasswordInput, Label, FieldError } from "@/components/ui/input";
 
@@ -12,6 +13,7 @@ function ResetPasswordInner() {
   const router = useRouter();
   const params = useSearchParams();
   const { toast } = useToast();
+  const { tr } = useLang();
 
   const userId = params.get("userId") ?? "";
   const channel = params.get("channel") ?? "your device";
@@ -52,24 +54,24 @@ function ResetPasswordInner() {
     setError(null);
     const code = digits.join("");
     if (code.length !== 6) {
-      setError("Enter the 6-digit code.");
+      setError(tr("auth.verifyOtp.errCode"));
       return;
     }
     if (newPassword.length < 8) {
-      setError("New password must be at least 8 characters.");
+      setError(tr("auth.resetPassword.errPasswordLen"));
       return;
     }
     if (newPassword !== confirm) {
-      setError("New password and confirmation don't match.");
+      setError(tr("auth.resetPassword.errPasswordMismatch"));
       return;
     }
     setLoading(true);
     try {
       await api.resetPassword({ userId, code, newPassword });
-      toast("Password reset. Please sign in.", "success");
+      toast(tr("auth.resetPassword.toastSuccess"), "success");
       router.push("/login");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't reset your password.");
+      setError(err instanceof ApiError ? err.message : tr("auth.resetPassword.errFailed"));
     } finally {
       setLoading(false);
     }
@@ -81,10 +83,9 @@ function ResetPasswordInner() {
         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary-soft text-primary">
           <ShieldCheck className="h-6 w-6" />
         </div>
-        <h1 className="text-2xl font-bold tracking-tight">Enter your code</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{tr("auth.verifyOtp.heading")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          We sent a 6-digit code to your {channel}. It expires shortly, so
-          finish resetting your password now.
+          {tr("auth.resetPassword.subtitle", { channel })}
         </p>
       </div>
 
@@ -108,17 +109,17 @@ function ResetPasswordInner() {
         </div>
 
         <div>
-          <Label htmlFor="new-password">New password</Label>
+          <Label htmlFor="new-password">{tr("auth.resetPassword.newPasswordLabel")}</Label>
           <PasswordInput
             id="new-password"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
-            placeholder="At least 8 characters"
+            placeholder={tr("auth.register.passwordPlaceholder")}
             autoComplete="new-password"
           />
         </div>
         <div>
-          <Label htmlFor="confirm-password">Confirm new password</Label>
+          <Label htmlFor="confirm-password">{tr("auth.resetPassword.confirmPasswordLabel")}</Label>
           <PasswordInput
             id="confirm-password"
             value={confirm}
@@ -129,7 +130,7 @@ function ResetPasswordInner() {
 
         <FieldError>{error}</FieldError>
         <Button type="submit" full size="lg" disabled={loading}>
-          {loading ? "Resetting…" : "Reset password"}
+          {loading ? tr("auth.resetPassword.resetting") : tr("auth.resetPassword.reset")}
         </Button>
       </form>
     </div>

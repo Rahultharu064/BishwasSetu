@@ -4,6 +4,7 @@ import {
   notifyComplaintFiled,
   notifyComplaintResolved,
 } from '../services/notificationsService'
+import { logAdminAction } from '../services/auditLogService'
 import type { CreateComplaintInput, ResolveComplaintInput } from '../validators/complaintValidator'
 
 const REFUNDABLE_ESCROW_STATUSES = ['HELD', 'DISPUTED']
@@ -255,6 +256,14 @@ export const resolveComplaint = async (
 
   // Notify customer
   await notifyComplaintResolved(complaint.customerId, resolution)
+
+  await logAdminAction({
+    adminId:    adminId,
+    action:     action === 'DISMISSED' ? 'COMPLAINT_DISMISSED' : 'COMPLAINT_RESOLVED',
+    targetType: 'complaint',
+    targetId:   complaintId,
+    details:    { action, resolution, refundIssued },
+  })
 
   const message =
     action === 'REFUND'

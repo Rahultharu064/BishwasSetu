@@ -15,17 +15,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/context/auth-context";
+import { useLang } from "@/context/language-context";
 import { useToast } from "@/context/toast-context";
+import type { StringKey } from "@/lib/i18n";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-const EMERGENCY_CATEGORIES = [
-  { slug: "plumbing", label: "Plumbing" },
-  { slug: "electrical", label: "Electrical" },
-  { slug: "ac-cooling", label: "AC / Cooling" },
-  { slug: "appliance-repair", label: "Appliance" },
-  { slug: "cleaning", label: "Cleaning" },
-  { slug: "carpentry", label: "Carpentry" },
+const EMERGENCY_CATEGORIES: { slug: string; labelKey: StringKey }[] = [
+  { slug: "plumbing", labelKey: "emergency.category.plumbing" },
+  { slug: "electrical", labelKey: "emergency.category.electrical" },
+  { slug: "ac-cooling", labelKey: "emergency.category.acCooling" },
+  { slug: "appliance-repair", labelKey: "emergency.category.applianceRepair" },
+  { slug: "cleaning", labelKey: "emergency.category.cleaning" },
+  { slug: "carpentry", labelKey: "emergency.category.carpentry" },
 ];
 
 type Stage = "category" | "confirm" | "matching" | "accepted" | "no-match";
@@ -33,6 +35,7 @@ type Stage = "category" | "confirm" | "matching" | "accepted" | "no-match";
 // ── Radar Animation ───────────────────────────────────────────
 
 function RadarAnimation({ label }: { label: string }) {
+  const { tr } = useLang();
   const [count, setCount] = useState(0);
 
   useEffect(() => {
@@ -73,11 +76,11 @@ function RadarAnimation({ label }: { label: string }) {
           <Zap className="h-6 w-6 text-urgent-foreground" fill="currentColor" />
         </div>
       </div>
-      <p className="mt-6 text-lg font-bold">Finding your nearest verified pro…</p>
+      <p className="mt-6 text-lg font-bold">{tr("emergency.stage3.finding")}</p>
       <p className="mt-1 text-sm text-muted-foreground">{label}</p>
       <div className="mt-4 flex items-center gap-1.5 text-xs text-urgent">
         <Clock className="h-3.5 w-3.5" />
-        <span className="tabular">Searching within 10km · up to 10 min</span>
+        <span className="tabular">{tr("emergency.stage3.searchWindow")}</span>
       </div>
       {/* animated provider count */}
       <div className="mt-6 flex gap-3">
@@ -90,7 +93,9 @@ function RadarAnimation({ label }: { label: string }) {
         ))}
       </div>
       <p className="mt-2 text-xs text-muted-foreground">
-        {count === 0 ? "Scanning area…" : `${Math.min(count * 2, 8)} providers notified`}
+        {count === 0
+          ? tr("emergency.stage3.scanning")
+          : tr("emergency.stage3.providersNotified", { count: Math.min(count * 2, 8) })}
       </p>
     </div>
   );
@@ -101,6 +106,7 @@ function RadarAnimation({ label }: { label: string }) {
 export default function EmergencyPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
+  const { tr } = useLang();
   const { toast } = useToast();
 
   const [stage, setStage] = useState<Stage>("category");
@@ -119,7 +125,7 @@ export default function EmergencyPage() {
   // Grab the browser's location for accurate dispatch (Nepal-bounded on the API).
   function captureLocation() {
     if (!("geolocation" in navigator)) {
-      toast("Location isn't available on this device.", "error");
+      toast(tr("emergency.toast.noLocationSupport"), "error");
       return;
     }
     setLocating(true);
@@ -127,14 +133,11 @@ export default function EmergencyPage() {
       (pos) => {
         setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         setLocating(false);
-        toast("Location captured.", "success");
+        toast(tr("emergency.toast.locationCaptured"), "success");
       },
       () => {
         setLocating(false);
-        toast(
-          "Couldn't get your location — allow access and try again.",
-          "error"
-        );
+        toast(tr("emergency.toast.locationFailed"), "error");
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
@@ -172,7 +175,7 @@ export default function EmergencyPage() {
     }
     if (!category) return;
     if (!coords) {
-      toast("Share your location so we can find the nearest pro.", "error");
+      toast(tr("emergency.toast.needLocation"), "error");
       return;
     }
     setBusy(true);
@@ -188,7 +191,7 @@ export default function EmergencyPage() {
       setStage("matching");
     } catch (err) {
       toast(
-        err instanceof ApiError ? err.message : "Could not dispatch. Try again.",
+        err instanceof ApiError ? err.message : tr("emergency.toast.dispatchFailed"),
         "error"
       );
     } finally {
@@ -225,7 +228,7 @@ export default function EmergencyPage() {
           }
           className="mb-4 inline-flex items-center gap-1 self-start text-sm font-medium text-muted-foreground hover:text-foreground"
         >
-          <ChevronLeft className="h-4 w-4" /> Back
+          <ChevronLeft className="h-4 w-4" /> {tr("emergency.back")}
         </button>
       )}
 
@@ -235,17 +238,15 @@ export default function EmergencyPage() {
           <Zap className="h-6 w-6" fill="currentColor" />
         </span>
         <div>
-          <h1 className="text-xl font-bold tracking-tight">Emergency Dispatch</h1>
-          <p className="text-sm text-muted-foreground">
-            Nearest verified pro · 12% priority fee · Tier 2+ only
-          </p>
+          <h1 className="text-xl font-bold tracking-tight">{tr("emergency.title")}</h1>
+          <p className="text-sm text-muted-foreground">{tr("emergency.subtitle")}</p>
         </div>
       </div>
 
       {/* Stage 1 — category */}
       {stage === "category" && (
         <div>
-          <h2 className="mb-3 font-semibold">What&apos;s the emergency?</h2>
+          <h2 className="mb-3 font-semibold">{tr("emergency.stage1.heading")}</h2>
           <div className="grid grid-cols-2 gap-3">
             {EMERGENCY_CATEGORIES.map((c) => (
               <button
@@ -258,12 +259,12 @@ export default function EmergencyPage() {
                 className="flex flex-col items-center gap-2.5 rounded-2xl border border-border bg-card p-6 text-center transition-all hover:border-urgent/60 hover:bg-urgent-soft hover:shadow-sm active:scale-95"
               >
                 <CategoryIcon name={c.slug} className="h-9 w-9 text-urgent" />
-                <span className="font-semibold">{c.label}</span>
+                <span className="font-semibold">{tr(c.labelKey)}</span>
               </button>
             ))}
           </div>
           <p className="mt-4 text-center text-xs text-muted-foreground">
-            Only Tier 2+ verified providers · 12% emergency fee applies
+            {tr("emergency.stage1.note")}
           </p>
         </div>
       )}
@@ -273,20 +274,19 @@ export default function EmergencyPage() {
         <div className="space-y-4">
           <div className="rounded-2xl border border-urgent/20 bg-urgent-soft p-4">
             <p className="text-sm font-medium text-urgent">
-              ⚡ Emergency mode — a 12% priority fee is added. Providers who accept within 5 min
-              earn a Fast Responder badge.
+              {tr("emergency.stage2.banner")}
             </p>
           </div>
 
-          <h2 className="font-semibold">Confirm your location</h2>
+          <h2 className="font-semibold">{tr("emergency.stage2.heading")}</h2>
           <div className="rounded-xl border border-border bg-card p-4">
             <label className="mb-1.5 flex items-center gap-1.5 text-sm font-medium">
-              <MapPin className="h-4 w-4 text-urgent" /> Service address
+              <MapPin className="h-4 w-4 text-urgent" /> {tr("emergency.stage2.addressLabel")}
             </label>
             <Input
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              placeholder="Area / landmark (e.g. Maharajgunj, near the chowk)"
+              placeholder={tr("emergency.stage2.addressPlaceholder")}
               id="emergency-address-input"
             />
 
@@ -303,28 +303,30 @@ export default function EmergencyPage() {
             >
               {coords ? (
                 <>
-                  <CheckCircle2 className="h-4 w-4" /> Location shared
+                  <CheckCircle2 className="h-4 w-4" /> {tr("emergency.stage2.locationShared")}
                 </>
               ) : (
                 <>
                   <LocateFixed className="h-4 w-4" />
-                  {locating ? "Getting location…" : "Share my current location"}
+                  {locating
+                    ? tr("emergency.stage2.gettingLocation")
+                    : tr("emergency.stage2.shareLocation")}
                 </>
               )}
             </button>
             <p className="mt-1.5 text-center text-xs text-muted-foreground">
-              We use your GPS to dispatch the nearest verified pro.
+              {tr("emergency.stage2.gpsNote")}
             </p>
           </div>
 
           <div className="rounded-xl border border-border bg-card p-4">
             <label className="mb-1.5 block text-sm font-medium">
-              Describe the problem (optional)
+              {tr("emergency.stage2.describeLabel")}
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="e.g. Water pipe burst in bathroom, need urgent fix"
+              placeholder={tr("emergency.stage2.describePlaceholder")}
               rows={3}
               className="w-full resize-none rounded-lg bg-secondary px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               id="emergency-description-input"
@@ -340,11 +342,11 @@ export default function EmergencyPage() {
             id="find-pro-now-btn"
           >
             <Zap className="h-5 w-5" fill="currentColor" />
-            {busy ? "Dispatching…" : "Find me a pro now"}
+            {busy ? tr("emergency.stage2.dispatching") : tr("emergency.stage2.findProNow")}
           </Button>
           {!coords && (
             <p className="-mt-2 text-center text-xs text-muted-foreground">
-              Share your location above to dispatch.
+              {tr("emergency.stage2.shareToDispatch")}
             </p>
           )}
         </div>
@@ -361,7 +363,7 @@ export default function EmergencyPage() {
             className="mx-auto"
             onClick={cancelDispatch}
           >
-            Cancel request
+            {tr("emergency.stage3.cancel")}
           </Button>
         </>
       )}
@@ -372,18 +374,17 @@ export default function EmergencyPage() {
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30">
             <Zap className="h-7 w-7" fill="currentColor" />
           </div>
-          <p className="mt-4 text-xl font-bold text-primary">Pro on the way! 🎉</p>
+          <p className="mt-4 text-xl font-bold text-primary">{tr("emergency.stage4.title")}</p>
           <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
-            A verified provider has accepted your emergency request and is heading your
-            way. You&apos;ll receive an SMS confirmation shortly.
+            {tr("emergency.stage4.body")}
           </p>
           {bookingId ? (
             <Link href={`/bookings/${bookingId}`}>
-              <Button full className="mt-5">View booking details</Button>
+              <Button full className="mt-5">{tr("emergency.stage4.viewBooking")}</Button>
             </Link>
           ) : (
             <Link href="/bookings">
-              <Button full className="mt-5">Go to my bookings</Button>
+              <Button full className="mt-5">{tr("emergency.stage4.goToBookings")}</Button>
             </Link>
           )}
         </div>
@@ -395,15 +396,14 @@ export default function EmergencyPage() {
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-urgent-soft text-urgent">
             <MessageSquare className="h-6 w-6" />
           </div>
-          <p className="mt-3 text-lg font-bold">No pros available right now</p>
+          <p className="mt-3 text-lg font-bold">{tr("emergency.stage5.title")}</p>
           <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
-            We&apos;ve queued your request and will SMS you the moment a verified provider
-            accepts. No charge until one is on the way.
+            {tr("emergency.stage5.body")}
           </p>
           <div className="mt-5 flex flex-col gap-2">
             <Link href={category ? `/services/${category}` : "/services"}>
               <Button variant="outline" full>
-                Browse scheduled bookings instead
+                {tr("emergency.stage5.browseInstead")}
               </Button>
             </Link>
             <Button
@@ -413,7 +413,7 @@ export default function EmergencyPage() {
                 setCategory(null);
               }}
             >
-              Try again
+              {tr("emergency.stage5.tryAgain")}
             </Button>
           </div>
         </div>

@@ -168,6 +168,14 @@ export interface Service {
   estimatedMinutes?: number | null;
 }
 
+// dayOfWeek: 0 = Sunday, 6 = Saturday (backend/prisma/schema.prisma ProviderAvailability)
+export interface AvailabilitySlot {
+  id?: string;
+  dayOfWeek: number;
+  startTime: string; // "08:00"
+  endTime: string; // "18:00"
+}
+
 export interface Provider {
   id: string;
   userId?: string;
@@ -183,6 +191,7 @@ export interface Provider {
   completedBookings: number;
   trustScore: number;
   isAvailable: boolean;
+  availability?: AvailabilitySlot[];
   user?: { name: string };
   categories?: { category: Category }[];
   reviews?: Review[];

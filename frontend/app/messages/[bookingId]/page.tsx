@@ -8,6 +8,7 @@ import { api, ApiError } from "@/lib/api";
 import { useFetch } from "@/lib/use-fetch";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/context/toast-context";
+import { useNotifications } from "@/context/notification-context";
 import { formatDateTime } from "@/lib/format";
 import type { ChatThread } from "@/lib/types";
 import { Avatar } from "@/components/ui/avatar";
@@ -24,6 +25,7 @@ export default function ConversationPage({
   const router = useRouter();
   const { toast } = useToast();
   const { isAuthenticated, loading: authLoading } = useAuth();
+  const { socket } = useNotifications();
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -36,8 +38,24 @@ export default function ConversationPage({
   const req = useFetch<ChatThread>(
     () => api.messageThread(bookingId),
     [bookingId, isAuthenticated],
-    { pollMs: 5000, enabled: isAuthenticated }
+    // The socket below reloads the thread the instant a message arrives —
+    // this poll is just a safety net for a dropped/reconnecting socket.
+    { pollMs: 20000, enabled: isAuthenticated }
   );
+
+  // Realtime: refresh the thread the moment the other party sends something,
+  // instead of waiting up to 20s for the fallback poll.
+  useEffect(() => {
+    if (!socket) return;
+    function onNewMessage(payload: { bookingId: string }) {
+      if (payload.bookingId === bookingId) req.reload();
+    }
+    socket.on("message:new", onNewMessage);
+    return () => {
+      socket.off("message:new", onNewMessage);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [socket, bookingId]);
 
   const thread = req.data;
   const messages = useMemo(() => thread?.messages ?? [], [thread]);

@@ -32,13 +32,60 @@ import { EmptyState, ErrorState } from "@/components/ui/states";
 import { cn } from "@/lib/utils";
 
 export default function KycQueuePage() {
+  const [page, setPage] = useState(1);
   const { data, loading, error, reload } = useFetch<KycQueueResponse>(
-    () => api.adminKycQueue({ limit: 20 }) as Promise<KycQueueResponse>,
-    []
+    () => api.adminKycQueue({ page, limit: 20 }) as Promise<KycQueueResponse>,
+    [page]
   );
   const [selected, setSelected] = useState<KycQueueItem | null>(null);
+  const [checked, setChecked] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkRejecting, setBulkRejecting] = useState(false);
+  const [bulkReason, setBulkReason] = useState("");
+  const { toast } = useToast();
 
   const queue = data?.queue ?? [];
+  const pagination = data?.pagination;
+
+  function toggleChecked(id: string) {
+    setChecked((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAllOnPage() {
+    setChecked((prev) =>
+      queue.every((item) => prev.has(item.id)) ? new Set() : new Set(queue.map((i) => i.id))
+    );
+  }
+
+  async function runBulk(
+    fn: (id: string) => Promise<unknown>,
+    successVerb: string
+  ) {
+    setBulkBusy(true);
+    const ids = Array.from(checked);
+    const results = await Promise.allSettled(ids.map(fn));
+    const failed = results.filter((r) => r.status === "rejected").length;
+    if (failed === 0) {
+      toast(`${successVerb} ${ids.length} provider${ids.length === 1 ? "" : "s"}.`, "success");
+    } else {
+      toast(
+        `${successVerb} ${ids.length - failed} of ${ids.length} — ${failed} failed.`,
+        failed === ids.length ? "error" : "info"
+      );
+    }
+    setChecked(new Set());
+    setBulkRejecting(false);
+    setBulkReason("");
+    setBulkBusy(false);
+    reload();
+  }
+
+  const bulkReject = () => runBulk((id) => api.adminRejectKyc(id, bulkReason.trim()), "Rejected");
 
   return (
     <div>
@@ -55,6 +102,42 @@ export default function KycQueuePage() {
           </Badge>
         )}
       </div>
+
+      {queue.length > 0 && (
+        <div className="mb-3 flex flex-wrap items-center gap-3">
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+            <input
+              type="checkbox"
+              className="h-4 w-4 rounded border-input"
+              checked={queue.length > 0 && queue.every((i) => checked.has(i.id))}
+              onChange={toggleAllOnPage}
+            />
+            Select all on this page
+          </label>
+          {checked.size > 0 && (
+            <div className="ml-auto flex items-center gap-2">
+              <span className="text-sm font-medium text-muted-foreground">
+                {checked.size} selected
+              </span>
+              <Button
+                size="sm"
+                disabled={bulkBusy}
+                onClick={() => runBulk((id) => api.adminApproveKyc(id), "Approved")}
+              >
+                <Check className="h-4 w-4" /> Approve
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={bulkBusy}
+                onClick={() => setBulkRejecting(true)}
+              >
+                <X className="h-4 w-4" /> Reject
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
 
       {loading ? (
         <div className="space-y-3">
@@ -76,10 +159,36 @@ export default function KycQueuePage() {
             <QueueRow
               key={item.id}
               item={item}
+              checked={checked.has(item.id)}
+              onToggleChecked={() => toggleChecked(item.id)}
               onOpen={() => setSelected(item)}
             />
           ))}
         </ul>
+      )}
+
+      {!loading && !error && pagination && pagination.totalPages > 1 && (
+        <div className="mt-5 flex items-center justify-between">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+          >
+            Previous
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            Page {pagination.page} of {pagination.totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= pagination.totalPages}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            Next
+          </Button>
+        </div>
       )}
 
       <ReviewPanel
@@ -90,6 +199,35 @@ export default function KycQueuePage() {
           reload();
         }}
       />
+
+      <Sheet
+        open={bulkRejecting}
+        onClose={() => setBulkRejecting(false)}
+        title={`Reject ${checked.size} provider${checked.size === 1 ? "" : "s"}?`}
+      >
+        <p className="text-sm text-muted-foreground">
+          The same reason is sent to every selected provider — only use this
+          for a shared, genuine issue (e.g. &ldquo;documents didn&apos;t upload&rdquo;), not as
+          a shortcut for individually distinct rejections.
+        </p>
+        <div className="mt-4">
+          <Label htmlFor="bulk-reason">Rejection reason (shown to each provider)</Label>
+          <Textarea
+            id="bulk-reason"
+            value={bulkReason}
+            onChange={(e) => setBulkReason(e.target.value)}
+            placeholder="e.g. ID photo is blurry — please re-upload a clear image."
+          />
+        </div>
+        <Button
+          full
+          className="mt-5"
+          disabled={bulkBusy || bulkReason.trim().length < 3}
+          onClick={bulkReject}
+        >
+          {bulkBusy ? "Working…" : `Confirm rejection of ${checked.size}`}
+        </Button>
+      </Sheet>
     </div>
   );
 }
@@ -126,18 +264,29 @@ function riskFromDecision(item: KycQueueItem): {
 
 function QueueRow({
   item,
+  checked,
+  onToggleChecked,
   onOpen,
 }: {
   item: KycQueueItem;
+  checked: boolean;
+  onToggleChecked: () => void;
   onOpen: () => void;
 }) {
   const risk = riskFromDecision(item);
   const waited = relativeTime(item.updatedAt);
   return (
-    <li>
+    <li className="flex items-center gap-3">
+      <input
+        type="checkbox"
+        className="h-4 w-4 shrink-0 rounded border-input"
+        checked={checked}
+        onChange={onToggleChecked}
+        aria-label={`Select ${item.legalName || item.user?.name || "provider"}`}
+      />
       <button
         onClick={onOpen}
-        className="flex w-full items-center gap-4 rounded-xl border border-border bg-card p-4 text-left transition-colors hover:border-primary/40"
+        className="flex w-full min-w-0 flex-1 items-center gap-4 rounded-xl border border-border bg-card p-4 text-left transition-colors hover:border-primary/40"
       >
         <Avatar name={item.legalName || item.user?.name || "Provider"} size={48} />
         <div className="min-w-0 flex-1">

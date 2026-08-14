@@ -73,12 +73,32 @@ export default function AdminSkillEvidencePage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [rejecting, setRejecting] = useState<SkillEvidenceItem | null>(null);
   const [reason, setReason] = useState("");
+  const [checked, setChecked] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkRejecting, setBulkRejecting] = useState(false);
+  const [bulkReason, setBulkReason] = useState("");
 
   const req = useFetch(
     () => api.adminSkillEvidence({ status, limit: 30 }),
     [status]
   );
   const { evidence } = useMemo(() => evidenceFrom(req.data), [req.data]);
+  const pending = evidence.filter((e) => e.reviewStatus === "PENDING");
+
+  function toggleChecked(id: string) {
+    setChecked((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAllPending() {
+    setChecked((prev) =>
+      pending.every((e) => prev.has(e.id)) ? new Set() : new Set(pending.map((e) => e.id))
+    );
+  }
 
   async function approve(item: SkillEvidenceItem) {
     setBusyId(item.id);
@@ -112,6 +132,29 @@ export default function AdminSkillEvidencePage() {
     }
   }
 
+  async function runBulk(fn: (id: string) => Promise<unknown>, successVerb: string) {
+    setBulkBusy(true);
+    const ids = Array.from(checked);
+    const results = await Promise.allSettled(ids.map(fn));
+    const failed = results.filter((r) => r.status === "rejected").length;
+    if (failed === 0) {
+      toast(`${successVerb} ${ids.length} submission${ids.length === 1 ? "" : "s"}.`, "success");
+    } else {
+      toast(
+        `${successVerb} ${ids.length - failed} of ${ids.length} — ${failed} failed.`,
+        failed === ids.length ? "error" : "info"
+      );
+    }
+    setChecked(new Set());
+    setBulkRejecting(false);
+    setBulkReason("");
+    setBulkBusy(false);
+    req.reload();
+  }
+
+  const bulkReject = () =>
+    runBulk((id) => api.adminRejectSkillEvidence(id, bulkReason.trim()), "Rejected");
+
   return (
     <div>
       <h1 className="text-2xl font-bold tracking-tight">Skill evidence</h1>
@@ -135,6 +178,44 @@ export default function AdminSkillEvidencePage() {
           </button>
         ))}
       </div>
+
+      {pending.length > 0 && (
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+            <input
+              type="checkbox"
+              className="h-4 w-4 rounded border-input"
+              checked={pending.length > 0 && pending.every((e) => checked.has(e.id))}
+              onChange={toggleAllPending}
+            />
+            Select all pending
+          </label>
+          {checked.size > 0 && (
+            <div className="ml-auto flex items-center gap-2">
+              <span className="text-sm font-medium text-muted-foreground">
+                {checked.size} selected
+              </span>
+              <Button
+                size="sm"
+                disabled={bulkBusy}
+                onClick={() =>
+                  runBulk((id) => api.adminApproveSkillEvidence(id), "Approved")
+                }
+              >
+                Approve
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={bulkBusy}
+                onClick={() => setBulkRejecting(true)}
+              >
+                Reject
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="mt-5">
         {req.loading ? (
@@ -167,9 +248,16 @@ export default function AdminSkillEvidencePage() {
                   className="rounded-xl border border-border bg-card p-4"
                 >
                   <div className="flex items-start gap-3">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary text-muted-foreground">
-                      <Icon className="h-5 w-5" />
-                    </span>
+                    {pending && (
+                      <input
+                        type="checkbox"
+                        className="mt-1 h-4 w-4 shrink-0 rounded border-input"
+                        checked={checked.has(item.id)}
+                        onChange={() => toggleChecked(item.id)}
+                        aria-label={`Select ${item.provider.legalName}`}
+                      />
+                    )}
+                    <EvidenceThumbnail url={item.fileUrl} icon={Icon} />
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="font-semibold">{meta.label}</p>
@@ -292,6 +380,74 @@ export default function AdminSkillEvidencePage() {
           </>
         )}
       </Sheet>
+
+      <Sheet
+        open={bulkRejecting}
+        onClose={() => setBulkRejecting(false)}
+        title={`Reject ${checked.size} submission${checked.size === 1 ? "" : "s"}?`}
+      >
+        <p className="text-sm text-muted-foreground">
+          The same reason is sent to every selected provider — only use this
+          for a shared, genuine issue, not as a shortcut for individually
+          distinct rejections.
+        </p>
+        <div className="mt-4">
+          <Label htmlFor="bulk-reason">Reason (shown to each provider)</Label>
+          <Textarea
+            id="bulk-reason"
+            value={bulkReason}
+            onChange={(e) => setBulkReason(e.target.value)}
+            placeholder="e.g. Image quality too low to verify across all selected submissions."
+          />
+        </div>
+        <Button
+          full
+          className="mt-5"
+          disabled={bulkBusy || bulkReason.trim().length < 10}
+          onClick={bulkReject}
+        >
+          {bulkBusy ? "Working…" : `Confirm rejection of ${checked.size}`}
+        </Button>
+      </Sheet>
     </div>
+  );
+}
+
+// Inline thumbnail so a reviewer can eyeball the submission without leaving
+// the queue — matches the KYC queue's inline document previews instead of
+// making this the one review flow that's just an off-site link.
+function EvidenceThumbnail({
+  url,
+  icon: Icon,
+}: {
+  url: string;
+  icon: typeof FileText;
+}) {
+  const [broken, setBroken] = useState(false);
+
+  if (broken) {
+    return (
+      <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-secondary text-muted-foreground">
+        <Icon className="h-5 w-5" />
+      </span>
+    );
+  }
+
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group relative block h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-border"
+      aria-label="Open evidence full size"
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={url}
+        alt="Submitted evidence"
+        className="h-full w-full object-cover transition-transform group-hover:scale-105"
+        onError={() => setBroken(true)}
+      />
+    </a>
   );
 }

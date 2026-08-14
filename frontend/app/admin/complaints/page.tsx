@@ -7,6 +7,7 @@ import { useFetch } from "@/lib/use-fetch";
 import { useToast } from "@/context/toast-context";
 import { relativeTime } from "@/lib/format";
 import type { Complaint } from "@/lib/types";
+import type { Pagination } from "@/lib/admin-types";
 import {
   ComplaintStatusBadge,
   COMPLAINT_TYPE_LABEL,
@@ -44,14 +45,23 @@ function listFrom(data: unknown): Complaint[] {
   return [];
 }
 
+function paginationFrom(data: unknown): Pagination | undefined {
+  if (data && typeof data === "object") {
+    return (data as { pagination?: Pagination }).pagination;
+  }
+  return undefined;
+}
+
 export default function AdminComplaintsPage() {
   const { toast } = useToast();
   const [status, setStatus] = useState("");
+  const [page, setPage] = useState(1);
   const req = useFetch(
-    () => api.adminComplaints({ status: status || undefined, limit: 30 }),
-    [status]
+    () => api.adminComplaints({ status: status || undefined, page, limit: 30 }),
+    [status, page]
   );
   const complaints = listFrom(req.data);
+  const pagination = paginationFrom(req.data);
 
   const [selected, setSelected] = useState<Complaint | null>(null);
   const [resolution, setResolution] = useState("");
@@ -88,7 +98,10 @@ export default function AdminComplaintsPage() {
         {STATUS_FILTERS.map((f) => (
           <button
             key={f.value || "all"}
-            onClick={() => setStatus(f.value)}
+            onClick={() => {
+              setPage(1);
+              setStatus(f.value);
+            }}
             className={`whitespace-nowrap rounded-full border px-3 py-1.5 text-sm font-medium ${
               status === f.value
                 ? "border-primary bg-primary-soft text-primary"
@@ -177,6 +190,30 @@ export default function AdminComplaintsPage() {
           </ul>
         )}
       </div>
+
+      {!req.loading && !req.error && pagination && pagination.totalPages > 1 && (
+        <div className="mt-5 flex items-center justify-between">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+          >
+            Previous
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            Page {pagination.page} of {pagination.totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= pagination.totalPages}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            Next
+          </Button>
+        </div>
+      )}
 
       {/* Resolve sheet */}
       <Sheet

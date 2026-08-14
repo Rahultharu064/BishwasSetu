@@ -1,8 +1,10 @@
 "use client";
 
 import { API_BASE } from "@/lib/api";
+import { useLang } from "@/context/language-context";
 
 export function GoogleLoginButton({ next = "/" }: { next?: string }) {
+  const { tr } = useLang();
   // Construct the backend Google OAuth initiation URL with the next redirect
   const googleAuthUrl = `${API_BASE}/auth/google${next && next !== "/" ? `?next=${encodeURIComponent(next)}` : ""}`;
 
@@ -33,7 +35,7 @@ export function GoogleLoginButton({ next = "/" }: { next?: string }) {
           fill="#EA4335"
         />
       </svg>
-      Continue with Google
+      {tr("auth.continueWithGoogle")}
     </a>
   );
 }

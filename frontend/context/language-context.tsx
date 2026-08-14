@@ -41,6 +41,13 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     if (saved === "en" || saved === "ne") setLang(saved);
   }, []);
 
+  // The root layout can only ever render `lang="en"` at SSR time (language
+  // lives in localStorage, not on the server) — keep the attribute honest
+  // for screen readers and browser translation tools once we know better.
+  useEffect(() => {
+    document.documentElement.lang = lang === "ne" ? "ne" : "en";
+  }, [lang]);
+
   const toggle = () =>
     setLang((prev) => {
       const next = prev === "en" ? "ne" : "en";
