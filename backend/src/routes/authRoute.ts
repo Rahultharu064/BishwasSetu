@@ -6,6 +6,8 @@ import {
   RegisterSchema,
   LoginSchema,
   VerifyOtpSchema,
+  ForgotPasswordSchema,
+  ResetPasswordSchema,
 } from '../validators/authValidator'
 
 const router = Router()
@@ -43,5 +45,7 @@ router.post('/verify-otp', validate(VerifyOtpSchema), AuthController.verifyOtp)
 router.post('/refresh', AuthController.refresh)
 router.post('/logout', AuthController.logout)
 router.post('/resend-otp', AuthController.resendOtp)
+router.post('/forgot-password', validate(ForgotPasswordSchema), AuthController.forgotPassword)
+router.post('/reset-password', validate(ResetPasswordSchema), AuthController.resetPassword)
 
 export default router

@@ -187,7 +187,34 @@ export const api = {
   resendOtp: (body: { userId: string }) =>
     apiRequest<null>("/auth/resend-otp", { method: "POST", body }),
 
+  forgotPassword: (body: { email?: string; phone?: string }) =>
+    apiRequest<{ userId: string; message: string }>("/auth/forgot-password", {
+      method: "POST",
+      body,
+    }),
+
+  resetPassword: (body: { userId: string; code: string; newPassword: string }) =>
+    apiRequest<{ message: string }>("/auth/reset-password", {
+      method: "POST",
+      body,
+    }),
+
   logout: () => apiRequest<null>("/auth/logout", { method: "POST" }),
+
+  // Self-service account settings — any signed-in user (customer or
+  // provider) managing their own row. See backend routes/userRoute.ts.
+  updateProfile: (body: { name: string }) =>
+    apiRequest<{ id: string; name: string; role: string }>("/users/me", {
+      method: "PATCH",
+      body,
+      auth: true,
+    }),
+  changePassword: (body: { currentPassword: string; newPassword: string }) =>
+    apiRequest<{ message: string }>("/users/me/change-password", {
+      method: "PATCH",
+      body,
+      auth: true,
+    }),
 
   // Staff login — separate endpoint from the public auth/* flow above (no
   // registration, no OTP step; see backend routes/adminAuthRoute.ts).

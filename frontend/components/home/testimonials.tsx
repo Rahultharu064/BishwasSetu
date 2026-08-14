@@ -1,24 +1,24 @@
-import { Star } from "lucide-react";
-import { Avatar } from "@/components/ui/avatar";
+import { ShieldCheck, Wallet, BadgeCheck } from "lucide-react";
 
-const TESTIMONIALS = [
+// Real testimonials don't exist yet — BishwasSetu is a new marketplace, and
+// putting invented names/quotes in a customer's mouth would undercut the
+// exact trust the platform is selling. These cards describe what's actually
+// built instead of simulating social proof.
+const REASONS = [
   {
-    quote:
-      "BishwasSetu found me a certified electrician in under 10 minutes. No more asking around and hoping for the best.",
-    name: "Anjali Sharma",
-    role: "Homeowner, Kathmandu",
+    icon: ShieldCheck,
+    title: "Verified before they're listed",
+    body: "Every provider goes through a tiered check — phone, profile, and work photos at minimum, with certificates and ID verification for higher-value jobs.",
   },
   {
-    quote:
-      "I trusted the escrow to hold my payment until the plumber actually finished the job. That alone changed how I book services.",
-    name: "Rohan Maharjan",
-    role: "Homeowner, Lalitpur",
+    icon: Wallet,
+    title: "Your payment stays in escrow",
+    body: "We hold the payment until you tap ‘Job Complete.’ The provider is only paid once you've confirmed the work is done.",
   },
   {
-    quote:
-      "Our family's go-to for cleaning and repairs now. The trust score means we never have to guess who's reliable.",
-    name: "Sita Adhikari",
-    role: "Homeowner, Bhaktapur",
+    icon: BadgeCheck,
+    title: "A 7-day guarantee on every job",
+    body: "On-platform bookings come with a workmanship guarantee window — if something's wrong, you can file a claim directly in the app.",
   },
 ];
 
@@ -26,35 +26,25 @@ export function Testimonials() {
   return (
     <section>
       <span className="text-xs font-bold uppercase tracking-wide text-urgent">
-        Loved by households
+        Built on trust
       </span>
       <h2 className="mt-1.5 text-2xl font-bold tracking-tight sm:text-3xl">
-        Stories from real Nepali families.
+        Why families choose BishwasSetu.
       </h2>
 
       <div className="mt-6 grid gap-4 md:grid-cols-3">
-        {TESTIMONIALS.map((t) => (
+        {REASONS.map((r) => (
           <div
-            key={t.name}
+            key={r.title}
             className="flex flex-col rounded-2xl border border-border bg-card p-5"
           >
-            <div className="flex gap-0.5 text-warning">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Star key={i} className="h-4 w-4 fill-warning" />
-              ))}
-            </div>
-            <p className="mt-3 flex-1 text-sm leading-relaxed text-foreground">
-              &ldquo;{t.quote}&rdquo;
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-soft text-primary">
+              <r.icon className="h-5 w-5" />
+            </span>
+            <p className="mt-3 font-semibold text-foreground">{r.title}</p>
+            <p className="mt-1.5 flex-1 text-sm leading-relaxed text-muted-foreground">
+              {r.body}
             </p>
-            <div className="mt-4 flex items-center gap-3">
-              <Avatar name={t.name} size={36} />
-              <div>
-                <p className="text-sm font-semibold text-foreground">
-                  {t.name}
-                </p>
-                <p className="text-xs text-muted-foreground">{t.role}</p>
-              </div>
-            </div>
           </div>
         ))}
       </div>

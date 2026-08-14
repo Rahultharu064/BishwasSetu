@@ -11,7 +11,12 @@ import {
 } from '../utils/jwt'
 import { sendSms } from '../utils/sms'
 import { sendOtpEmail } from '../utils/email'
-import type { RegisterInput, LoginInput } from '../validators/authValidator'
+import type {
+  RegisterInput,
+  LoginInput,
+  ForgotPasswordInput,
+  ResetPasswordInput,
+} from '../validators/authValidator'
 
 // ── REGISTER ─────────────────────────────────
 
@@ -268,4 +273,63 @@ export const resendOtp = async (userId: string) => {
   }
 
   return { message: `OTP resent to ${user.phone || user.email}` }
+}
+
+// ── FORGOT PASSWORD ───────────────────────────
+// Reuses the same Otp model/rate limits as login/register — a reset code is
+// just an OTP that unlocks resetPassword() below instead of a login token.
+
+export const requestPasswordReset = async (input: ForgotPasswordInput) => {
+  const { email, phone } = input
+
+  const user = await prisma.user.findFirst({
+    where: {
+      OR: [
+        email ? { email } : {},
+        phone ? { phone } : {},
+      ],
+      isActive:  true,
+      deletedAt: null,
+    },
+    select: { id: true, email: true, phone: true, passwordHash: true },
+  })
+
+  if (!user || !user.passwordHash) {
+    throw { code: 'USER_NOT_FOUND', message: 'No account found for that email or phone', status: 404 }
+  }
+
+  const otp = generateOtp()
+  await saveOtp(user.id, otp)
+
+  const contact = email || phone!
+  if (phone) {
+    await sendSms(phone, `Your BishwasSetu password reset code is: ${otp}. Valid for ${process.env.OTP_EXPIRES_MINUTES} minutes.`)
+  } else if (email) {
+    await sendOtpEmail(email, otp, process.env.OTP_EXPIRES_MINUTES ?? '5', 'reset')
+  }
+
+  return {
+    userId:  user.id,
+    message: `A reset code was sent to ${contact}`,
+  }
+}
+
+// ── RESET PASSWORD ────────────────────────────
+
+export const resetPassword = async (input: ResetPasswordInput) => {
+  const { userId, code, newPassword } = input
+
+  const valid = await verifyOtp(userId, code)
+  if (!valid) {
+    throw { code: 'INVALID_OTP', message: 'Invalid or expired code', status: 400 }
+  }
+
+  const passwordHash = await hashPassword(newPassword)
+  await prisma.user.update({ where: { id: userId }, data: { passwordHash } })
+
+  // A password reset should end every existing session, not just issue a
+  // new one — otherwise a stolen device stays logged in through the reset.
+  await prisma.refreshToken.deleteMany({ where: { userId } })
+
+  return { message: 'Password reset. Please log in with your new password.' }
 }

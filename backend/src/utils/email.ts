@@ -100,14 +100,21 @@ export const sendOtpEmail = async (
   to:             string,
   code:           string,
   expiresMinutes: string | number,
-  context:        "register" | "login" | "resend" = "login"
+  context:        "register" | "login" | "resend" | "reset" = "login"
 ): Promise<void> => {
   const subject =
-    context === "register" ? "Verify your BishwasSetu account" : "Your BishwasSetu verification code";
-  const heading = context === "register" ? "Welcome to BishwasSetu" : "Your verification code";
+    context === "register" ? "Verify your BishwasSetu account"
+    : context === "reset"  ? "Reset your BishwasSetu password"
+    : "Your BishwasSetu verification code";
+  const heading =
+    context === "register" ? "Welcome to BishwasSetu"
+    : context === "reset"  ? "Reset your password"
+    : "Your verification code";
   const intro =
     context === "register"
       ? "Use the code below to verify your account and finish setting up."
+      : context === "reset"
+      ? "Use the code below to confirm it's you and set a new password."
       : "Use the code below to finish signing in.";
 
   const text = `${intro}\n\nYour code: ${code}\nThis code expires in ${expiresMinutes} minutes.\n\nIf you didn't request this, you can safely ignore this email.`;

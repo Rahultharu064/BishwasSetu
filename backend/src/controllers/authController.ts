@@ -198,3 +198,41 @@ export const resendOtp = async (
     next(err)
   }
 }
+
+// ── POST /api/v1/auth/forgot-password ────────
+
+export const forgotPassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const result = await AuthService.requestPasswordReset(req.body)
+    sendSuccess(res, result, result.message)
+  } catch (err: any) {
+    if (err.code) {
+      sendError(res, err.message, err.code, err.status)
+      return
+    }
+    next(err)
+  }
+}
+
+// ── POST /api/v1/auth/reset-password ─────────
+
+export const resetPassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const result = await AuthService.resetPassword(req.body)
+    sendSuccess(res, result, result.message)
+  } catch (err: any) {
+    if (err.code) {
+      sendError(res, err.message, err.code, err.status)
+      return
+    }
+    next(err)
+  }
+}
