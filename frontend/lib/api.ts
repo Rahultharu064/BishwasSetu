@@ -385,6 +385,19 @@ export const api = {
   providerById: (id: string) =>
     apiRequest<import("./types").Provider>(`/providers/${id}`),
 
+  // Provider — own profile (includes availability, the weekly schedule)
+  providerProfile: () =>
+    apiRequest<import("./types").Provider>("/providers/me", { auth: true }),
+  updateProviderProfile: (body: {
+    isAvailable?: boolean;
+    availability?: import("./types").AvailabilitySlot[];
+  }) =>
+    apiRequest<{ message: string }>("/providers/me", {
+      method: "PUT",
+      body,
+      auth: true,
+    }),
+
   // Bookings (customer)
   createBooking: (body: unknown) =>
     apiRequest<import("./types").Booking>("/bookings", {

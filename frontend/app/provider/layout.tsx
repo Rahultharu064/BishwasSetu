@@ -11,6 +11,7 @@ import {
   Coins,
   ShieldCheck,
   ClipboardCheck,
+  CalendarClock,
   Settings,
   ExternalLink,
   LogOut,
@@ -42,6 +43,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     items: [
       { href: "/provider/jobs", label: "Jobs", icon: Briefcase },
       { href: "/provider/emergencies", label: "Emergency Jobs", icon: Siren },
+      { href: "/provider/availability", label: "Availability", icon: CalendarClock },
     ],
   },
   {
