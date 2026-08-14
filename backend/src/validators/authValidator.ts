@@ -42,6 +42,22 @@ export const RefreshTokenSchema = z.object({
   refreshToken: z.string().min(1),
 })
 
-export type RegisterInput     = z.infer<typeof RegisterSchema>
-export type LoginInput        = z.infer<typeof LoginSchema>
-export type VerifyOtpInput    = z.infer<typeof VerifyOtpSchema>
+export const ForgotPasswordSchema = z.object({
+  email: z.string().email().optional(),
+  phone: z.string().optional(),
+}).refine((data) => data.email || data.phone, {
+  message: 'Provide either email or phone',
+  path:    ['email'],
+})
+
+export const ResetPasswordSchema = z.object({
+  userId:      z.string().uuid(),
+  code:        z.string().length(6).regex(/^\d{6}$/, 'OTP must be 6 digits'),
+  newPassword: z.string().min(8).max(100),
+})
+
+export type RegisterInput        = z.infer<typeof RegisterSchema>
+export type LoginInput           = z.infer<typeof LoginSchema>
+export type VerifyOtpInput       = z.infer<typeof VerifyOtpSchema>
+export type ForgotPasswordInput  = z.infer<typeof ForgotPasswordSchema>
+export type ResetPasswordInput   = z.infer<typeof ResetPasswordSchema>

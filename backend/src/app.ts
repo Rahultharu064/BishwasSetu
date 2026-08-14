@@ -90,11 +90,13 @@ app.get('/health', (_req, res) => {
 const v1 = '/api/v1'
 
 // Tight limits on auth endpoints
-app.use(`${v1}/auth/register`,   otpLimiter)
-app.use(`${v1}/auth/login`,      authLimiter)
-app.use(`${v1}/auth/verify-otp`, otpLimiter)
-app.use(`${v1}/auth/resend-otp`, otpLimiter)
-app.use(`${v1}/auth`,            authRoutes)
+app.use(`${v1}/auth/register`,        otpLimiter)
+app.use(`${v1}/auth/login`,           authLimiter)
+app.use(`${v1}/auth/verify-otp`,      otpLimiter)
+app.use(`${v1}/auth/resend-otp`,      otpLimiter)
+app.use(`${v1}/auth/forgot-password`, otpLimiter)
+app.use(`${v1}/auth/reset-password`,  otpLimiter)
+app.use(`${v1}/auth`,                 authRoutes)
 
 // Staff login — deliberately a separate mount from both `/auth` (public,
 // OTP-gated) and `/admin` (already-authenticated resource API below) so

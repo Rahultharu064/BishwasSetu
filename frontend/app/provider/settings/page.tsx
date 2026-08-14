@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/context/toast-context";
+import { api, ApiError } from "@/lib/api";
 import { initials } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -67,7 +68,7 @@ export default function ProviderSettingsPage() {
 // ── Profile ─────────────────────────────────────────────────────
 
 function ProfileTab() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const { toast } = useToast();
   const [name, setName] = useState(user?.name ?? "");
   const [error, setError] = useState<string | null>(null);
@@ -84,11 +85,11 @@ function ProfileTab() {
     }
     setSaving(true);
     try {
-      // Simulate API call for now since there's no general profile update endpoint yet
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      const updated = await api.updateProfile({ name: name.trim() });
+      updateUser({ name: updated.name });
       toast("Profile updated.", "success");
     } catch (err) {
-      setError("Couldn't save changes.");
+      setError(err instanceof ApiError ? err.message : "Couldn't save changes.");
     } finally {
       setSaving(false);
     }
@@ -174,14 +175,13 @@ function SecurityTab() {
     }
     setSaving(true);
     try {
-      // Simulate API call for now
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      await api.changePassword({ currentPassword: current, newPassword: next });
       toast("Password updated.", "success");
       setCurrent("");
       setNext("");
       setConfirm("");
     } catch (err) {
-      setError("Couldn't change password.");
+      setError(err instanceof ApiError ? err.message : "Couldn't change password.");
     } finally {
       setSaving(false);
     }

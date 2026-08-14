@@ -1,8 +1,11 @@
+// These describe how the platform is built, not usage counts — BishwasSetu
+// is a new marketplace, so real activity numbers don't exist yet to quote
+// honestly. Update this once there's a real metrics endpoint to back it.
 const STATS = [
-  { value: "12,400+", label: "Verified providers", accent: "bg-urgent" },
-  { value: "84,000+", label: "Jobs completed", accent: "bg-primary" },
-  { value: "4.9 / 5", label: "Average rating", accent: "bg-warning" },
-  { value: "3+", label: "Cities, growing", accent: "bg-skilled" },
+  { value: "100%", label: "Escrow-protected payments", accent: "bg-urgent" },
+  { value: "7-day", label: "Workmanship guarantee", accent: "bg-primary" },
+  { value: "3-tier", label: "Provider verification", accent: "bg-warning" },
+  { value: "EN / ने", label: "Bilingual, end to end", accent: "bg-skilled" },
 ];
 
 export function StatsBand() {
