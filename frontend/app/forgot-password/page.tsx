@@ -6,12 +6,14 @@ import { useRouter } from "next/navigation";
 import { KeyRound } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { useToast } from "@/context/toast-context";
+import { useLang } from "@/context/language-context";
 import { Button } from "@/components/ui/button";
 import { Input, Label, FieldError } from "@/components/ui/input";
 
 function ForgotPasswordInner() {
   const router = useRouter();
   const { toast } = useToast();
+  const { tr } = useLang();
 
   const [identifier, setIdentifier] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +23,7 @@ function ForgotPasswordInner() {
     e.preventDefault();
     setError(null);
     if (!identifier.trim()) {
-      setError("Enter your email or phone number.");
+      setError(tr("auth.forgotPassword.errEmpty"));
       return;
     }
     setLoading(true);
@@ -31,14 +33,14 @@ function ForgotPasswordInner() {
         email: isEmail ? identifier.trim() : undefined,
         phone: isEmail ? undefined : identifier.trim(),
       });
-      toast("A reset code is on its way.", "info");
+      toast(tr("auth.forgotPassword.toastSent"), "info");
       router.push(
         `/reset-password?userId=${res.userId}&channel=${
           isEmail ? "email" : "phone"
         }`
       );
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't send a reset code.");
+      setError(err instanceof ApiError ? err.message : tr("auth.forgotPassword.errFailed"));
     } finally {
       setLoading(false);
     }
@@ -50,35 +52,35 @@ function ForgotPasswordInner() {
         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary-soft text-primary">
           <KeyRound className="h-6 w-6" />
         </div>
-        <h1 className="text-2xl font-bold tracking-tight">Reset your password</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{tr("auth.forgotPassword.heading")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Enter the email or phone on your account and we&apos;ll send you a code.
+          {tr("auth.forgotPassword.subtitle")}
         </p>
       </div>
 
       <form onSubmit={submit} className="space-y-4" noValidate>
         <div>
-          <Label htmlFor="identifier">Email or phone</Label>
+          <Label htmlFor="identifier">{tr("auth.forgotPassword.label")}</Label>
           <Input
             id="identifier"
             type="text"
             value={identifier}
             onChange={(e) => setIdentifier(e.target.value)}
-            placeholder="you@example.com or 98XXXXXXXX"
+            placeholder={tr("auth.forgotPassword.placeholder")}
             autoComplete="username"
             autoFocus
           />
         </div>
         <FieldError>{error}</FieldError>
         <Button type="submit" full size="lg" disabled={loading}>
-          {loading ? "Sending code…" : "Send reset code"}
+          {loading ? tr("auth.forgotPassword.sending") : tr("auth.forgotPassword.send")}
         </Button>
       </form>
 
       <div className="mt-6 text-center text-sm text-muted-foreground">
-        Remembered it?{" "}
+        {tr("auth.forgotPassword.rememberedIt")}{" "}
         <Link href="/login" className="font-semibold text-primary hover:underline">
-          Back to sign in
+          {tr("auth.forgotPassword.backToSignIn")}
         </Link>
       </div>
     </div>
