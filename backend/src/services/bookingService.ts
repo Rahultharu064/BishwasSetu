@@ -12,6 +12,7 @@ import {
   notifyBookingRejected,
   notifyBookingCompleted,
 } from '../services/notificationsService'
+import { emitNewBooking, emitBookingStatusUpdate } from '../config/socketHandlers'
 
 // ─────────────────────────────────────────────
 // STATE MACHINE
@@ -212,6 +213,7 @@ export const createBooking = async (
     booking.scheduledAt.toLocaleDateString('en-NP')
   ).catch(() => {})
 
+  emitNewBooking(booking.provider.user.id, booking)
 
   return {
     booking,
@@ -243,7 +245,7 @@ export const updateBookingStatus = async (
   const booking = await prisma.booking.findUnique({
     where:   { id: bookingId },
     include: {
-      provider: { select: { id: true, trustScore: true, legalName: true } },
+      provider: { select: { id: true, trustScore: true, legalName: true, userId: true } },
       category: { select: { name: true } },
     },
   })
@@ -359,8 +361,11 @@ export const updateBookingStatus = async (
       booking.category.name
     ).catch(() => {})
 
+    const completedBooking = await prisma.booking.findUnique({ where: { id: bookingId } })
+    emitBookingStatusUpdate(booking.customerId, booking.provider.userId, completedBooking)
+
     return {
-      booking: await prisma.booking.findUnique({ where: { id: bookingId } }),
+      booking: completedBooking,
       commission: commissionResult,
       message:    'Booking marked complete. Commission deducted. Payout initiated.',
     }
@@ -415,6 +420,8 @@ export const updateBookingStatus = async (
       booking.category.name
     ).catch(() => {})
   }
+
+  emitBookingStatusUpdate(booking.customerId, booking.provider.userId, updated)
 
   return { booking: updated, message: `Booking ${newStatus.toLowerCase()}` }
 }

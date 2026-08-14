@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/context/auth-context";
 import { LanguageProvider } from "@/context/language-context";
 import { ToastProvider } from "@/context/toast-context";
+import { NotificationProvider } from "@/context/notification-context";
 import { SiteChrome } from "@/components/site-chrome";
 
 // Single font family — reduces payload on 3G (ux.md §2.2)
@@ -42,7 +43,9 @@ export default function RootLayout({
         <ToastProvider>
           <LanguageProvider>
             <AuthProvider>
-              <SiteChrome>{children}</SiteChrome>
+              <NotificationProvider>
+                <SiteChrome>{children}</SiteChrome>
+              </NotificationProvider>
             </AuthProvider>
           </LanguageProvider>
         </ToastProvider>

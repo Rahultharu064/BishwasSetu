@@ -22,6 +22,7 @@ import {
 import { useAuth } from "@/context/auth-context";
 import { cn } from "@/lib/utils";
 import { initials } from "@/lib/format";
+import { NotificationBell } from "@/components/notification-bell";
 
 interface NavItem {
   href: string;
@@ -268,6 +269,7 @@ export default function ProviderLayout({
               >
                 View site <ExternalLink className="h-3.5 w-3.5" />
               </Link>
+              <NotificationBell />
             </div>
 
             <div className="relative">

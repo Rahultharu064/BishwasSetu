@@ -7,6 +7,7 @@
 import { prisma } from "../config/db";
 import { BookingStatus } from "@prisma/client";
 import { ApiError } from "../utils/apierror";
+import { emitNewMessage } from "../config/socketHandlers";
 
 const OPEN_STATUSES: BookingStatus[] = [
   BookingStatus.ACCEPTED,
@@ -147,7 +148,7 @@ export async function sendMessage(
   if (text.length > 2000)
     throw new ApiError(400, "Message is too long (2000 chars max)");
 
-  const { booking } = await loadBookingForUser(userId, bookingId);
+  const { booking, isCustomer } = await loadBookingForUser(userId, bookingId);
   if (!OPEN_STATUSES.includes(booking.status))
     throw new ApiError(
       409,
@@ -158,6 +159,9 @@ export async function sendMessage(
     data: { bookingId, senderId: userId, body: text },
     select: { id: true, senderId: true, body: true, readAt: true, createdAt: true },
   });
+
+  const recipientUserId = isCustomer ? booking.provider.userId : booking.customerId;
+  emitNewMessage(recipientUserId, bookingId, message);
 
   return {
     id: message.id,
