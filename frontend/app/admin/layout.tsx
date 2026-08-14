@@ -21,6 +21,7 @@ import {
   Menu,
   X,
   History,
+  PhoneOff,
 } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { api } from "@/lib/api";
@@ -64,6 +65,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     items: [
       { href: "/admin/complaints", label: "Complaints", icon: MessageSquareWarning },
       { href: "/admin/fraud", label: "Trust & Fraud", icon: Flag },
+      { href: "/admin/leakage", label: "Leakage Flags", icon: PhoneOff },
       { href: "/admin/audit-log", label: "Audit Log", icon: History },
     ],
   },

@@ -574,6 +574,21 @@ export const api = {
       auth: true,
     }),
 
+  // Admin — off-platform leakage flags (PHONE_IN_CHAT / CANCEL_AFTER_CONTACT / COMPLAINT_PATTERN)
+  adminLeakageFlags: (query?: Record<string, string | number | undefined>) =>
+    apiRequest<import("./admin-types").LeakageFlagsResponse>(
+      "/admin/leakage-flags",
+      { query, auth: true }
+    ),
+  adminResolveLeakageFlag: (
+    id: string,
+    status: "REVIEWED" | "DISMISSED" | "ACTIONED"
+  ) =>
+    apiRequest<import("./admin-types").LeakageFlag>(
+      `/admin/leakage-flags/${id}/resolve`,
+      { method: "PATCH", body: { status }, auth: true }
+    ),
+
   // Admin — revenue analytics
   adminRevenue: (query: { from: string; to: string }) =>
     apiRequest<unknown>("/admin/analytics/revenue", { query, auth: true }),

@@ -8,6 +8,7 @@ import { prisma } from "../config/db";
 import { BookingStatus } from "@prisma/client";
 import { ApiError } from "../utils/apierror";
 import { emitNewMessage } from "../config/socketHandlers";
+import { findPhoneNumber } from "../utils/detectPhoneNumber";
 
 const OPEN_STATUSES: BookingStatus[] = [
   BookingStatus.ACCEPTED,
@@ -162,6 +163,27 @@ export async function sendMessage(
 
   const recipientUserId = isCustomer ? booking.provider.userId : booking.customerId;
   emitNewMessage(recipientUserId, bookingId, message);
+
+  // Anti-disintermediation (PRD §5): a phone number shared in-chat is the
+  // most direct off-platform signal there is — flag it for admin review,
+  // same queue the leakage-scan cron feeds (jobs/maintenanceJob.ts).
+  const sharedNumber = findPhoneNumber(text);
+  if (sharedNumber) {
+    const alreadyFlagged = await prisma.leakageFlag.findFirst({
+      where: { bookingId, signal: "PHONE_IN_CHAT", status: "OPEN" },
+    });
+    if (!alreadyFlagged) {
+      await prisma.leakageFlag.create({
+        data: {
+          providerId: booking.provider.id,
+          customerId: booking.customerId,
+          bookingId,
+          signal: "PHONE_IN_CHAT",
+          details: { messageId: message.id, senderId: userId, snippet: text.slice(0, 200) },
+        },
+      });
+    }
+  }
 
   return {
     id: message.id,
