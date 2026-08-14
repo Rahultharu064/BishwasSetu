@@ -274,6 +274,93 @@ export const STRINGS = {
   "assistant.provider1": { en: "What's my trust score?", ne: "मेरो विश्वास स्कोर कति छ?" },
   "assistant.provider2": { en: "How do credits work?", ne: "क्रेडिटले कसरी काम गर्छ?" },
   "assistant.provider3": { en: "How do I get verified?", ne: "म कसरी प्रमाणित हुन सक्छु?" },
+
+  // ── Emergency dispatch ("Find Me a Pro Now") ────────────
+  "emergency.title": { en: "Emergency Dispatch", ne: "आपतकालीन सेवा" },
+  "emergency.subtitle": {
+    en: "Nearest verified pro · 12% priority fee · Tier 2+ only",
+    ne: "नजिकको प्रमाणित प्रो · १२% प्राथमिकता शुल्क · टियर २+ मात्र",
+  },
+  "emergency.back": { en: "Back", ne: "पछाडि" },
+
+  "emergency.category.plumbing": { en: "Plumbing", ne: "प्लम्बिङ" },
+  "emergency.category.electrical": { en: "Electrical", ne: "बिजुली" },
+  "emergency.category.acCooling": { en: "AC / Cooling", ne: "एसी / कुलिङ" },
+  "emergency.category.applianceRepair": { en: "Appliance", ne: "उपकरण मर्मत" },
+  "emergency.category.cleaning": { en: "Cleaning", ne: "सरसफाई" },
+  "emergency.category.carpentry": { en: "Carpentry", ne: "काठको काम" },
+
+  "emergency.stage1.heading": { en: "What's the emergency?", ne: "आपतकालीन समस्या के हो?" },
+  "emergency.stage1.note": {
+    en: "Only Tier 2+ verified providers · 12% emergency fee applies",
+    ne: "टियर २+ प्रमाणित प्रदायक मात्र · १२% आपतकालीन शुल्क लाग्छ",
+  },
+
+  "emergency.stage2.banner": {
+    en: "⚡ Emergency mode — a 12% priority fee is added. Providers who accept within 5 min earn a Fast Responder badge.",
+    ne: "⚡ आपतकालीन मोड — १२% प्राथमिकता शुल्क थपिन्छ। ५ मिनेटभित्र स्वीकार गर्ने प्रदायकले फास्ट रेस्पोन्डर ब्याज पाउँछन्।",
+  },
+  "emergency.stage2.heading": { en: "Confirm your location", ne: "आफ्नो स्थान पुष्टि गर्नुहोस्" },
+  "emergency.stage2.addressLabel": { en: "Service address", ne: "सेवा ठेगाना" },
+  "emergency.stage2.addressPlaceholder": {
+    en: "Area / landmark (e.g. Maharajgunj, near the chowk)",
+    ne: "क्षेत्र / ल्यान्डमार्क (जस्तै: महाराजगंज, चोक नजिक)",
+  },
+  "emergency.stage2.locationShared": { en: "Location shared", ne: "स्थान साझा गरियो" },
+  "emergency.stage2.gettingLocation": { en: "Getting location…", ne: "स्थान लिँदैछ…" },
+  "emergency.stage2.shareLocation": { en: "Share my current location", ne: "मेरो हालको स्थान साझा गर्नुहोस्" },
+  "emergency.stage2.gpsNote": {
+    en: "We use your GPS to dispatch the nearest verified pro.",
+    ne: "नजिकको प्रमाणित प्रो पठाउन हामी तपाईंको GPS प्रयोग गर्छौं।",
+  },
+  "emergency.stage2.describeLabel": { en: "Describe the problem (optional)", ne: "समस्या वर्णन गर्नुहोस् (वैकल्पिक)" },
+  "emergency.stage2.describePlaceholder": {
+    en: "e.g. Water pipe burst in bathroom, need urgent fix",
+    ne: "जस्तै: बाथरूमको पाइप फुट्यो, तुरुन्त मर्मत चाहियो",
+  },
+  "emergency.stage2.findProNow": { en: "Find me a pro now", ne: "अहिले नै प्रो खोज्नुहोस्" },
+  "emergency.stage2.dispatching": { en: "Dispatching…", ne: "पठाउँदैछ…" },
+  "emergency.stage2.shareToDispatch": {
+    en: "Share your location above to dispatch.",
+    ne: "पठाउन माथि आफ्नो स्थान साझा गर्नुहोस्।",
+  },
+
+  "emergency.stage3.finding": { en: "Finding your nearest verified pro…", ne: "तपाईंको नजिकको प्रमाणित प्रो खोज्दैछ…" },
+  "emergency.stage3.searchWindow": { en: "Searching within 10km · up to 10 min", ne: "१० किमीभित्र खोजी · १० मिनेटसम्म" },
+  "emergency.stage3.scanning": { en: "Scanning area…", ne: "क्षेत्र स्क्यान गर्दैछ…" },
+  "emergency.stage3.providersNotified": { en: "{count} providers notified", ne: "{count} प्रदायकलाई सूचित गरियो" },
+  "emergency.stage3.cancel": { en: "Cancel request", ne: "अनुरोध रद्द गर्नुहोस्" },
+
+  "emergency.stage4.title": { en: "Pro on the way! 🎉", ne: "प्रो आउँदैछन्! 🎉" },
+  "emergency.stage4.body": {
+    en: "A verified provider has accepted your emergency request and is heading your way. You'll receive an SMS confirmation shortly.",
+    ne: "एक प्रमाणित प्रदायकले तपाईंको आपतकालीन अनुरोध स्वीकार गरेका छन् र तपाईंतर्फ आउँदैछन्। चाँडै तपाईंलाई SMS पुष्टि आउनेछ।",
+  },
+  "emergency.stage4.viewBooking": { en: "View booking details", ne: "बुकिङ विवरण हेर्नुहोस्" },
+  "emergency.stage4.goToBookings": { en: "Go to my bookings", ne: "मेरो बुकिङहरूमा जानुहोस्" },
+
+  "emergency.stage5.title": { en: "No pros available right now", ne: "अहिले कुनै प्रो उपलब्ध छैनन्" },
+  "emergency.stage5.body": {
+    en: "We've queued your request and will SMS you the moment a verified provider accepts. No charge until one is on the way.",
+    ne: "हामीले तपाईंको अनुरोध लाइनमा राखेका छौं र प्रमाणित प्रदायकले स्वीकार गर्नेबित्तिकै SMS पठाउनेछौं। प्रो नआएसम्म कुनै शुल्क लाग्दैन।",
+  },
+  "emergency.stage5.browseInstead": { en: "Browse scheduled bookings instead", ne: "बरु तालिकाबद्ध बुकिङहरू हेर्नुहोस्" },
+  "emergency.stage5.tryAgain": { en: "Try again", ne: "फेरि प्रयास गर्नुहोस्" },
+
+  "emergency.toast.noLocationSupport": {
+    en: "Location isn't available on this device.",
+    ne: "यो यन्त्रमा स्थान सेवा उपलब्ध छैन।",
+  },
+  "emergency.toast.locationCaptured": { en: "Location captured.", ne: "स्थान लिइयो।" },
+  "emergency.toast.locationFailed": {
+    en: "Couldn't get your location — allow access and try again.",
+    ne: "तपाईंको स्थान लिन सकिएन — पहुँच दिनुहोस् र फेरि प्रयास गर्नुहोस्।",
+  },
+  "emergency.toast.needLocation": {
+    en: "Share your location so we can find the nearest pro.",
+    ne: "नजिकको प्रो खोज्न आफ्नो स्थान साझा गर्नुहोस्।",
+  },
+  "emergency.toast.dispatchFailed": { en: "Could not dispatch. Try again.", ne: "पठाउन सकिएन। फेरि प्रयास गर्नुहोस्।" },
 } as const satisfies Record<string, { en: string; ne: string }>;
 
 export type StringKey = keyof typeof STRINGS;
